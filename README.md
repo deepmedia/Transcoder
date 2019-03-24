@@ -24,7 +24,7 @@ MediaTranscoder.into(filePath)
 
 Take a look at the demo app for a real example or keep reading below for documentation.
 
-**Note**: this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
+***Note***: *this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
 It features a lot of improvements over the original project, including:
 
 - Multithreading support
@@ -36,7 +36,7 @@ It features a lot of improvements over the original project, including:
 - Configurable [Validators](#validators) to e.g. **not** perform transcoding if the source video is already compressed enough
 - Expose internal logs through Logger (so they can be reported to e.g. Crashlytics)
 - Handy utilities for track configuration through [Output Strategies](#output-strategies)
-- Handy utilities for resizing
+- Handy utilities for resizing*
 
 ## Setup
 
@@ -57,17 +57,17 @@ Starting a transcoding operation will require a source for our data, which is no
 a `File`. The `DataSource` objects will automatically take care about releasing streams / resources,
 which is convenient but it means that they can not be used twice.
 
-### `UriDataSource`
+#### `UriDataSource`
 
 The Android friendly source can be created with `new UriDataSource(context, uri)` or simply
 using `setDataSource(context, uri)` in the transcoding builder.
 
-### `FileDescriptorDataSource`
+#### `FileDescriptorDataSource`
 
 A data source backed by a file descriptor. Use `new FileDescriptorDataSource(descriptor)` or
 simply `setDataSource(descriptor)` in the transcoding builder.
 
-### `FilePathDataSource`
+#### `FilePathDataSource`
 
 A data source backed by a file absolute path. Use `new FilePathDataSource(path)` or
 simply `setDataSource(path)` in the transcoding builder.
@@ -95,19 +95,19 @@ All of the listener callbacks are called:
 - If it has a handler, on the thread that started the `transcode()` call
 - As a last resort, on the UI thread
 
-### `onTranscodeProgress`
+#### `onTranscodeProgress`
 
 This simply sends a double indicating the current progress. The value is typically between 0 and 1,
 but can be a negative value to indicate that we are not able to compute progress (yet?).
 
 This is the right place to update a ProgressBar, for example.
 
-### `onTranscodeCanceled`
+#### `onTranscodeCanceled`
 
 The transcoding operation was canceled. This can happen when the `Future` returned by `transcode()`
 is cancelled by the user.
 
-### `onTranscodeFailed`
+#### `onTranscodeFailed`
 
 This can happen in a number of cases and is typically out of our control. Input options might be
 wrong, write permissions might be missing, codec might be absent, input file might be not supported
@@ -115,7 +115,7 @@ or simply corrupted.
 
 You can take a look at the `Throwable` being passed to know more about the exception.
 
-### `onTranscodeCompleted`
+#### `onTranscodeCompleted`
 
 Transcoding operation did succeed. The success code can be:
 
@@ -157,17 +157,17 @@ The TrackStatus enum contains the following values:
 The `TrackStatus` value depends on the [output strategy](#output-strategies) that was used.
 We provide a few validators that can be injected for typical usage.
 
-### `DefaultValidator`
+#### `DefaultValidator`
 
 This is the default validator and it returns true when any of the track is `COMPRESSING` or `REMOVING`.
 In the other cases, transcoding is typically not needed so we abort the operation.
 
-### `WriteAlwaysValidator`
+#### `WriteAlwaysValidator`
 
 This validator always returns true and as such will always write to target file, no matter the track status,
 presence of tracks and so on. For instance, the output container file might have no tracks.
 
-### `WriteVideoValidator`
+#### `WriteVideoValidator`
 
 A Validator that gives priority to the video track. Transcoding will not happen if the video track does not need it,
 even if the audio track might need it. If reducing file size is your only concern, this can avoid compressing
@@ -192,14 +192,14 @@ This library offers track specific strategies that help with audio and video opt
 [Audio Strategies](#audio-strategies) and [Video Strategies](#video-strategies)).
 In addition, we have a few built-in strategies that can work for both audio and video:
 
-### `PassThroughTrackStrategy`
+#### `PassThroughTrackStrategy`
 
 An OutputStrategy that asks the encoder to keep this track as is, by returning the same input
 format. Note that this is risky, as the input track format might not be supported my the MP4 container.
 
 This will set the `TrackStatus` to `TrackStatus.PASS_THROUGH`.
 
-### `RemoveTrackStrategy`
+#### `RemoveTrackStrategy`
 
 An OutputStrategy that asks the encoder to remove this track from the output container, by returning null.
 For instance, this can be used as an audio strategy to remove audio from video/audio streams.
