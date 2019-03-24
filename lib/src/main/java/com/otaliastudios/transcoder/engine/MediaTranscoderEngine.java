@@ -68,10 +68,6 @@ public class MediaTranscoderEngine {
         mDataSource = dataSource;
     }
 
-    public ProgressCallback getProgressCallback() {
-        return mProgressCallback;
-    }
-
     public void setProgressCallback(ProgressCallback progressCallback) {
         mProgressCallback = progressCallback;
     }
