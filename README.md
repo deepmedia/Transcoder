@@ -31,6 +31,7 @@ It features a lot of improvements over the original project, including:*
 - *Various bugs fixed*
 - *[Input](#data-sources): Accept content Uris and other types*
 - *[Real error handling](#listening-for-events) instead of errors being thrown*
+- *Frame dropping support, which means you can set the video frame rate*
 - *Source project is over-conservative when choosing options that *might* not be supported. We prefer to try and let the codec fail*
 - *More convenient APIs for transcoding & choosing options*
 - *Configurable [Validators](#validators) to e.g. **not** perform transcoding if the source video is already compressed enough*
