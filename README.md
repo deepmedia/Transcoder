@@ -6,18 +6,6 @@ Transcodes and compresses video files into the MP4 format, with audio support.
 implementation 'com.otaliastudios:transcoder:0.4.0'
 ```
 
-This project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
-It features a lot of improvements over the original project, including:
-
-- Multithreading support
-- Various bugs fixed
-- Accept content:// Uris and other types of input
-- Real error handling instead of errors being thrown
-- Source project is over-conservative when choosing options that *might* not be supported. We prefer to try and let the codec fail
-- More convenient APIs for transcoding & choosing options
-- Do **not** perform transcoding if the source video already matches our options (configurable)
-- Expose internal logs through Logger (so they can be reported to e.g. Crashlytics)
-
 Using Transcoder in the most basic form is pretty simple:
 
 ```java
@@ -36,6 +24,20 @@ MediaTranscoder.into(filePath)
 
 Take a look at the demo app for a real example or keep reading below for documentation.
 
+**Note**: this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
+It features a lot of improvements over the original project, including:
+
+- Multithreading support
+- Various bugs fixed
+- [Input](#data-sources): Accept content:// Uris and other types
+- [Real error handling](#listening-for-events) instead of errors being thrown
+- Source project is over-conservative when choosing options that *might* not be supported. We prefer to try and let the codec fail
+- More convenient APIs for transcoding & choosing options
+- Configurable [Validators](#validators) to e.g. **not** perform transcoding if the source video is already compressed enough
+- Expose internal logs through Logger (so they can be reported to e.g. Crashlytics)
+- Handy utilities for track configuration through [Output Strategies](#output-strategies)
+- Handy utilities for resizing
+
 ## Setup
 
 This library requires API level 18 (Android 4.3, JELLY_BEAN_MR2) or later.
@@ -49,7 +51,7 @@ adding this line to your manifest file:
 In this case you should check at runtime that API level is at least 18, before
 calling any method here.
 
-## DataSource
+## Data Sources
 
 Starting a transcoding operation will require a source for our data, which is not necessarily
 a `File`. The `DataSource` objects will automatically take care about releasing streams / resources,
