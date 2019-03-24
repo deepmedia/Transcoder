@@ -24,7 +24,7 @@ MediaTranscoder.into(filePath)
 
 Take a look at the demo app for a real example or keep reading below for documentation.
 
-*Note: *this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
+*Note: this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
 It features a lot of improvements over the original project, including:*
 
 - *Multithreading support*
