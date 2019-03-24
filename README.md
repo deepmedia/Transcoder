@@ -24,19 +24,19 @@ MediaTranscoder.into(filePath)
 
 Take a look at the demo app for a real example or keep reading below for documentation.
 
-***Note***: *this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
-It features a lot of improvements over the original project, including:
+*Note: *this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
+It features a lot of improvements over the original project, including:*
 
-- Multithreading support
-- Various bugs fixed
-- [Input](#data-sources): Accept content:// Uris and other types
-- [Real error handling](#listening-for-events) instead of errors being thrown
-- Source project is over-conservative when choosing options that *might* not be supported. We prefer to try and let the codec fail
-- More convenient APIs for transcoding & choosing options
-- Configurable [Validators](#validators) to e.g. **not** perform transcoding if the source video is already compressed enough
-- Expose internal logs through Logger (so they can be reported to e.g. Crashlytics)
-- Handy utilities for track configuration through [Output Strategies](#output-strategies)
-- Handy utilities for resizing*
+- *Multithreading support*
+- *Various bugs fixed*
+- *[Input](#data-sources): Accept content Uris and other types*
+- *[Real error handling](#listening-for-events) instead of errors being thrown*
+- *Source project is over-conservative when choosing options that *might* not be supported. We prefer to try and let the codec fail*
+- *More convenient APIs for transcoding & choosing options*
+- *Configurable [Validators](#validators) to e.g. **not** perform transcoding if the source video is already compressed enough*
+- *Expose internal logs through Logger (so they can be reported to e.g. Crashlytics)*
+- *Handy utilities for track configuration through [Output Strategies](#output-strategies)*
+- *Handy utilities for resizing*
 
 ## Setup
 
