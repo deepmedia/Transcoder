@@ -259,7 +259,12 @@ public class VideoTrackTranscoder implements TrackTranscoder {
 
     private int drainEncoder(long timeoutUs) {
         if (mIsEncoderEOS) return DRAIN_STATE_NONE;
-        int result = mEncoder.dequeueOutputBuffer(mBufferInfo, timeoutUs);
+        int result = MediaCodec.INFO_TRY_AGAIN_LATER;
+        try{
+            result = mEncoder.dequeueOutputBuffer(mBufferInfo, timeoutUs);
+        }catch(Exception e){
+            LOG.e("Error dequeingoutputbuffer ", e);
+        }
         switch (result) {
             case MediaCodec.INFO_TRY_AGAIN_LATER:
                 return DRAIN_STATE_NONE;
