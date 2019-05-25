@@ -154,14 +154,25 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             mEncoderInputSurfaceWrapper = null;
         }
         if (mDecoder != null) {
-            if (mDecoderStarted) mDecoder.stop();
-            mDecoder.release();
-            mDecoder = null;
+            try{
+                if (mDecoderStarted)
+                    mDecoder.stop();
+                mDecoder.release();
+                mDecoder = null;
+            }catch(Exception e){
+                LOG.e("Error stopping decoder. Probably its already released "+e.getMessage());
+            }
         }
         if (mEncoder != null) {
-            if (mEncoderStarted) mEncoder.stop();
-            mEncoder.release();
-            mEncoder = null;
+            try{
+                if (mEncoderStarted)
+                    mEncoder.stop();
+                mEncoder.release();
+                mEncoder = null;
+            }catch(Exception e){
+                LOG.e("Error stopping encoding. Probably its already released "+e.getMessage());
+            }
+
         }
     }
 
