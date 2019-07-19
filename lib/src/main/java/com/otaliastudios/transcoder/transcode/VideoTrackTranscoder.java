@@ -106,7 +106,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
             inputFormat.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         }
-
+        // Cropping support.
         float inputWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
         float inputHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
         float inputRatio = inputWidth / inputHeight;
@@ -119,7 +119,8 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         } else if (inputRatio < outputRatio) { // Input taller. We have a scaleY.
             scaleY = outputRatio / inputRatio;
         }
-        // TODO should consider rotation? Not clear to me ATM
+        // I don't think we should consider rotation and flip these - we operate on non-rotated
+        // surfaces and pass the input rotation metadata to the output muxer, see TranscoderEngine.setupMetadata.
         mDecoderOutputSurface = new VideoDecoderOutput(scaleX, scaleY);
         try {
             mDecoder = MediaCodec.createDecoderByType(inputFormat.getString(MediaFormat.KEY_MIME));

@@ -15,6 +15,9 @@ import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.OutputStrategy;
+import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
+import com.otaliastudios.transcoder.strategy.size.FractionResizer;
+import com.otaliastudios.transcoder.strategy.size.PassThroughResizer;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +42,7 @@ public class TranscoderActivity extends AppCompatActivity implements
     private RadioGroup mAudioChannelsGroup;
     private RadioGroup mVideoFramesGroup;
     private RadioGroup mVideoResolutionGroup;
+    private RadioGroup mVideoAspectGroup;
     private ProgressBar mProgressView;
     private TextView mButtonView;
 
@@ -72,9 +76,11 @@ public class TranscoderActivity extends AppCompatActivity implements
         mAudioChannelsGroup = findViewById(R.id.channels);
         mVideoFramesGroup = findViewById(R.id.frames);
         mVideoResolutionGroup = findViewById(R.id.resolution);
+        mVideoAspectGroup = findViewById(R.id.aspect);
         mAudioChannelsGroup.setOnCheckedChangeListener(this);
         mVideoFramesGroup.setOnCheckedChangeListener(this);
         mVideoResolutionGroup.setOnCheckedChangeListener(this);
+        mVideoAspectGroup.setOnCheckedChangeListener(this);
         syncParameters();
     }
 
@@ -105,8 +111,16 @@ public class TranscoderActivity extends AppCompatActivity implements
             case R.id.resolution_third: fraction = 1F / 3F; break;
             default: fraction = 1F;
         }
-        mTranscodeVideoStrategy = DefaultVideoStrategy
-                .fraction(fraction)
+        float aspectRatio;
+        switch (mVideoAspectGroup.getCheckedRadioButtonId()) {
+            case R.id.aspect_169: aspectRatio = 16F / 9F; break;
+            case R.id.aspect_43: aspectRatio = 4F / 3F; break;
+            case R.id.aspect_square: aspectRatio = 1F; break;
+            default: aspectRatio = 0F;
+        }
+        mTranscodeVideoStrategy = new DefaultVideoStrategy.Builder()
+                .addResizer(aspectRatio > 0 ? new AspectRatioResizer(aspectRatio) : new PassThroughResizer())
+                .addResizer(new FractionResizer(fraction))
                 .frameRate(frames)
                 .build();
     }
