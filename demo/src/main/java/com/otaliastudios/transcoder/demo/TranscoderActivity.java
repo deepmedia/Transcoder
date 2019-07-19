@@ -5,11 +5,17 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.otaliastudios.transcoder.MediaTranscoder;
 import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
+import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
+import com.otaliastudios.transcoder.strategy.OutputStrategy;
+import com.otaliastudios.transcoder.strategy.size.FractionResizer;
+import com.otaliastudios.transcoder.strategy.size.Resizer;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +26,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 
-public class TranscoderActivity extends AppCompatActivity implements MediaTranscoder.Listener {
+public class TranscoderActivity extends AppCompatActivity implements
+        MediaTranscoder.Listener,
+        RadioGroup.OnCheckedChangeListener {
 
     private static final String TAG = "DemoApp";
     private static final Logger LOG = new Logger(TAG);
@@ -29,6 +37,9 @@ public class TranscoderActivity extends AppCompatActivity implements MediaTransc
     private static final int REQUEST_CODE_PICK = 1;
     private static final int PROGRESS_BAR_MAX = 1000;
 
+    private RadioGroup mAudioChannelsGroup;
+    private RadioGroup mVideoFramesGroup;
+    private RadioGroup mVideoResolutionGroup;
     private ProgressBar mProgressView;
     private TextView mButtonView;
 
@@ -37,6 +48,8 @@ public class TranscoderActivity extends AppCompatActivity implements MediaTransc
     private Uri mTranscodeInputUri;
     private File mTranscodeOutputFile;
     private long mTranscodeStartTime;
+    private OutputStrategy mTranscodeVideoStrategy;
+    private OutputStrategy mTranscodeAudioStrategy;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +69,47 @@ public class TranscoderActivity extends AppCompatActivity implements MediaTransc
 
         mProgressView = findViewById(R.id.progress);
         mProgressView.setMax(PROGRESS_BAR_MAX);
+
+        mAudioChannelsGroup = findViewById(R.id.channels);
+        mVideoFramesGroup = findViewById(R.id.frames);
+        mVideoResolutionGroup = findViewById(R.id.resolution);
+        mAudioChannelsGroup.setOnCheckedChangeListener(this);
+        mVideoFramesGroup.setOnCheckedChangeListener(this);
+        mVideoResolutionGroup.setOnCheckedChangeListener(this);
+        syncParameters();
+    }
+
+    @Override
+    public void onCheckedChanged(RadioGroup group, int checkedId) {
+        syncParameters();
+    }
+
+    private void syncParameters() {
+        int channels;
+        switch (mAudioChannelsGroup.getCheckedRadioButtonId()) {
+            case R.id.channels_mono: channels = 1; break;
+            case R.id.channels_stereo: channels = 2; break;
+            default: channels = DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS;
+        }
+        mTranscodeAudioStrategy = new DefaultAudioStrategy(channels);
+
+        int frames;
+        switch (mVideoFramesGroup.getCheckedRadioButtonId()) {
+            case R.id.frames_24: frames = 24; break;
+            case R.id.frames_30: frames = 30; break;
+            case R.id.frames_60: frames = 60; break;
+            default: frames = DefaultVideoStrategy.DEFAULT_FRAME_RATE;
+        }
+        float fraction;
+        switch (mVideoResolutionGroup.getCheckedRadioButtonId()) {
+            case R.id.resolution_half: fraction = 0.5F; break;
+            case R.id.resolution_third: fraction = 1F / 3F; break;
+            default: fraction = 1F;
+        }
+        mTranscodeVideoStrategy = DefaultVideoStrategy
+                .fraction(fraction)
+                .frameRate(frames)
+                .build();
     }
 
     private void setIsTranscoding(boolean isTranscoding) {
@@ -95,6 +149,8 @@ public class TranscoderActivity extends AppCompatActivity implements MediaTransc
         mTranscodeFuture = MediaTranscoder.into(mTranscodeOutputFile.getAbsolutePath())
                 .setDataSource(this, mTranscodeInputUri)
                 .setListener(this)
+                .setAudioOutputStrategy(mTranscodeAudioStrategy)
+                .setVideoOutputStrategy(mTranscodeVideoStrategy)
                 .transcode();
     }
 
