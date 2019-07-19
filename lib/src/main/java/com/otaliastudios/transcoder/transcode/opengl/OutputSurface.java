@@ -50,7 +50,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private EGLSurface mEGLSurface = EGL14.EGL_NO_SURFACE;
     private SurfaceTexture mSurfaceTexture;
     private Surface mSurface;
-    private Object mFrameSyncObject = new Object();     // guards mFrameAvailable
+    private final Object mFrameSyncObject = new Object();     // guards mFrameAvailable
     private boolean mFrameAvailable;
     private TextureRender mTextureRender;
     /**
@@ -220,7 +220,6 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
                         throw new RuntimeException("Surface frame wait timed out");
                     }
                 } catch (InterruptedException ie) {
-                    // shouldn't happen
                     throw new RuntimeException(ie);
                 }
             }
