@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.internal.openglnew;
+package com.otaliastudios.transcoder.internal.video;
 
 
 import android.graphics.SurfaceTexture;
@@ -14,17 +14,20 @@ import com.otaliastudios.opengl.scene.EglScene;
 import com.otaliastudios.transcoder.internal.Logger;
 
 /**
- * Holds state associated with a Surface used for MediaCodec decoder output.
+ * The purpose of this class is to create a {@link Surface} associated to a certain GL texture.
  *
- * This does not allocate any buffer or creates any GL context.
- * Instead, it just creates the Surface and SurfaceTexture, and when a frame arrives
- * we just draw it on whatever surface is current.
+ * The Surface is exposed through {@link #getSurface()} and we expect someone to draw there.
+ * Typically this will be a {@link android.media.MediaCodec} instance, using this surface as output.
  *
- * By default, the Surface will be using a BufferQueue in asynchronous mode, so we
+ * When {@link #drawFrame()} is called, this class will wait for a new frame from MediaCodec,
+ * and draw it on the current EGL surface. The class itself does no GL initialization, and will
+ * draw on whatever surface is current.
+ *
+ * NOTE: By default, the Surface will be using a BufferQueue in asynchronous mode, so we
  * can potentially drop frames.
  */
-public class OutputSurface {
-    private static final String TAG = OutputSurface.class.getSimpleName();
+public class TextureOutputSurface {
+    private static final String TAG = TextureOutputSurface.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     private static final long NEW_IMAGE_TIMEOUT_MILLIS = 10000;
@@ -44,10 +47,10 @@ public class OutputSurface {
     private final Object mFrameAvailableLock = new Object();
 
     /**
-     * Creates an OutputSurface using the current EGL context (rather than establishing a
+     * Creates an TextureOutputSurface using the current EGL context (rather than establishing a
      * new one). Creates a Surface that can be passed to MediaCodec.configure().
      */
-    public OutputSurface() {
+    public TextureOutputSurface() {
         mScene = new EglScene();
         mProgram = new EglTextureProgram();
         mDrawable = new EglRect();
@@ -75,7 +78,7 @@ public class OutputSurface {
     }
 
     /**
-     * Returns the Surface that we draw onto.
+     * Returns a Surface to draw onto.
      * @return the output surface
      */
     @NonNull
@@ -100,11 +103,20 @@ public class OutputSurface {
     }
 
     /**
+     * Waits for a new frame drawn into our surface (see {@link #getSurface()}),
+     * then draws it using OpenGL.
+     */
+    public void drawFrame() {
+        awaitNewFrame();
+        drawNewFrame();
+    }
+
+    /**
      * Latches the next buffer into the texture.  Must be called from the thread that created
-     * the OutputSurface object, after the onFrameAvailable callback has signaled that new
+     * the TextureOutputSurface object, after the onFrameAvailable callback has signaled that new
      * data is available.
      */
-    public void awaitNewImage() {
+    private void awaitNewFrame() {
         synchronized (mFrameAvailableLock) {
             while (!mFrameAvailable) {
                 try {
@@ -129,7 +141,7 @@ public class OutputSurface {
     /**
      * Draws the data from SurfaceTexture onto the current EGL surface.
      */
-    public void drawImage() {
+    private void drawNewFrame() {
         mSurfaceTexture.getTransformMatrix(mTextureTransform);
         mScene.drawTexture(mDrawable, mProgram, mTextureId, mTextureTransform);
     }

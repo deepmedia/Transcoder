@@ -21,8 +21,8 @@ import android.media.MediaFormat;
 
 import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
 import com.otaliastudios.transcoder.engine.QueuedMuxer;
-import com.otaliastudios.transcoder.internal.openglnew.InputSurface;
-import com.otaliastudios.transcoder.internal.openglnew.OutputSurface;
+import com.otaliastudios.transcoder.internal.video.TextureInputSurface;
+import com.otaliastudios.transcoder.internal.video.TextureOutputSurface;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
@@ -48,14 +48,15 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private MediaCodecBufferCompat mEncoderBuffers;
 
     private MediaFormat mActualOutputFormat;
-    private OutputSurface mDecoderOutputSurface;
-    private InputSurface mEncoderInputSurface;
     private boolean mIsExtractorEOS;
     private boolean mIsDecoderEOS;
     private boolean mIsEncoderEOS;
     private boolean mDecoderStarted;
     private boolean mEncoderStarted;
     private long mWrittenPresentationTimeUs;
+
+    private TextureOutputSurface mDecoderOutputSurface;
+    private TextureInputSurface mEncoderInputSurface;
 
     // A step is defined as the microseconds between two frame.
     // The average step is basically 1 / frame rate.
@@ -87,8 +88,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             throw new IllegalStateException(e);
         }
         mEncoder.configure(mOutputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-        mEncoderInputSurface = new InputSurface(mEncoder.createInputSurface());
-        mEncoderInputSurface.makeCurrent();
+        mEncoderInputSurface = new TextureInputSurface(mEncoder.createInputSurface());
         mEncoder.start();
         mEncoderStarted = true;
         mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
@@ -101,7 +101,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
             inputFormat.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         }
-        mDecoderOutputSurface = new OutputSurface();
+        mDecoderOutputSurface = new TextureOutputSurface();
         try {
             mDecoder = MediaCodec.createDecoderByType(inputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
@@ -121,7 +121,6 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     @Override
     public boolean stepPipeline() {
         boolean busy = false;
-
         int status;
         while (drainEncoder(0) != DRAIN_STATE_NONE) busy = true;
         do {
@@ -209,10 +208,8 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         // Refer: http://bigflake.com/mediacodec/CameraToMpegTest.java.txt
         mDecoder.releaseOutputBuffer(result, doRender);
         if (doRender) {
-            mDecoderOutputSurface.awaitNewImage();
-            mDecoderOutputSurface.drawImage();
-            mEncoderInputSurface.setPresentationTime(mBufferInfo.presentationTimeUs * 1000);
-            mEncoderInputSurface.swapBuffers();
+            mDecoderOutputSurface.drawFrame();
+            mEncoderInputSurface.onFrame(mBufferInfo.presentationTimeUs);
         }
         return DRAIN_STATE_CONSUMED;
     }
