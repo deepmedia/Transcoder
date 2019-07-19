@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.internal;
+package com.otaliastudios.transcoder.engine.internal;
 
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
+
+import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

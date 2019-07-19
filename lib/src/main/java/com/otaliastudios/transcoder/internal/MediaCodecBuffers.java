@@ -12,13 +12,13 @@ import java.nio.ByteBuffer;
  * A Wrapper to MediaCodec that facilitates the use of API-dependent get{Input/Output}Buffer methods,
  * in order to prevent: http://stackoverflow.com/q/30646885
  */
-public class MediaCodecBufferCompat {
+public class MediaCodecBuffers {
 
     private final MediaCodec mMediaCodec;
     private final ByteBuffer[] mInputBuffers;
     private ByteBuffer[] mOutputBuffers;
 
-    public MediaCodecBufferCompat(@NonNull MediaCodec mediaCodec) {
+    public MediaCodecBuffers(@NonNull MediaCodec mediaCodec) {
         mMediaCodec = mediaCodec;
 
         if (Build.VERSION.SDK_INT < 21) {

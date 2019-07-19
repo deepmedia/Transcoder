@@ -19,10 +19,10 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
-import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
+import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.engine.QueuedMuxer;
-import com.otaliastudios.transcoder.transcode.opengl.InputSurface;
-import com.otaliastudios.transcoder.transcode.opengl.OutputSurface;
+import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
+import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
@@ -44,18 +44,19 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private MediaCodec mDecoder;
     private MediaCodec mEncoder;
-    private MediaCodecBufferCompat mDecoderBuffers;
-    private MediaCodecBufferCompat mEncoderBuffers;
+    private MediaCodecBuffers mDecoderBuffers;
+    private MediaCodecBuffers mEncoderBuffers;
 
     private MediaFormat mActualOutputFormat;
-    private OutputSurface mDecoderOutputSurfaceWrapper;
-    private InputSurface mEncoderInputSurfaceWrapper;
     private boolean mIsExtractorEOS;
     private boolean mIsDecoderEOS;
     private boolean mIsEncoderEOS;
     private boolean mDecoderStarted;
     private boolean mEncoderStarted;
     private long mWrittenPresentationTimeUs;
+
+    private VideoDecoderOutput mDecoderOutputSurface;
+    private VideoEncoderInput mEncoderInputSurface;
 
     // A step is defined as the microseconds between two frame.
     // The average step is basically 1 / frame rate.
@@ -79,18 +80,20 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     @Override
     public void setup() {
         mExtractor.selectTrack(mTrackIndex);
+
+        // Configure encoder.
         try {
             mEncoder = MediaCodec.createEncoderByType(mOutputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
         mEncoder.configure(mOutputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-        mEncoderInputSurfaceWrapper = new InputSurface(mEncoder.createInputSurface());
-        mEncoderInputSurfaceWrapper.makeCurrent();
+        mEncoderInputSurface = new VideoEncoderInput(mEncoder.createInputSurface());
         mEncoder.start();
         mEncoderStarted = true;
-        mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
+        mEncoderBuffers = new MediaCodecBuffers(mEncoder);
 
+        // Configure decoder.
         MediaFormat inputFormat = mExtractor.getTrackFormat(mTrackIndex);
         if (inputFormat.containsKey(MediaFormatConstants.KEY_ROTATION_DEGREES)) {
             // Decoded video is rotated automatically in Android 5.0 lollipop.
@@ -98,16 +101,16 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
             inputFormat.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         }
-        mDecoderOutputSurfaceWrapper = new OutputSurface();
+        mDecoderOutputSurface = new VideoDecoderOutput();
         try {
             mDecoder = MediaCodec.createDecoderByType(inputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        mDecoder.configure(inputFormat, mDecoderOutputSurfaceWrapper.getSurface(), null, 0);
+        mDecoder.configure(inputFormat, mDecoderOutputSurface.getSurface(), null, 0);
         mDecoder.start();
         mDecoderStarted = true;
-        mDecoderBuffers = new MediaCodecBufferCompat(mDecoder);
+        mDecoderBuffers = new MediaCodecBuffers(mDecoder);
     }
 
     @Override
@@ -118,7 +121,6 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     @Override
     public boolean stepPipeline() {
         boolean busy = false;
-
         int status;
         while (drainEncoder(0) != DRAIN_STATE_NONE) busy = true;
         do {
@@ -144,13 +146,13 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     // TODO: CloseGuard
     @Override
     public void release() {
-        if (mDecoderOutputSurfaceWrapper != null) {
-            mDecoderOutputSurfaceWrapper.release();
-            mDecoderOutputSurfaceWrapper = null;
+        if (mDecoderOutputSurface != null) {
+            mDecoderOutputSurface.release();
+            mDecoderOutputSurface = null;
         }
-        if (mEncoderInputSurfaceWrapper != null) {
-            mEncoderInputSurfaceWrapper.release();
-            mEncoderInputSurfaceWrapper = null;
+        if (mEncoderInputSurface != null) {
+            mEncoderInputSurface.release();
+            mEncoderInputSurface = null;
         }
         if (mDecoder != null) {
             if (mDecoderStarted) mDecoder.stop();
@@ -206,10 +208,8 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         // Refer: http://bigflake.com/mediacodec/CameraToMpegTest.java.txt
         mDecoder.releaseOutputBuffer(result, doRender);
         if (doRender) {
-            mDecoderOutputSurfaceWrapper.awaitNewImage();
-            mDecoderOutputSurfaceWrapper.drawImage();
-            mEncoderInputSurfaceWrapper.setPresentationTime(mBufferInfo.presentationTimeUs * 1000);
-            mEncoderInputSurfaceWrapper.swapBuffers();
+            mDecoderOutputSurface.drawFrame();
+            mEncoderInputSurface.onFrame(mBufferInfo.presentationTimeUs);
         }
         return DRAIN_STATE_CONSUMED;
     }

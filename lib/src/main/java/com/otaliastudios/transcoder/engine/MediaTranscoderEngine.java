@@ -29,7 +29,7 @@ import com.otaliastudios.transcoder.transcode.NoOpTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.PassThroughTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.TrackTranscoder;
 import com.otaliastudios.transcoder.transcode.VideoTrackTranscoder;
-import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
+import com.otaliastudios.transcoder.engine.internal.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.Logger;
 
 import java.io.IOException;

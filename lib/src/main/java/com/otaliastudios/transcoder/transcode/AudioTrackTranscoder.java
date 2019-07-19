@@ -7,8 +7,9 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
+import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.engine.QueuedMuxer;
+import com.otaliastudios.transcoder.transcode.internal.AudioChannel;
 
 import java.io.IOException;
 
@@ -32,8 +33,8 @@ public class AudioTrackTranscoder implements TrackTranscoder {
     private MediaCodec mEncoder;
     private MediaFormat mActualOutputFormat;
 
-    private MediaCodecBufferCompat mDecoderBuffers;
-    private MediaCodecBufferCompat mEncoderBuffers;
+    private MediaCodecBuffers mDecoderBuffers;
+    private MediaCodecBuffers mEncoderBuffers;
 
     private boolean mIsExtractorEOS;
     private boolean mIsDecoderEOS;
@@ -64,7 +65,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
         mEncoder.configure(mOutputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         mEncoder.start();
         mEncoderStarted = true;
-        mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
+        mEncoderBuffers = new MediaCodecBuffers(mEncoder);
 
         final MediaFormat inputFormat = mExtractor.getTrackFormat(mTrackIndex);
         try {
@@ -75,7 +76,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
         mDecoder.configure(inputFormat, null, null, 0);
         mDecoder.start();
         mDecoderStarted = true;
-        mDecoderBuffers = new MediaCodecBufferCompat(mDecoder);
+        mDecoderBuffers = new MediaCodecBuffers(mDecoder);
 
         mAudioChannel = new AudioChannel(mDecoder, mEncoder, mOutputFormat);
     }
@@ -167,7 +168,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
                 mMuxer.setOutputFormat(SAMPLE_TYPE, mActualOutputFormat);
                 return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
             case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
-                mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
+                mEncoderBuffers = new MediaCodecBuffers(mEncoder);
                 return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
 
