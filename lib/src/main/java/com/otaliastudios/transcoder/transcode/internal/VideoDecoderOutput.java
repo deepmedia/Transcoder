@@ -2,6 +2,7 @@ package com.otaliastudios.transcoder.transcode.internal;
 
 
 import android.graphics.SurfaceTexture;
+import android.opengl.Matrix;
 import android.view.Surface;
 
 import androidx.annotation.GuardedBy;
@@ -149,6 +150,15 @@ public class VideoDecoderOutput {
      */
     private void drawNewFrame() {
         mSurfaceTexture.getTransformMatrix(mTextureTransform);
+        // Invert the scale.
+        float glScaleX = 1F / mScaleX;
+        float glScaleY = 1F / mScaleY;
+        // Compensate before scaling.
+        float glTranslX = (1F - glScaleX) / 2F;
+        float glTranslY = (1F - glScaleY) / 2F;
+        Matrix.translateM(mTextureTransform, 0, glTranslX, glTranslY, 0);
+        // Scale and draw.
+        Matrix.scaleM(mTextureTransform, 0, glScaleX, glScaleY, 1);
         mScene.drawTexture(mDrawable, mProgram, mTextureId, mTextureTransform);
     }
 }
