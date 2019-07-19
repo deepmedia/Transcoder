@@ -15,7 +15,7 @@
  */
 // from: https://android.googlesource.com/platform/cts/+/lollipop-release/tests/tests/media/src/android/media/cts/InputSurface.java
 // blob: 157ed88d143229e4edb6889daf18fb73aa2fc5a5
-package com.otaliastudios.transcoder.transcode.opengl;
+package com.otaliastudios.transcoder.internal.opengl;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
@@ -134,34 +134,6 @@ public class InputSurface {
      */
     public boolean swapBuffers() {
         return EGL14.eglSwapBuffers(mEGLDisplay, mEGLSurface);
-    }
-
-    /**
-     * Returns the Surface that the MediaCodec receives buffers from.
-     * @return the surface
-     */
-    public Surface getSurface() {
-        return mSurface;
-    }
-
-    /**
-     * Queries the surface's width.
-     * @return surface width
-     */
-    public int getWidth() {
-        int[] value = new int[1];
-        EGL14.eglQuerySurface(mEGLDisplay, mEGLSurface, EGL14.EGL_WIDTH, value, 0);
-        return value[0];
-    }
-
-    /**
-     * Queries the surface's height.
-     * @return surface height
-     */
-    public int getHeight() {
-        int[] value = new int[1];
-        EGL14.eglQuerySurface(mEGLDisplay, mEGLSurface, EGL14.EGL_HEIGHT, value, 0);
-        return value[0];
     }
 
     /**

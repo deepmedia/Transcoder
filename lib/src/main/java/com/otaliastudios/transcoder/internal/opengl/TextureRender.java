@@ -17,7 +17,7 @@
 // blob: 4125dcfcfed6ed7fddba5b71d657dec0d433da6a
 // modified: removed unused method bodies
 // modified: use GL_LINEAR for GL_TEXTURE_MIN_FILTER to improve quality.
-package com.otaliastudios.transcoder.transcode.opengl;
+package com.otaliastudios.transcoder.internal.opengl;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
@@ -65,6 +65,7 @@ class TextureRender {
                     "void main() {\n" +
                     "  gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
                     "}\n";
+
     private float[] mMVPMatrix = new float[16];
     private float[] mSTMatrix = new float[16];
     private int mProgram;
@@ -73,6 +74,7 @@ class TextureRender {
     private int muSTMatrixHandle;
     private int maPositionHandle;
     private int maTextureHandle;
+
     public TextureRender() {
         mTriangleVertices = ByteBuffer.allocateDirect(
                 mTriangleVerticesData.length * FLOAT_SIZE_BYTES)
@@ -80,9 +82,11 @@ class TextureRender {
         mTriangleVertices.put(mTriangleVerticesData).position(0);
         Matrix.setIdentityM(mSTMatrix, 0);
     }
+
     public int getTextureId() {
         return mTextureID;
     }
+
     public void drawFrame(SurfaceTexture st) {
         checkGlError("onDrawFrame start");
         st.getTransformMatrix(mSTMatrix);
@@ -111,6 +115,7 @@ class TextureRender {
         checkGlError("glDrawArrays");
         GLES20.glFinish();
     }
+
     /**
      * Initializes GL state.  Call this after the EGL surface has been created and made current.
      */
@@ -154,12 +159,7 @@ class TextureRender {
                 GLES20.GL_CLAMP_TO_EDGE);
         checkGlError("glTexParameter");
     }
-    /**
-     * Replaces the fragment shader.
-     */
-    public void changeFragmentShader(String fragmentShader) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+
     private int loadShader(int shaderType, String source) {
         int shader = GLES20.glCreateShader(shaderType);
         checkGlError("glCreateShader type=" + shaderType);
@@ -175,6 +175,7 @@ class TextureRender {
         }
         return shader;
     }
+
     private int createProgram(String vertexSource, String fragmentSource) {
         int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource);
         if (vertexShader == 0) {
@@ -210,13 +211,5 @@ class TextureRender {
             LOG.e(op + ": glError " + error);
             throw new RuntimeException(op + ": glError " + error);
         }
-    }
-    /**
-     * Saves the current frame to disk as a PNG image.  Frame starts from (0,0).
-     * <p>
-     * Useful for debugging.
-     */
-    public static void saveFrame(String filename, int width, int height) {
-        throw new UnsupportedOperationException("Not implemented.");
     }
 }
