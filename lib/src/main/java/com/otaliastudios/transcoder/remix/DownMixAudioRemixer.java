@@ -1,5 +1,7 @@
 package com.otaliastudios.transcoder.remix;
 
+import androidx.annotation.NonNull;
+
 import java.nio.ShortBuffer;
 
 /**
@@ -11,7 +13,7 @@ public class DownMixAudioRemixer implements AudioRemixer {
     private static final int UNSIGNED_SHORT_MAX = 65535;
 
     @Override
-    public void remix(final ShortBuffer inSBuff, final ShortBuffer outSBuff) {
+    public void remix(@NonNull final ShortBuffer inSBuff, @NonNull final ShortBuffer outSBuff) {
         // Down-mix stereo to mono
         // Viktor Toth's algorithm -
         // See: http://www.vttoth.com/CMS/index.php/technical-notes/68

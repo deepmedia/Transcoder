@@ -9,11 +9,10 @@ import com.otaliastudios.transcoder.strategy.size.ExactResizer;
 import com.otaliastudios.transcoder.strategy.size.ExactSize;
 import com.otaliastudios.transcoder.strategy.size.FractionResizer;
 import com.otaliastudios.transcoder.strategy.size.MultiResizer;
-import com.otaliastudios.transcoder.strategy.size.PassThroughResizer;
 import com.otaliastudios.transcoder.strategy.size.Size;
 import com.otaliastudios.transcoder.strategy.size.Resizer;
-import com.otaliastudios.transcoder.utils.Logger;
-import com.otaliastudios.transcoder.utils.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,13 +26,20 @@ public class DefaultVideoStrategy implements OutputStrategy {
     private final static Logger LOG = new Logger(TAG);
 
     private final static String MIME_TYPE = MediaFormatConstants.MIMETYPE_VIDEO_AVC;
+
+    @SuppressWarnings("WeakerAccess")
     public final static long BITRATE_UNKNOWN = Long.MIN_VALUE;
+
+    @SuppressWarnings("WeakerAccess")
     public final static float DEFAULT_I_FRAME_INTERVAL = 3;
+
+    @SuppressWarnings("WeakerAccess")
     public final static int DEFAULT_FRAME_RATE = 30;
 
     /**
      * Holds configuration values.
      */
+    @SuppressWarnings("WeakerAccess")
     public static class Options {
         private Options() {}
         private Resizer resizer;
@@ -50,6 +56,8 @@ public class DefaultVideoStrategy implements OutputStrategy {
      * @param secondSize the exact second size
      * @return a strategy builder
      */
+    @NonNull
+    @SuppressWarnings("WeakerAccess")
     public static Builder exact(int firstSize, int secondSize) {
         return new Builder(new ExactResizer(firstSize, secondSize));
     }
@@ -61,6 +69,8 @@ public class DefaultVideoStrategy implements OutputStrategy {
      * @param fraction the downscale fraction
      * @return a strategy builder
      */
+    @NonNull
+    @SuppressWarnings("unused")
     public static Builder fraction(float fraction) {
         return new Builder(new FractionResizer(fraction));
     }
@@ -72,6 +82,8 @@ public class DefaultVideoStrategy implements OutputStrategy {
      * @param atMostSize size constraint
      * @return a strategy builder
      */
+    @NonNull
+    @SuppressWarnings("unused")
     public static Builder atMost(int atMostSize) {
         return new Builder(new AtMostResizer(atMostSize));
     }
@@ -84,6 +96,8 @@ public class DefaultVideoStrategy implements OutputStrategy {
      * @param atMostMinor constraint for the minor dimension
      * @return a strategy builder
      */
+    @NonNull
+    @SuppressWarnings("unused")
     public static Builder atMost(int atMostMinor, int atMostMajor) {
         return new Builder(new AtMostResizer(atMostMinor, atMostMajor));
     }
@@ -94,9 +108,10 @@ public class DefaultVideoStrategy implements OutputStrategy {
         private long targetBitRate = BITRATE_UNKNOWN;
         private float targetIFrameInterval = DEFAULT_I_FRAME_INTERVAL;
 
-        public Builder() {
-        }
+        @SuppressWarnings("unused")
+        public Builder() { }
 
+        @SuppressWarnings("WeakerAccess")
         public Builder(@NonNull Resizer resizer) {
             this.resizer.addResizer(resizer);
         }
@@ -107,6 +122,8 @@ public class DefaultVideoStrategy implements OutputStrategy {
          * @param resizer new resizer for backed {@link MultiResizer}
          * @return this for chaining
          */
+        @NonNull
+        @SuppressWarnings("unused")
         public Builder addResizer(@NonNull Resizer resizer) {
             this.resizer.addResizer(resizer);
             return this;
@@ -118,6 +135,8 @@ public class DefaultVideoStrategy implements OutputStrategy {
          * @param bitRate desired bit rate (bits per second)
          * @return this for chaining
          */
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
         public Builder bitRate(long bitRate) {
             targetBitRate = bitRate;
             return this;
@@ -129,6 +148,8 @@ public class DefaultVideoStrategy implements OutputStrategy {
          * @param frameRate desired frame rate (frames per second)
          * @return this for chaining
          */
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
         public Builder frameRate(int frameRate) {
             targetFrameRate = frameRate;
             return this;
@@ -139,11 +160,15 @@ public class DefaultVideoStrategy implements OutputStrategy {
          * @param iFrameInterval desired i-frame interval
          * @return this for chaining
          */
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
         public Builder iFrameInterval(float iFrameInterval) {
             targetIFrameInterval = iFrameInterval;
             return this;
         }
 
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
         public Options options() {
             Options options = new Options();
             options.resizer = resizer;
@@ -153,6 +178,8 @@ public class DefaultVideoStrategy implements OutputStrategy {
             return options;
         }
 
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
         public DefaultVideoStrategy build() {
             return new DefaultVideoStrategy(options());
         }
@@ -160,6 +187,7 @@ public class DefaultVideoStrategy implements OutputStrategy {
 
     private final Options options;
 
+    @SuppressWarnings("WeakerAccess")
     public DefaultVideoStrategy(@NonNull Options options) {
         this.options = options;
     }
@@ -239,14 +267,5 @@ public class DefaultVideoStrategy implements OutputStrategy {
     // https://stackoverflow.com/a/5220554/4288782
     private static long estimateBitRate(int width, int height, int frameRate) {
         return (long) (0.07F * 2 * width * height * frameRate);
-    }
-
-    private static void copyInteger(@NonNull MediaFormat input, @NonNull MediaFormat output,
-                                    @NonNull String key, @Nullable Integer fallback) {
-        if (input.containsKey(key)) {
-            output.setInteger(key, input.getInteger(key));
-        } else if (fallback != null) {
-            output.setInteger(key, fallback);
-        }
     }
 }

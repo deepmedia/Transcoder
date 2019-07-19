@@ -19,9 +19,9 @@ import android.os.Handler;
 
 import com.otaliastudios.transcoder.engine.MediaTranscoderEngine;
 import com.otaliastudios.transcoder.source.DataSource;
-import com.otaliastudios.transcoder.utils.Logger;
+import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
-import com.otaliastudios.transcoder.validator.ValidatorException;
+import com.otaliastudios.transcoder.engine.ValidatorException;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
@@ -74,6 +74,7 @@ public class MediaTranscoder {
                 new Factory());
     }
 
+    @SuppressWarnings("WeakerAccess")
     @NonNull
     public static MediaTranscoder getInstance() {
         if (sMediaTranscoder == null) {
@@ -104,10 +105,10 @@ public class MediaTranscoder {
      * @param options The transcoder options.
      * @return a Future that completes when transcoding is completed
      */
-    @SuppressWarnings("WeakerAccess")
+    @NonNull
     public Future<Void> transcode(@NonNull final MediaTranscoderOptions options) {
         final Listener listenerWrapper = new ListenerWrapper(options.listenerHandler,
-                options.listener, options.dataSource);
+                options.listener, options.getDataSource());
         return mExecutor.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
@@ -119,28 +120,42 @@ public class MediaTranscoder {
                             listenerWrapper.onTranscodeProgress(progress);
                         }
                     });
-                    engine.setDataSource(options.dataSource);
+                    engine.setDataSource(options.getDataSource());
                     engine.transcode(options);
                     listenerWrapper.onTranscodeCompleted(SUCCESS_TRANSCODED);
+
                 } catch (ValidatorException e) {
                     LOG.i("Validator has decided that the input is fine and transcoding is not necessary.");
                     listenerWrapper.onTranscodeCompleted(SUCCESS_NOT_NEEDED);
-                } catch (InterruptedException e) {
-                    LOG.i("Cancel transcode video file.", e);
-                    listenerWrapper.onTranscodeCanceled();
-                } catch (IOException e) {
-                    LOG.w("Transcode failed: input source (" + options.dataSource.toString() + ") not found"
-                            + " or could not open output file ('" + options.outPath + "') .", e);
-                    listenerWrapper.onTranscodeFailed(e);
-                    throw e;
-                } catch (RuntimeException e) {
-                    LOG.e("Fatal error while transcoding, this might be invalid format or bug in engine or Android.", e);
-                    listenerWrapper.onTranscodeFailed(e);
-                    throw e;
+
                 } catch (Throwable e) {
-                    LOG.e("Unexpected error while transcoding", e);
-                    listenerWrapper.onTranscodeFailed(e);
-                    throw e;
+                    // Check InterruptedException in e and in its causes.
+                    Throwable current = e;
+                    boolean isInterrupted = e instanceof InterruptedException;
+                    while (!isInterrupted && current.getCause() != null && !current.getCause().equals(current)) {
+                        current = current.getCause();
+                        if (current instanceof InterruptedException) isInterrupted = true;
+                    }
+                    if (isInterrupted) {
+                        LOG.i("Transcode canceled.", current);
+                        listenerWrapper.onTranscodeCanceled();
+
+                    } else if (e instanceof IOException) {
+                        LOG.w("Transcode failed: input source (" + options.getDataSource().toString() + ") not found"
+                                + " or could not open output file ('" + options.getOutputPath() + "') .", e);
+                        listenerWrapper.onTranscodeFailed(e);
+                        throw e;
+
+                    } else if (e instanceof RuntimeException) {
+                        LOG.e("Fatal error while transcoding, this might be invalid format or bug in engine or Android.", e);
+                        listenerWrapper.onTranscodeFailed(e);
+                        throw e;
+
+                    } else {
+                        LOG.e("Unexpected error while transcoding", e);
+                        listenerWrapper.onTranscodeFailed(e);
+                        throw e;
+                    }
                 }
                 return null;
             }

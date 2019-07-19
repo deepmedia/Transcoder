@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/natario1/Transcoder.svg?branch=master)](https://travis-ci.org/natario1/Transcoder)
+[![Release](https://img.shields.io/github/release/natario1/Transcoder.svg)](https://github.com/natario1/Transcoder/releases)
+[![Issues](https://img.shields.io/github/issues-raw/natario1/Transcoder.svg)](https://github.com/natario1/Transcoder/issues)
+
 # Transcoder
 
 Transcodes and compresses video files into the MP4 format, with audio support, using hardware accelerated Android codecs available on the device. Works on API 18+.

@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.validator;
+package com.otaliastudios.transcoder.engine;
 
 import com.otaliastudios.transcoder.strategy.OutputStrategy;
+import com.otaliastudios.transcoder.validator.Validator;
 
 import androidx.annotation.Nullable;
 
@@ -24,8 +25,7 @@ import androidx.annotation.Nullable;
  * returns false. Not to be used.
  */
 public class ValidatorException extends RuntimeException {
-
-    public ValidatorException(String detailMessage) {
+    ValidatorException(@Nullable String detailMessage) {
         super(detailMessage);
     }
 }

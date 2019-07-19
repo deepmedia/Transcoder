@@ -1,6 +1,7 @@
 package com.otaliastudios.transcoder.strategy.size;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 
@@ -10,11 +11,12 @@ import androidx.annotation.NonNull;
  */
 public class MultiResizer implements Resizer {
 
-    private final ArrayList<Resizer> list = new ArrayList<>();
+    private final List<Resizer> list = new ArrayList<>();
 
     // In this case we act as a pass through
     public MultiResizer() {}
 
+    @SuppressWarnings("unused")
     public MultiResizer(@NonNull Resizer... resizers) {
         for (Resizer resizer : resizers) {
             addResizer(resizer);

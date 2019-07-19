@@ -18,6 +18,8 @@ package com.otaliastudios.transcoder.engine;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
+import androidx.annotation.NonNull;
+
 @SuppressWarnings("WeakerAccess")
 public class TracksInfo {
 
@@ -44,7 +46,8 @@ public class TracksInfo {
         return videoTrackIndex >= 0;
     }
 
-    public static TracksInfo fromExtractor(MediaExtractor extractor) {
+    @NonNull
+    public static TracksInfo fromExtractor(@NonNull MediaExtractor extractor) {
         TracksInfo trackResult = new TracksInfo();
         trackResult.videoTrackIndex = -1;
         trackResult.audioTrackIndex = -1;

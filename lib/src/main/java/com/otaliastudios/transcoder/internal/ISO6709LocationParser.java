@@ -1,4 +1,6 @@
-package com.otaliastudios.transcoder.utils;
+package com.otaliastudios.transcoder.internal;
+
+import androidx.annotation.Nullable;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,7 +21,8 @@ public class ISO6709LocationParser {
      * @return <code>null</code> if the given string is not as expected, an array of floats with size 2,
      * where the first element represents latitude and the second represents longitude, otherwise.
      */
-    public float[] parse(String location) {
+    @Nullable
+    public float[] parse(@Nullable String location) {
         if (location == null) return null;
         Matcher m = pattern.matcher(location);
         if (m.find() && m.groupCount() == 2) {

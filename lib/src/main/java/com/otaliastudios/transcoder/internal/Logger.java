@@ -1,6 +1,7 @@
-package com.otaliastudios.transcoder.utils;
+package com.otaliastudios.transcoder.internal;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import android.util.Log;
 
@@ -10,8 +11,14 @@ import java.lang.annotation.RetentionPolicy;
 public class Logger {
 
     public final static int LEVEL_VERBOSE = 0;
+
+    @SuppressWarnings("WeakerAccess")
     public final static int LEVEL_INFO = 1;
+
+    @SuppressWarnings("WeakerAccess")
     public final static int LEVEL_WARNING = 2;
+
+    @SuppressWarnings("WeakerAccess")
     public final static int LEVEL_ERROR = 3;
 
     private static int sLevel;
@@ -23,13 +30,14 @@ public class Logger {
      * @see #LEVEL_WARNING
      * @see #LEVEL_ERROR
      */
+    @SuppressWarnings("WeakerAccess")
     @IntDef({LEVEL_VERBOSE, LEVEL_INFO, LEVEL_WARNING, LEVEL_ERROR})
     @Retention(RetentionPolicy.SOURCE)
     public @interface LogLevel {}
 
     private String mTag;
 
-    public Logger(String tag) {
+    public Logger(@NonNull String tag) {
         mTag = tag;
     }
 
@@ -58,6 +66,7 @@ public class Logger {
 
     public void e(String message) { e(message, null); }
 
+    @SuppressWarnings("WeakerAccess")
     public void v(String message, @Nullable Throwable error) {
         log(LEVEL_VERBOSE, message, error);
     }

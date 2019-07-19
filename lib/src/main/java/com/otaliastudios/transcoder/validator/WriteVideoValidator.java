@@ -1,5 +1,7 @@
 package com.otaliastudios.transcoder.validator;
 
+import androidx.annotation.NonNull;
+
 import com.otaliastudios.transcoder.engine.TrackStatus;
 
 /**
@@ -7,10 +9,11 @@ import com.otaliastudios.transcoder.engine.TrackStatus;
  * Transcoding will not happen if the video track does not need it, even if the
  * audio track might need it.
  */
+@SuppressWarnings("unused")
 public class WriteVideoValidator implements Validator {
 
     @Override
-    public boolean validate(TrackStatus videoStatus, TrackStatus audioStatus) {
+    public boolean validate(@NonNull TrackStatus videoStatus, @NonNull TrackStatus audioStatus) {
         switch (videoStatus) {
             case ABSENT: return false;
             case REMOVING: return true;

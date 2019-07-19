@@ -13,6 +13,8 @@ public class ExactSize extends Size {
 
     public ExactSize(int width, int height) {
         super(width, height);
+        mWidth = width;
+        mHeight = height;
     }
 
     public int getWidth() {

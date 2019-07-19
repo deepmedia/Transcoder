@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.utils;
+package com.otaliastudios.transcoder.internal;
 
 import android.media.MediaFormat;
+
+import androidx.annotation.NonNull;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -35,7 +37,8 @@ public class AvcCsdUtils {
      * @param format the input format
      * @return ByteBuffer contains SPS without NAL header.
      */
-    public static ByteBuffer getSpsBuffer(MediaFormat format) {
+    @NonNull
+    public static ByteBuffer getSpsBuffer(@NonNull MediaFormat format) {
         ByteBuffer sourceBuffer = format.getByteBuffer(MediaFormatConstants.KEY_AVC_SPS).asReadOnlyBuffer(); // might be direct buffer
         ByteBuffer prefixedSpsBuffer = ByteBuffer.allocate(sourceBuffer.limit()).order(sourceBuffer.order());
         prefixedSpsBuffer.put(sourceBuffer);
@@ -51,7 +54,7 @@ public class AvcCsdUtils {
         return prefixedSpsBuffer.slice();
     }
 
-    private static void skipStartCode(ByteBuffer prefixedSpsBuffer) {
+    private static void skipStartCode(@NonNull ByteBuffer prefixedSpsBuffer) {
         byte[] prefix3 = new byte[3];
         prefixedSpsBuffer.get(prefix3);
         if (Arrays.equals(prefix3, AVC_START_CODE_3)) return;
@@ -63,6 +66,5 @@ public class AvcCsdUtils {
     }
 
     private AvcCsdUtils() {
-        throw new RuntimeException();
     }
 }

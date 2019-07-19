@@ -17,8 +17,6 @@ package com.otaliastudios.transcoder.transcode;
 
 import android.media.MediaFormat;
 
-import com.otaliastudios.transcoder.transcode.TrackTranscoder;
-
 public class NoOpTrackTranscoder implements TrackTranscoder {
 
     public NoOpTrackTranscoder() {

@@ -13,20 +13,27 @@ android {
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName project.version
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
     }
 
     buildTypes {
         release {
-            zipAlignEnabled true
             minifyEnabled false
-            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
 
 dependencies {
-    api "androidx.annotation:annotation:1.0.2"
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test:rules:1.2.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'org.mockito:mockito-android:2.28.2'
+
+    api "androidx.annotation:annotation:1.1.0"
 }
 
 install {

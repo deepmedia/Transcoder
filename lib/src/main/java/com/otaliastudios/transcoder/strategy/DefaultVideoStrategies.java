@@ -1,5 +1,7 @@
 package com.otaliastudios.transcoder.strategy;
 
+import androidx.annotation.NonNull;
+
 /**
  * Contains presets and utilities for defining a {@link DefaultVideoStrategy}.
  */
@@ -14,6 +16,7 @@ public class DefaultVideoStrategies {
      *
      * @return a default video strategy
      */
+    @NonNull
     public static DefaultVideoStrategy for720x1280() {
         return DefaultVideoStrategy.exact(720, 1280)
                 .bitRate(2L * 1000 * 1000)
@@ -29,6 +32,8 @@ public class DefaultVideoStrategies {
      *
      * @return a default video strategy
      */
+    @SuppressWarnings("unused")
+    @NonNull
     public static DefaultVideoStrategy for360x480() {
         return DefaultVideoStrategy.exact(360, 480)
                 .bitRate(500L * 1000)

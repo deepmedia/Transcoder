@@ -14,6 +14,7 @@ public class ExactResizer implements Resizer {
         output = new Size(first, second);
     }
 
+    @SuppressWarnings("unused")
     public ExactResizer(@NonNull Size size) {
         output = size;
     }

@@ -24,18 +24,43 @@ import androidx.annotation.Nullable;
 /**
  * Collects transcoding options consumed by {@link MediaTranscoder}.
  */
-@SuppressWarnings("WeakerAccess")
 public class MediaTranscoderOptions {
 
     private MediaTranscoderOptions() {}
 
-    public String outPath;
-    public DataSource dataSource;
-    public OutputStrategy audioOutputStrategy;
-    public OutputStrategy videoOutputStrategy;
-    public MediaTranscoder.Listener listener;
-    public Handler listenerHandler;
-    public Validator validator;
+    private String outPath;
+    private DataSource dataSource;
+    private OutputStrategy audioOutputStrategy;
+    private OutputStrategy videoOutputStrategy;
+    private Validator validator;
+    MediaTranscoder.Listener listener;
+    Handler listenerHandler;
+
+    @NonNull
+    public String getOutputPath() {
+        return outPath;
+    }
+
+    @NonNull
+    @SuppressWarnings("WeakerAccess")
+    public DataSource getDataSource() {
+        return dataSource;
+    }
+
+    @NonNull
+    public OutputStrategy getAudioOutputStrategy() {
+        return audioOutputStrategy;
+    }
+
+    @NonNull
+    public OutputStrategy getVideoOutputStrategy() {
+        return videoOutputStrategy;
+    }
+
+    @NonNull
+    public Validator getValidator() {
+        return validator;
+    }
 
     public static class Builder {
         private String outPath;
@@ -50,21 +75,29 @@ public class MediaTranscoderOptions {
             this.outPath = outPath;
         }
 
+        @NonNull
+        @SuppressWarnings("unused")
         public Builder setDataSource(@NonNull DataSource dataSource) {
             this.dataSource = dataSource;
             return this;
         }
 
+        @NonNull
+        @SuppressWarnings("unused")
         public Builder setDataSource(@NonNull FileDescriptor fileDescriptor) {
             this.dataSource = new FileDescriptorDataSource(fileDescriptor);
             return this;
         }
 
+        @NonNull
+        @SuppressWarnings("unused")
         public Builder setDataSource(@NonNull String inPath) {
             this.dataSource = new FilePathDataSource(inPath);
             return this;
         }
 
+        @NonNull
+        @SuppressWarnings("unused")
         public Builder setDataSource(@NonNull Context context, @NonNull Uri uri) {
             this.dataSource = new UriDataSource(context, uri);
             return this;
@@ -77,6 +110,8 @@ public class MediaTranscoderOptions {
          * @param outputStrategy the desired strategy
          * @return this for chaining
          */
+        @NonNull
+        @SuppressWarnings("unused")
         public Builder setAudioOutputStrategy(@Nullable OutputStrategy outputStrategy) {
             this.audioOutputStrategy = outputStrategy;
             return this;
@@ -89,11 +124,14 @@ public class MediaTranscoderOptions {
          * @param outputStrategy the desired strategy
          * @return this for chaining
          */
+        @NonNull
+        @SuppressWarnings("unused")
         public Builder setVideoOutputStrategy(@Nullable OutputStrategy outputStrategy) {
             this.videoOutputStrategy = outputStrategy;
             return this;
         }
 
+        @NonNull
         public Builder setListener(@NonNull MediaTranscoder.Listener listener) {
             this.listener = listener;
             return this;
@@ -107,6 +145,8 @@ public class MediaTranscoderOptions {
          * @param listenerHandler the thread to receive callbacks
          * @return this for chaining
          */
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
         public Builder setListenerHandler(@Nullable Handler listenerHandler) {
             this.listenerHandler = listenerHandler;
             return this;
@@ -120,11 +160,14 @@ public class MediaTranscoderOptions {
          * @param validator the validator
          * @return this for chaining
          */
+        @NonNull
+        @SuppressWarnings("unused")
         public Builder setValidator(@Nullable Validator validator) {
             this.validator = validator;
             return this;
         }
 
+        @NonNull
         @SuppressWarnings("WeakerAccess")
         public MediaTranscoderOptions build() {
             if (listener == null) throw new IllegalStateException("listener can't be null");
@@ -149,6 +192,7 @@ public class MediaTranscoderOptions {
             return options;
         }
 
+        @NonNull
         public Future<Void> transcode() {
             return MediaTranscoder.getInstance().transcode(build());
         }

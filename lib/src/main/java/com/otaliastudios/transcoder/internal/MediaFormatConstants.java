@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.utils;
+package com.otaliastudios.transcoder.internal;
 
+@SuppressWarnings("unused")
 public class MediaFormatConstants {
+
     // from MediaFormat of API level >= 21, but might be usable in older APIs as native code implementation exists.
     // https://android.googlesource.com/platform/frameworks/av/+/lollipop-release/media/libstagefright/ACodec.cpp#2621
     // NOTE: native code enforces baseline profile.
@@ -29,7 +31,9 @@ public class MediaFormatConstants {
 
     // from https://android.googlesource.com/platform/frameworks/av/+/lollipop-release/media/libstagefright/MediaCodec.cpp#2197
     /** Included in MediaFormat from {@link android.media.MediaExtractor#getTrackFormat(int)}. Value is {@link java.nio.ByteBuffer}. */
+    @SuppressWarnings("WeakerAccess")
     public static final String KEY_AVC_SPS = "csd-0";
+
     /** Included in MediaFormat from {@link android.media.MediaExtractor#getTrackFormat(int)}. Value is {@link java.nio.ByteBuffer}. */
     public static final String KEY_AVC_PPS = "csd-1";
 
@@ -50,7 +54,5 @@ public class MediaFormatConstants {
     // from MediaFormat of API level >= 21
     public static final String MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
 
-    private MediaFormatConstants() {
-        throw new RuntimeException();
-    }
+    private MediaFormatConstants() { }
 }

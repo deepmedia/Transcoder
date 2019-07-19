@@ -3,7 +3,7 @@ package com.otaliastudios.transcoder.source;
 import android.media.MediaExtractor;
 import android.media.MediaMetadataRetriever;
 
-import com.otaliastudios.transcoder.utils.Logger;
+import com.otaliastudios.transcoder.internal.Logger;
 
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
@@ -36,12 +36,12 @@ public class FilePathDataSource implements DataSource {
     }
 
     @Override
-    public void apply(MediaExtractor extractor) throws IOException {
+    public void apply(@NonNull MediaExtractor extractor) throws IOException {
         descriptor.apply(extractor);
     }
 
     @Override
-    public void apply(MediaMetadataRetriever retriever) {
+    public void apply(@NonNull MediaMetadataRetriever retriever) {
         descriptor.apply(retriever);
     }
 

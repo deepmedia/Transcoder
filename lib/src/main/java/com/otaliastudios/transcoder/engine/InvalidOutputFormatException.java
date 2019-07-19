@@ -15,8 +15,19 @@
  */
 package com.otaliastudios.transcoder.engine;
 
+import androidx.annotation.NonNull;
+
+import com.otaliastudios.transcoder.MediaTranscoder;
+import com.otaliastudios.transcoder.MediaTranscoderOptions;
+
+/**
+ * One of the exceptions possibly thrown by
+ * {@link MediaTranscoder#transcode(MediaTranscoderOptions)}, which means it can be
+ * passed to {@link MediaTranscoder.Listener#onTranscodeFailed(Throwable)}.
+ */
+@SuppressWarnings("WeakerAccess")
 public class InvalidOutputFormatException extends RuntimeException {
-    public InvalidOutputFormatException(String detailMessage) {
+    InvalidOutputFormatException(@NonNull String detailMessage) {
         super(detailMessage);
     }
 }
