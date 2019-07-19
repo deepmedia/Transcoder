@@ -32,6 +32,7 @@ Take a look at the demo app for a real example or keep reading below for documen
 It features a lot of improvements over the original project, including:*
 
 - *Multithreading support*
+- *Crop to any aspect ratio*
 - *Various bugs fixed*
 - *[Input](#data-sources): Accept content Uris and other types*
 - *[Real error handling](#listening-for-events) instead of errors being thrown*
@@ -229,8 +230,9 @@ Take a look at the source code to understand how to manage the `android.media.Me
 ## Video Strategies
 
 The default internal strategy for video is a `DefaultVideoStrategy`, which converts the
-video stream to AVC format and is very configurable. The class helps in defining an output size
-that matches the aspect ratio of the input stream size, which is a basic requirement for video strategies.
+video stream to AVC format and is very configurable. The class helps in defining an output size.
+If the output size does not match the aspect ratio of the input stream size, `Transcoder` will
+crop part of the input so it matches the final ratio.
 
 ### Video Size
 
@@ -239,7 +241,7 @@ We provide helpers for common tasks:
 ```java
 DefaultVideoStrategy strategy;
 
-// Sets an exact size. Of course this is risky if you don't read the input size first.
+// Sets an exact size. If aspect ratio does not match, cropping will take place.
 strategy = DefaultVideoStrategy.exact(1080, 720).build()
 
 // Keeps the aspect ratio, but scales down the input size with the given fraction.
@@ -257,7 +259,8 @@ resizer. We offer handy resizers:
 
 |Name|Description|
 |----|-----------|
-|`ExactResizer`|Returns the dimensions passed to the constructor..|
+|`ExactResizer`|Returns the exact dimensions passed to the constructor.|
+|`AspectRatioResizer`|Crops the input size to match the given aspect ratio.|
 |`FractionResizer`|Reduces the input size by the given fraction (0..1).|
 |`AtMostResizer`|If needed, reduces the input size so that the "at most" constraints are matched. Aspect ratio is kept.|
 |`PassThroughResizer`|Returns the input size unchanged.|
@@ -269,12 +272,18 @@ You can also group resizers through `MultiResizer`, which applies resizers in ch
 Resizer resizer = new MultiResizer()
 resizer.addResizer(new FractionResizer(0.5F))
 resizer.addResizer(new AtMostResizer(1000))
+
+// First makes it 16:9, then ensures size is at most 1000. Order matters!
+Resizer resizer = new MultiResizer()
+resizer.addResizer(new AspectRatioResizer(16F / 9F))
+resizer.addResizer(new AtMostResizer(1000))
 ```
 
 This option is already available through the DefaultVideoStrategy builder, so you can do:
 
 ```java
 DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
+        .addResizer(new AspectRatioResizer(16F / 9F))
         .addResizer(new FractionResizer(0.5F))
         .addResizer(new AtMostResizer(1000))
         .build()
