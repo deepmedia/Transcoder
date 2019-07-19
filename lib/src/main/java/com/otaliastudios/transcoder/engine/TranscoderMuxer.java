@@ -31,8 +31,8 @@ import androidx.annotation.NonNull;
 /**
  * This class queues until all output track formats are determined.
  */
-public class QueuedMuxer {
-    private static final String TAG = "QueuedMuxer";
+public class TranscoderMuxer {
+    private static final String TAG = TranscoderMuxer.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     private static final int BUFFER_SIZE = 64 * 1024; // I have no idea whether this value is appropriate or not...
@@ -48,7 +48,7 @@ public class QueuedMuxer {
     private final List<SampleInfo> mSampleInfoList;
     private boolean mMuxerStarted;
 
-    QueuedMuxer(@NonNull MediaMuxer muxer, @NonNull TracksInfo info, @NonNull Listener listener) {
+    TranscoderMuxer(@NonNull MediaMuxer muxer, @NonNull TracksInfo info, @NonNull Listener listener) {
         mMuxer = muxer;
         mInfo = info;
         mListener = listener;

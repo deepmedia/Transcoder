@@ -7,22 +7,22 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
-import com.otaliastudios.transcoder.engine.QueuedMuxer;
 import com.otaliastudios.transcoder.transcode.internal.AudioChannel;
 
 import java.io.IOException;
 
 public class AudioTrackTranscoder implements TrackTranscoder {
 
-    private static final QueuedMuxer.SampleType SAMPLE_TYPE = QueuedMuxer.SampleType.AUDIO;
+    private static final TranscoderMuxer.SampleType SAMPLE_TYPE = TranscoderMuxer.SampleType.AUDIO;
 
     private static final int DRAIN_STATE_NONE = 0;
     private static final int DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY = 1;
     private static final int DRAIN_STATE_CONSUMED = 2;
 
     private final MediaExtractor mExtractor;
-    private final QueuedMuxer mMuxer;
+    private final TranscoderMuxer mMuxer;
     private long mWrittenPresentationTimeUs;
 
     private final int mTrackIndex;
@@ -47,7 +47,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
     public AudioTrackTranscoder(@NonNull MediaExtractor extractor,
                                 int trackIndex,
                                 @NonNull MediaFormat outputFormat,
-                                @NonNull QueuedMuxer muxer) {
+                                @NonNull TranscoderMuxer muxer) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
         mOutputFormat = outputFormat;

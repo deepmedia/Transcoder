@@ -21,8 +21,8 @@ import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
+import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
-import com.otaliastudios.transcoder.engine.QueuedMuxer;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
 import com.otaliastudios.transcoder.internal.Logger;
@@ -42,7 +42,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private final MediaExtractor mExtractor;
     private final int mTrackIndex;
     private final MediaFormat mOutputFormat;
-    private final QueuedMuxer mMuxer;
+    private final TranscoderMuxer mMuxer;
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private MediaCodec mDecoder;
     private MediaCodec mEncoder;
@@ -74,7 +74,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             @NonNull MediaExtractor extractor,
             int trackIndex,
             @NonNull MediaFormat outputFormat,
-            @NonNull QueuedMuxer muxer,
+            @NonNull TranscoderMuxer muxer,
             float inputAspectRatio) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
@@ -267,7 +267,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
                 if (mActualOutputFormat != null)
                     throw new RuntimeException("Video output format changed twice.");
                 mActualOutputFormat = mEncoder.getOutputFormat();
-                mMuxer.setOutputFormat(QueuedMuxer.SampleType.VIDEO, mActualOutputFormat);
+                mMuxer.setOutputFormat(TranscoderMuxer.SampleType.VIDEO, mActualOutputFormat);
                 return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
             case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                 mEncoderBuffers.onOutputBuffersChanged();
@@ -286,7 +286,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             mEncoder.releaseOutputBuffer(result, false);
             return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
-        mMuxer.writeSampleData(QueuedMuxer.SampleType.VIDEO, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
+        mMuxer.writeSampleData(TranscoderMuxer.SampleType.VIDEO, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
         mWrittenPresentationTimeUs = mBufferInfo.presentationTimeUs;
         mEncoder.releaseOutputBuffer(result, false);
         return DRAIN_STATE_CONSUMED;

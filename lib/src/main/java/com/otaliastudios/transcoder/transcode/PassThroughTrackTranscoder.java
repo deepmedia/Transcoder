@@ -22,7 +22,7 @@ import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.engine.QueuedMuxer;
+import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -30,8 +30,8 @@ import java.nio.ByteOrder;
 public class PassThroughTrackTranscoder implements TrackTranscoder {
     private final MediaExtractor mExtractor;
     private final int mTrackIndex;
-    private final QueuedMuxer mMuxer;
-    private final QueuedMuxer.SampleType mSampleType;
+    private final TranscoderMuxer mMuxer;
+    private final TranscoderMuxer.SampleType mSampleType;
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private int mBufferSize;
     private ByteBuffer mBuffer;
@@ -41,8 +41,8 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
 
     public PassThroughTrackTranscoder(@NonNull MediaExtractor extractor,
                                       int trackIndex,
-                                      @NonNull QueuedMuxer muxer,
-                                      @NonNull QueuedMuxer.SampleType sampleType) {
+                                      @NonNull TranscoderMuxer muxer,
+                                      @NonNull TranscoderMuxer.SampleType sampleType) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
         mMuxer = muxer;

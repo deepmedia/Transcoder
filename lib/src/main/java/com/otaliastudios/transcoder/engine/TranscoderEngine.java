@@ -164,7 +164,7 @@ public class TranscoderEngine {
 
     private void setupTrackTranscoders(@NonNull TranscoderOptions options) {
         mTracksInfo = TracksInfo.fromExtractor(mExtractor);
-        QueuedMuxer queuedMuxer = new QueuedMuxer(mMuxer, mTracksInfo, new QueuedMuxer.Listener() {
+        TranscoderMuxer transcoderMuxer = new TranscoderMuxer(mMuxer, mTracksInfo, new TranscoderMuxer.Listener() {
             @Override
             public void onDetermineOutputFormat() {
                 MediaFormatValidator formatValidator = new MediaFormatValidator();
@@ -186,20 +186,20 @@ public class TranscoderEngine {
                     videoStatus = TrackStatus.REMOVING;
                 } else if (videoFormat == mTracksInfo.videoTrackFormat) {
                     mVideoTrackTranscoder = new PassThroughTrackTranscoder(mExtractor,
-                            mTracksInfo.videoTrackIndex, queuedMuxer, QueuedMuxer.SampleType.VIDEO);
+                            mTracksInfo.videoTrackIndex, transcoderMuxer, TranscoderMuxer.SampleType.VIDEO);
                     videoStatus = TrackStatus.PASS_THROUGH;
                 } else {
                     float inWidth = mTracksInfo.videoTrackFormat.getInteger(MediaFormat.KEY_WIDTH);
                     float inHeight = mTracksInfo.videoTrackFormat.getInteger(MediaFormat.KEY_HEIGHT);
                     mVideoTrackTranscoder = new VideoTrackTranscoder(mExtractor,
-                            mTracksInfo.videoTrackIndex, videoFormat, queuedMuxer, inWidth / inHeight);
+                            mTracksInfo.videoTrackIndex, videoFormat, transcoderMuxer, inWidth / inHeight);
                     videoStatus = TrackStatus.COMPRESSING;
                 }
             } catch (OutputStrategyException strategyException) {
                 if (strategyException.getType() == OutputStrategyException.TYPE_ALREADY_COMPRESSED) {
                     // Should not abort, because the other track might need compression. Use a pass through.
                     mVideoTrackTranscoder = new PassThroughTrackTranscoder(mExtractor,
-                            mTracksInfo.videoTrackIndex, queuedMuxer, QueuedMuxer.SampleType.VIDEO);
+                            mTracksInfo.videoTrackIndex, transcoderMuxer, TranscoderMuxer.SampleType.VIDEO);
                     videoStatus = TrackStatus.PASS_THROUGH;
                 } else { // Abort.
                     throw strategyException;
@@ -221,18 +221,18 @@ public class TranscoderEngine {
                     audioStatus = TrackStatus.REMOVING;
                 } else if (audioFormat == mTracksInfo.audioTrackFormat) {
                     mAudioTrackTranscoder = new PassThroughTrackTranscoder(mExtractor,
-                            mTracksInfo.audioTrackIndex, queuedMuxer, QueuedMuxer.SampleType.AUDIO);
+                            mTracksInfo.audioTrackIndex, transcoderMuxer, TranscoderMuxer.SampleType.AUDIO);
                     audioStatus = TrackStatus.PASS_THROUGH;
                 } else {
                     mAudioTrackTranscoder = new AudioTrackTranscoder(mExtractor,
-                            mTracksInfo.audioTrackIndex, audioFormat, queuedMuxer);
+                            mTracksInfo.audioTrackIndex, audioFormat, transcoderMuxer);
                     audioStatus = TrackStatus.COMPRESSING;
                 }
             } catch (OutputStrategyException strategyException) {
                 if (strategyException.getType() == OutputStrategyException.TYPE_ALREADY_COMPRESSED) {
                     // Should not abort, because the other track might need compression. Use a pass through.
                     mAudioTrackTranscoder = new PassThroughTrackTranscoder(mExtractor,
-                            mTracksInfo.audioTrackIndex, queuedMuxer, QueuedMuxer.SampleType.AUDIO);
+                            mTracksInfo.audioTrackIndex, transcoderMuxer, TranscoderMuxer.SampleType.AUDIO);
                     audioStatus = TrackStatus.PASS_THROUGH;
                 } else { // Abort.
                     throw strategyException;
