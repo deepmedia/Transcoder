@@ -21,7 +21,7 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaMuxer;
 import android.os.Build;
 
-import com.otaliastudios.transcoder.MediaTranscoderOptions;
+import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.strategy.OutputStrategyException;
 import com.otaliastudios.transcoder.transcode.AudioTrackTranscoder;
@@ -40,9 +40,8 @@ import androidx.annotation.Nullable;
 /**
  * Internal engine, do not use this directly.
  */
-// TODO: treat encrypted data
-public class MediaTranscoderEngine {
-    private static final String TAG = "MediaTranscoderEngine";
+public class TranscoderEngine {
+    private static final String TAG = TranscoderEngine.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     private static final double PROGRESS_UNKNOWN = -1.0;
@@ -61,7 +60,7 @@ public class MediaTranscoderEngine {
     /**
      * Do not use this constructor unless you know what you are doing.
      */
-    public MediaTranscoderEngine() { }
+    public TranscoderEngine() { }
 
     public void setDataSource(@NonNull DataSource dataSource) {
         mDataSource = dataSource;
@@ -89,7 +88,7 @@ public class MediaTranscoderEngine {
      * @throws InterruptedException when cancel to transcode
      * @throws ValidatorException if validator decides transcoding is not needed.
      */
-    public void transcode(@NonNull MediaTranscoderOptions options) throws IOException, InterruptedException {
+    public void transcode(@NonNull TranscoderOptions options) throws IOException, InterruptedException {
         if (mDataSource == null) {
             throw new IllegalStateException("Data source is not set.");
         }
@@ -163,7 +162,7 @@ public class MediaTranscoderEngine {
         LOG.v("Duration (us): " + mDurationUs);
     }
 
-    private void setupTrackTranscoders(@NonNull MediaTranscoderOptions options) {
+    private void setupTrackTranscoders(@NonNull TranscoderOptions options) {
         mTracksInfo = TracksInfo.fromExtractor(mExtractor);
         QueuedMuxer queuedMuxer = new QueuedMuxer(mMuxer, mTracksInfo, new QueuedMuxer.Listener() {
             @Override

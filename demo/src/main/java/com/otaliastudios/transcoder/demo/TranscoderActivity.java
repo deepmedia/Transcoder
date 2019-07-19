@@ -9,13 +9,12 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.otaliastudios.transcoder.MediaTranscoder;
+import com.otaliastudios.transcoder.Transcoder;
+import com.otaliastudios.transcoder.TranscoderListener;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.OutputStrategy;
-import com.otaliastudios.transcoder.strategy.size.FractionResizer;
-import com.otaliastudios.transcoder.strategy.size.Resizer;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +26,7 @@ import androidx.core.content.FileProvider;
 
 
 public class TranscoderActivity extends AppCompatActivity implements
-        MediaTranscoder.Listener,
+        TranscoderListener,
         RadioGroup.OnCheckedChangeListener {
 
     private static final String TAG = "DemoApp";
@@ -146,7 +145,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
-        mTranscodeFuture = MediaTranscoder.into(mTranscodeOutputFile.getAbsolutePath())
+        mTranscodeFuture = Transcoder.into(mTranscodeOutputFile.getAbsolutePath())
                 .setDataSource(this, mTranscodeInputUri)
                 .setListener(this)
                 .setAudioOutputStrategy(mTranscodeAudioStrategy)
@@ -166,7 +165,7 @@ public class TranscoderActivity extends AppCompatActivity implements
 
     @Override
     public void onTranscodeCompleted(int successCode) {
-        if (successCode == MediaTranscoder.SUCCESS_TRANSCODED) {
+        if (successCode == Transcoder.SUCCESS_TRANSCODED) {
             LOG.w("Transcoding took " + (SystemClock.uptimeMillis() - mTranscodeStartTime) + "ms");
             onTranscodeFinished(true, "Transcoded file placed on " + mTranscodeOutputFile);
             Uri uri = FileProvider.getUriForFile(TranscoderActivity.this,
@@ -175,7 +174,7 @@ public class TranscoderActivity extends AppCompatActivity implements
             startActivity(new Intent(Intent.ACTION_VIEW)
                     .setDataAndType(uri, "video/mp4")
                     .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
-        } else if (successCode == MediaTranscoder.SUCCESS_NOT_NEEDED) {
+        } else if (successCode == Transcoder.SUCCESS_NOT_NEEDED) {
             // TODO: Not sure this works
             LOG.i("Transcoding was not needed.");
             onTranscodeFinished(true, "Transcoding not needed, source file not touched.");

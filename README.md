@@ -13,12 +13,12 @@ implementation 'com.otaliastudios:transcoder:0.4.0'
 Using Transcoder in the most basic form is pretty simple:
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setDataSource(context, uri) // or...
         .setDataSource(filePath) // or...
         .setDataSource(fileDescriptor) // or...
         .setDataSource(dataSource)
-        .setListener(new MediaTranscoder.Listener() {
+        .setListener(new TranscoderListener() {
              public void onTranscodeProgress(double progress) {}
              public void onTranscodeCompleted(int successCode) {}
              public void onTranscodeCanceled() {}
@@ -83,9 +83,9 @@ Transcoding will happen on a background thread, but we will send updates through
 interface, which can be applied when building the request:
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setListenerHandler(handler)
-        .setListener(new MediaTranscoder.Listener() {
+        .setListener(new TranscoderListener() {
              public void onTranscodeProgress(double progress) {}
              public void onTranscodeCompleted(int successCode) {}
              public void onTranscodeCanceled() {}
@@ -137,7 +137,7 @@ Validators tell the engine whether the transcoding process should start or not b
 of the audio and video track.
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setValidator(validator)
         // ...
 ```
@@ -184,7 +184,7 @@ Output strategies return options for each track (audio or video) for the engine 
 and **if** this track should be transcoded, and whether the whole process should be aborted.
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setVideoOutputStrategy(videoStrategy)
         .setAudioOutputStrategy(audioStrategy)
         // ...
@@ -217,7 +217,7 @@ The default internal strategy for audio is a `DefaultAudioStrategy`, which conve
 audio stream to AAC format with the specified number of channels.
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setAudioOutputStrategy(DefaultAudioStrategy(1)) // or..
         .setAudioOutputStrategy(DefaultAudioStrategy(2)) // or..
         .setAudioOutputStrategy(DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
@@ -305,7 +305,7 @@ Only a few codecs and sizes are strictly required to work.
 We collect common presets in the `DefaultVideoStrategies` class:
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setVideoOutputStrategy(DefaultVideoStrategies.for720x1280()) // 16:9
         .setVideoOutputStrategy(DefaultVideoStrategies.for360x480()) // 4:3
         // ...
