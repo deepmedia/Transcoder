@@ -22,7 +22,7 @@ import android.media.MediaFormat;
 import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
 import com.otaliastudios.transcoder.engine.QueuedMuxer;
 import com.otaliastudios.transcoder.internal.openglnew.InputSurface;
-import com.otaliastudios.transcoder.internal.opengl.OutputSurface;
+import com.otaliastudios.transcoder.internal.openglnew.OutputSurface;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
