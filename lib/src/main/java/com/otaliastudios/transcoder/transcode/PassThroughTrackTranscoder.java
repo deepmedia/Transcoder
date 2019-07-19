@@ -22,6 +22,7 @@ import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
+import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 
 import java.nio.ByteBuffer;
@@ -31,36 +32,30 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     private final MediaExtractor mExtractor;
     private final int mTrackIndex;
     private final TranscoderMuxer mMuxer;
-    private final TranscoderMuxer.SampleType mSampleType;
+    private final TrackType mTrackType;
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private int mBufferSize;
     private ByteBuffer mBuffer;
     private boolean mIsEOS;
-    private MediaFormat mActualOutputFormat;
     private long mWrittenPresentationTimeUs;
 
     public PassThroughTrackTranscoder(@NonNull MediaExtractor extractor,
                                       int trackIndex,
                                       @NonNull TranscoderMuxer muxer,
-                                      @NonNull TranscoderMuxer.SampleType sampleType) {
+                                      @NonNull TrackType trackType) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
         mMuxer = muxer;
-        mSampleType = sampleType;
+        mTrackType = trackType;
 
-        mActualOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
-        mMuxer.setOutputFormat(mSampleType, mActualOutputFormat);
+        MediaFormat mActualOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
+        mMuxer.setOutputFormat(mTrackType, mActualOutputFormat);
         mBufferSize = mActualOutputFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         mBuffer = ByteBuffer.allocateDirect(mBufferSize).order(ByteOrder.nativeOrder());
     }
 
     @Override
-    public void setup() {
-    }
-
-    @Override
-    public MediaFormat getDeterminedFormat() {
-        return mActualOutputFormat;
+    public void setUp(@NonNull MediaFormat desiredOutputFormat) {
     }
 
     @SuppressLint("Assert")
@@ -71,7 +66,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         if (trackIndex < 0) {
             mBuffer.clear();
             mBufferInfo.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-            mMuxer.writeSampleData(mSampleType, mBuffer, mBufferInfo);
+            mMuxer.write(mTrackType, mBuffer, mBufferInfo);
             mIsEOS = true;
             return true;
         }
@@ -83,7 +78,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         boolean isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
         int flags = isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0;
         mBufferInfo.set(0, sampleSize, mExtractor.getSampleTime(), flags);
-        mMuxer.writeSampleData(mSampleType, mBuffer, mBufferInfo);
+        mMuxer.write(mTrackType, mBuffer, mBufferInfo);
         mWrittenPresentationTimeUs = mBufferInfo.presentationTimeUs;
 
         mExtractor.advance();
@@ -91,7 +86,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public long getWrittenPresentationTimeUs() {
+    public long getLastWrittenPresentationTime() {
         return mWrittenPresentationTimeUs;
     }
 

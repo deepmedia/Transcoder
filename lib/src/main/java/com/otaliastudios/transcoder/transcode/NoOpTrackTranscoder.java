@@ -17,18 +17,15 @@ package com.otaliastudios.transcoder.transcode;
 
 import android.media.MediaFormat;
 
+import androidx.annotation.NonNull;
+
 public class NoOpTrackTranscoder implements TrackTranscoder {
 
     public NoOpTrackTranscoder() {
     }
 
     @Override
-    public void setup() {
-    }
-
-    @Override
-    public MediaFormat getDeterminedFormat() {
-        return null;
+    public void setUp(@NonNull MediaFormat desiredOutputFormat) {
     }
 
     @Override
@@ -37,7 +34,7 @@ public class NoOpTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public long getWrittenPresentationTimeUs() {
+    public long getLastWrittenPresentationTime() {
         return 0;
     }
 
