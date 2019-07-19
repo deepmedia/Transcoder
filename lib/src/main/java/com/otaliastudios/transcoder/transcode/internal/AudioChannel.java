@@ -1,11 +1,11 @@
-package com.otaliastudios.transcoder.transcode;
+package com.otaliastudios.transcoder.transcode.internal;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
+import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
 
 import java.nio.ByteBuffer;
@@ -21,7 +21,7 @@ import java.util.Queue;
  * We currently support upmixing from mono to stereo & downmixing from stereo to mono.
  * Sample rate conversion is not supported yet.
  */
-class AudioChannel {
+public class AudioChannel {
 
     private static class AudioBuffer {
         int bufferIndex;
@@ -29,7 +29,7 @@ class AudioChannel {
         ShortBuffer data;
     }
 
-    static final int BUFFER_INDEX_END_OF_STREAM = -1;
+    public static final int BUFFER_INDEX_END_OF_STREAM = -1;
 
     private static final int BYTES_PER_SHORT = 2;
     private static final long MICROSECS_PER_SEC = 1000000;
@@ -47,26 +47,25 @@ class AudioChannel {
 
     private AudioRemixer mRemixer;
 
-    private final MediaCodecBufferCompat mDecoderBuffers;
-    private final MediaCodecBufferCompat mEncoderBuffers;
+    private final MediaCodecBuffers mDecoderBuffers;
+    private final MediaCodecBuffers mEncoderBuffers;
 
     private final AudioBuffer mOverflowBuffer = new AudioBuffer();
 
     private MediaFormat mActualDecodedFormat;
 
-
-    AudioChannel(@NonNull final MediaCodec decoder,
+    public AudioChannel(@NonNull final MediaCodec decoder,
                  @NonNull final MediaCodec encoder,
                  @NonNull final MediaFormat encodeFormat) {
         mDecoder = decoder;
         mEncoder = encoder;
         mEncodeFormat = encodeFormat;
 
-        mDecoderBuffers = new MediaCodecBufferCompat(mDecoder);
-        mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
+        mDecoderBuffers = new MediaCodecBuffers(mDecoder);
+        mEncoderBuffers = new MediaCodecBuffers(mEncoder);
     }
 
-    void setActualDecodedFormat(@NonNull final MediaFormat decodedFormat) {
+    public void setActualDecodedFormat(@NonNull final MediaFormat decodedFormat) {
         mActualDecodedFormat = decodedFormat;
 
         // TODO I think these exceptions are either useless or not in the right place.
@@ -99,7 +98,7 @@ class AudioChannel {
         mOverflowBuffer.presentationTimeUs = 0;
     }
 
-    void drainDecoderBufferAndQueue(final int bufferIndex, final long presentationTimeUs) {
+    public void drainDecoderBufferAndQueue(final int bufferIndex, final long presentationTimeUs) {
         if (mActualDecodedFormat == null) {
             throw new RuntimeException("Buffer received before format!");
         }
@@ -129,7 +128,7 @@ class AudioChannel {
         mFilledBuffers.add(buffer);
     }
 
-    boolean feedEncoder(@SuppressWarnings("SameParameterValue") long timeoutUs) {
+    public boolean feedEncoder(@SuppressWarnings("SameParameterValue") long timeoutUs) {
         final boolean hasOverflow = mOverflowBuffer.data != null && mOverflowBuffer.data.hasRemaining();
         if (mFilledBuffers.isEmpty() && !hasOverflow) {
             // No audio data - Bail out

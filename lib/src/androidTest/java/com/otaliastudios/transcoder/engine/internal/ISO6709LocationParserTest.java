@@ -1,9 +1,9 @@
-package com.otaliastudios.transcoder.internal;
+package com.otaliastudios.transcoder.engine.internal;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+
+import com.otaliastudios.transcoder.engine.internal.ISO6709LocationParser;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

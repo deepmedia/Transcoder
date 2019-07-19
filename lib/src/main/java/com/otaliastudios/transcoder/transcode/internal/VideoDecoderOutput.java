@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.internal.video;
+package com.otaliastudios.transcoder.transcode.internal;
 
 
 import android.graphics.SurfaceTexture;
@@ -26,8 +26,8 @@ import com.otaliastudios.transcoder.internal.Logger;
  * NOTE: By default, the Surface will be using a BufferQueue in asynchronous mode, so we
  * can potentially drop frames.
  */
-public class TextureOutputSurface {
-    private static final String TAG = TextureOutputSurface.class.getSimpleName();
+public class VideoDecoderOutput {
+    private static final String TAG = VideoDecoderOutput.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     private static final long NEW_IMAGE_TIMEOUT_MILLIS = 10000;
@@ -47,10 +47,10 @@ public class TextureOutputSurface {
     private final Object mFrameAvailableLock = new Object();
 
     /**
-     * Creates an TextureOutputSurface using the current EGL context (rather than establishing a
+     * Creates an VideoDecoderOutput using the current EGL context (rather than establishing a
      * new one). Creates a Surface that can be passed to MediaCodec.configure().
      */
-    public TextureOutputSurface() {
+    public VideoDecoderOutput() {
         mScene = new EglScene();
         mProgram = new EglTextureProgram();
         mDrawable = new EglRect();
@@ -113,7 +113,7 @@ public class TextureOutputSurface {
 
     /**
      * Latches the next buffer into the texture.  Must be called from the thread that created
-     * the TextureOutputSurface object, after the onFrameAvailable callback has signaled that new
+     * the VideoDecoderOutput object, after the onFrameAvailable callback has signaled that new
      * data is available.
      */
     private void awaitNewFrame() {

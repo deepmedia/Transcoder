@@ -19,10 +19,10 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
-import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
+import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.engine.QueuedMuxer;
-import com.otaliastudios.transcoder.internal.video.TextureInputSurface;
-import com.otaliastudios.transcoder.internal.video.TextureOutputSurface;
+import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
+import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
@@ -44,8 +44,8 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private MediaCodec mDecoder;
     private MediaCodec mEncoder;
-    private MediaCodecBufferCompat mDecoderBuffers;
-    private MediaCodecBufferCompat mEncoderBuffers;
+    private MediaCodecBuffers mDecoderBuffers;
+    private MediaCodecBuffers mEncoderBuffers;
 
     private MediaFormat mActualOutputFormat;
     private boolean mIsExtractorEOS;
@@ -55,8 +55,8 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private boolean mEncoderStarted;
     private long mWrittenPresentationTimeUs;
 
-    private TextureOutputSurface mDecoderOutputSurface;
-    private TextureInputSurface mEncoderInputSurface;
+    private VideoDecoderOutput mDecoderOutputSurface;
+    private VideoEncoderInput mEncoderInputSurface;
 
     // A step is defined as the microseconds between two frame.
     // The average step is basically 1 / frame rate.
@@ -88,10 +88,10 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             throw new IllegalStateException(e);
         }
         mEncoder.configure(mOutputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-        mEncoderInputSurface = new TextureInputSurface(mEncoder.createInputSurface());
+        mEncoderInputSurface = new VideoEncoderInput(mEncoder.createInputSurface());
         mEncoder.start();
         mEncoderStarted = true;
-        mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
+        mEncoderBuffers = new MediaCodecBuffers(mEncoder);
 
         // Configure decoder.
         MediaFormat inputFormat = mExtractor.getTrackFormat(mTrackIndex);
@@ -101,7 +101,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
             inputFormat.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         }
-        mDecoderOutputSurface = new TextureOutputSurface();
+        mDecoderOutputSurface = new VideoDecoderOutput();
         try {
             mDecoder = MediaCodec.createDecoderByType(inputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
@@ -110,7 +110,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         mDecoder.configure(inputFormat, mDecoderOutputSurface.getSurface(), null, 0);
         mDecoder.start();
         mDecoderStarted = true;
-        mDecoderBuffers = new MediaCodecBufferCompat(mDecoder);
+        mDecoderBuffers = new MediaCodecBuffers(mDecoder);
     }
 
     @Override
