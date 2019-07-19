@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.utils;
+package com.otaliastudios.transcoder.internal;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;

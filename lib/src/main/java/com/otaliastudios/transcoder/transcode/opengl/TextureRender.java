@@ -22,9 +22,8 @@ import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
-import android.util.Log;
 
-import com.otaliastudios.transcoder.utils.Logger;
+import com.otaliastudios.transcoder.internal.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

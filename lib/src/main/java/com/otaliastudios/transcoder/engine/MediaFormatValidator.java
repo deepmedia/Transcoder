@@ -16,12 +16,11 @@
 package com.otaliastudios.transcoder.engine;
 
 import android.media.MediaFormat;
-import android.util.Log;
 
-import com.otaliastudios.transcoder.utils.Logger;
-import com.otaliastudios.transcoder.utils.MediaFormatConstants;
-import com.otaliastudios.transcoder.utils.AvcCsdUtils;
-import com.otaliastudios.transcoder.utils.AvcSpsUtils;
+import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.AvcCsdUtils;
+import com.otaliastudios.transcoder.internal.AvcSpsUtils;
 
 import java.nio.ByteBuffer;
 

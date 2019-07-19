@@ -23,10 +23,9 @@ import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
 import android.opengl.EGLSurface;
-import android.util.Log;
 import android.view.Surface;
 
-import com.otaliastudios.transcoder.utils.Logger;
+import com.otaliastudios.transcoder.internal.Logger;
 
 /**
  * Holds state associated with a Surface used for MediaCodec decoder output.

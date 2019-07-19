@@ -12,7 +12,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.otaliastudios.transcoder.MediaTranscoder;
-import com.otaliastudios.transcoder.utils.Logger;
+import com.otaliastudios.transcoder.internal.Logger;
 
 import java.io.File;
 import java.io.IOException;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.compat;
+package com.otaliastudios.transcoder.internal;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;

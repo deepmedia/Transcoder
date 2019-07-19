@@ -19,13 +19,12 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
-import com.otaliastudios.transcoder.compat.MediaCodecBufferCompatWrapper;
+import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
 import com.otaliastudios.transcoder.engine.QueuedMuxer;
-import com.otaliastudios.transcoder.transcode.TrackTranscoder;
 import com.otaliastudios.transcoder.transcode.opengl.InputSurface;
 import com.otaliastudios.transcoder.transcode.opengl.OutputSurface;
-import com.otaliastudios.transcoder.utils.Logger;
-import com.otaliastudios.transcoder.utils.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import java.io.IOException;
 
@@ -45,8 +44,8 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private MediaCodec mDecoder;
     private MediaCodec mEncoder;
-    private MediaCodecBufferCompatWrapper mDecoderBuffers;
-    private MediaCodecBufferCompatWrapper mEncoderBuffers;
+    private MediaCodecBufferCompat mDecoderBuffers;
+    private MediaCodecBufferCompat mEncoderBuffers;
 
     private MediaFormat mActualOutputFormat;
     private OutputSurface mDecoderOutputSurfaceWrapper;
@@ -90,7 +89,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         mEncoderInputSurfaceWrapper.makeCurrent();
         mEncoder.start();
         mEncoderStarted = true;
-        mEncoderBuffers = new MediaCodecBufferCompatWrapper(mEncoder);
+        mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
 
         MediaFormat inputFormat = mExtractor.getTrackFormat(mTrackIndex);
         if (inputFormat.containsKey(MediaFormatConstants.KEY_ROTATION_DEGREES)) {
@@ -108,7 +107,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         mDecoder.configure(inputFormat, mDecoderOutputSurfaceWrapper.getSurface(), null, 0);
         mDecoder.start();
         mDecoderStarted = true;
-        mDecoderBuffers = new MediaCodecBufferCompatWrapper(mDecoder);
+        mDecoderBuffers = new MediaCodecBufferCompat(mDecoder);
     }
 
     @Override

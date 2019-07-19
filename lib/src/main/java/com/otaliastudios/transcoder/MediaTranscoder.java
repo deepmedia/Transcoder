@@ -19,7 +19,7 @@ import android.os.Handler;
 
 import com.otaliastudios.transcoder.engine.MediaTranscoderEngine;
 import com.otaliastudios.transcoder.source.DataSource;
-import com.otaliastudios.transcoder.utils.Logger;
+import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
 import com.otaliastudios.transcoder.validator.ValidatorException;
 

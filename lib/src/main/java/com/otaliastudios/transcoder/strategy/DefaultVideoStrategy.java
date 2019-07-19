@@ -9,11 +9,10 @@ import com.otaliastudios.transcoder.strategy.size.ExactResizer;
 import com.otaliastudios.transcoder.strategy.size.ExactSize;
 import com.otaliastudios.transcoder.strategy.size.FractionResizer;
 import com.otaliastudios.transcoder.strategy.size.MultiResizer;
-import com.otaliastudios.transcoder.strategy.size.PassThroughResizer;
 import com.otaliastudios.transcoder.strategy.size.Size;
 import com.otaliastudios.transcoder.strategy.size.Resizer;
-import com.otaliastudios.transcoder.utils.Logger;
-import com.otaliastudios.transcoder.utils.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

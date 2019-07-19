@@ -29,8 +29,8 @@ import com.otaliastudios.transcoder.transcode.NoOpTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.PassThroughTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.TrackTranscoder;
 import com.otaliastudios.transcoder.transcode.VideoTrackTranscoder;
-import com.otaliastudios.transcoder.utils.ISO6709LocationParser;
-import com.otaliastudios.transcoder.utils.Logger;
+import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
+import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.ValidatorException;
 
 import java.io.IOException;

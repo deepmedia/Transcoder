@@ -3,7 +3,7 @@ package com.otaliastudios.transcoder.transcode;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 
-import com.otaliastudios.transcoder.compat.MediaCodecBufferCompatWrapper;
+import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
 
 import java.nio.ByteBuffer;
@@ -45,8 +45,8 @@ class AudioChannel {
 
     private AudioRemixer mRemixer;
 
-    private final MediaCodecBufferCompatWrapper mDecoderBuffers;
-    private final MediaCodecBufferCompatWrapper mEncoderBuffers;
+    private final MediaCodecBufferCompat mDecoderBuffers;
+    private final MediaCodecBufferCompat mEncoderBuffers;
 
     private final AudioBuffer mOverflowBuffer = new AudioBuffer();
 
@@ -59,8 +59,8 @@ class AudioChannel {
         mEncoder = encoder;
         mEncodeFormat = encodeFormat;
 
-        mDecoderBuffers = new MediaCodecBufferCompatWrapper(mDecoder);
-        mEncoderBuffers = new MediaCodecBufferCompatWrapper(mEncoder);
+        mDecoderBuffers = new MediaCodecBufferCompat(mDecoder);
+        mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
     }
 
     public void setActualDecodedFormat(final MediaFormat decodedFormat) {

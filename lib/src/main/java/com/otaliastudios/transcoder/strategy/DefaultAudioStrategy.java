@@ -3,7 +3,7 @@ package com.otaliastudios.transcoder.strategy;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
-import com.otaliastudios.transcoder.utils.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

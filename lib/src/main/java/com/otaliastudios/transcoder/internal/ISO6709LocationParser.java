@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.utils;
+package com.otaliastudios.transcoder.internal;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

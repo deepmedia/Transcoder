@@ -19,7 +19,7 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 
-import com.otaliastudios.transcoder.utils.Logger;
+import com.otaliastudios.transcoder.internal.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

@@ -1,5 +1,7 @@
 package com.otaliastudios.transcoder.utils;
 
+import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
+
 public class ISO6709LocationParserTest {
     public void testParse() {
         ISO6709LocationParser parser = new ISO6709LocationParser();
