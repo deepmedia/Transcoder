@@ -257,7 +257,7 @@ resizer. We offer handy resizers:
 
 |Name|Description|
 |----|-----------|
-|`ExactResizer`|Returns the dimensions passed to the constructor. Throws if aspect ratio does not match.|
+|`ExactResizer`|Returns the dimensions passed to the constructor..|
 |`FractionResizer`|Reduces the input size by the given fraction (0..1).|
 |`AtMostResizer`|If needed, reduces the input size so that the "at most" constraints are matched. Aspect ratio is kept.|
 |`PassThroughResizer`|Returns the input size unchanged.|

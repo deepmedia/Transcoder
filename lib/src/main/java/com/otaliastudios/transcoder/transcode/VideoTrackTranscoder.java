@@ -19,6 +19,8 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
+import androidx.annotation.NonNull;
+
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.engine.QueuedMuxer;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
@@ -66,12 +68,19 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private long mLastRenderedUs;
     private long mLastStep;
 
-    public VideoTrackTranscoder(MediaExtractor extractor, int trackIndex,
-                                MediaFormat outputFormat, QueuedMuxer muxer) {
+    private float mInputAspectRatio;
+
+    public VideoTrackTranscoder(
+            @NonNull MediaExtractor extractor,
+            int trackIndex,
+            @NonNull MediaFormat outputFormat,
+            @NonNull QueuedMuxer muxer,
+            float inputAspectRatio) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
         mOutputFormat = outputFormat;
         mMuxer = muxer;
+        mInputAspectRatio = inputAspectRatio;
 
         int frameRate = outputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
         mTargetAvgStep = (1F / frameRate) * 1000 * 1000;

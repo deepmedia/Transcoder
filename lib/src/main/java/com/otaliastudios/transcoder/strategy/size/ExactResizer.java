@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 
 /**
  * A {@link Resizer} that returns the exact dimensions that were passed to the constructor.
- * Throws if the input size aspect ratio does not match.
  */
 public class ExactResizer implements Resizer {
 
@@ -22,9 +21,10 @@ public class ExactResizer implements Resizer {
     @NonNull
     @Override
     public Size getOutputSize(@NonNull Size inputSize) {
-        if (inputSize.getMinor() * output.getMajor() != inputSize.getMajor() * output.getMinor()) {
+        // We now support different aspect ratios, but could make this check below configurable.
+        /* if (inputSize.getMinor() * output.getMajor() != inputSize.getMajor() * output.getMinor()) {
             throw new IllegalStateException("Input and output ratio do not match.");
-        }
+        } */
         return output;
     }
 }

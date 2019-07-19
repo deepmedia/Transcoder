@@ -189,8 +189,10 @@ public class TranscoderEngine {
                             mTracksInfo.videoTrackIndex, queuedMuxer, QueuedMuxer.SampleType.VIDEO);
                     videoStatus = TrackStatus.PASS_THROUGH;
                 } else {
+                    float inWidth = mTracksInfo.videoTrackFormat.getInteger(MediaFormat.KEY_WIDTH);
+                    float inHeight = mTracksInfo.videoTrackFormat.getInteger(MediaFormat.KEY_HEIGHT);
                     mVideoTrackTranscoder = new VideoTrackTranscoder(mExtractor,
-                            mTracksInfo.videoTrackIndex, videoFormat, queuedMuxer);
+                            mTracksInfo.videoTrackIndex, videoFormat, queuedMuxer, inWidth / inHeight);
                     videoStatus = TrackStatus.COMPRESSING;
                 }
             } catch (OutputStrategyException strategyException) {
