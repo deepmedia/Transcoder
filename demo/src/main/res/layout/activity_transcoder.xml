@@ -126,6 +126,49 @@
                     android:layout_height="wrap_content" />
             </RadioGroup>
 
+            <!-- VIDEO ASPECT RATIO -->
+            <TextView
+                android:padding="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Video aspect ratio" />
+            <RadioGroup
+                android:id="@+id/aspect"
+                android:checkedButton="@id/aspect_input"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/aspect_input"
+                    android:text="As input"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/aspect_169"
+                    android:text="16:9"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/aspect_43"
+                    android:text="4:3"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/aspect_square"
+                    android:text="Square"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </RadioGroup>
+
             <!-- INFO TEXT -->
             <TextView
                 android:padding="16dp"

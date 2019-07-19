@@ -7,26 +7,26 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
-import com.otaliastudios.transcoder.engine.QueuedMuxer;
 import com.otaliastudios.transcoder.transcode.internal.AudioChannel;
 
 import java.io.IOException;
 
 public class AudioTrackTranscoder implements TrackTranscoder {
 
-    private static final QueuedMuxer.SampleType SAMPLE_TYPE = QueuedMuxer.SampleType.AUDIO;
+    private static final TrackType SAMPLE_TYPE = TrackType.AUDIO;
 
     private static final int DRAIN_STATE_NONE = 0;
     private static final int DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY = 1;
     private static final int DRAIN_STATE_CONSUMED = 2;
 
     private final MediaExtractor mExtractor;
-    private final QueuedMuxer mMuxer;
+    private final TranscoderMuxer mMuxer;
     private long mWrittenPresentationTimeUs;
 
     private final int mTrackIndex;
-    private final MediaFormat mOutputFormat;
 
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private MediaCodec mDecoder;
@@ -46,23 +46,21 @@ public class AudioTrackTranscoder implements TrackTranscoder {
 
     public AudioTrackTranscoder(@NonNull MediaExtractor extractor,
                                 int trackIndex,
-                                @NonNull MediaFormat outputFormat,
-                                @NonNull QueuedMuxer muxer) {
+                                @NonNull TranscoderMuxer muxer) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
-        mOutputFormat = outputFormat;
         mMuxer = muxer;
     }
 
     @Override
-    public void setup() {
+    public void setUp(@NonNull MediaFormat desiredOutputFormat) {
         mExtractor.selectTrack(mTrackIndex);
         try {
-            mEncoder = MediaCodec.createEncoderByType(mOutputFormat.getString(MediaFormat.KEY_MIME));
+            mEncoder = MediaCodec.createEncoderByType(desiredOutputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        mEncoder.configure(mOutputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        mEncoder.configure(desiredOutputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         mEncoder.start();
         mEncoderStarted = true;
         mEncoderBuffers = new MediaCodecBuffers(mEncoder);
@@ -78,13 +76,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
         mDecoderStarted = true;
         mDecoderBuffers = new MediaCodecBuffers(mDecoder);
 
-        mAudioChannel = new AudioChannel(mDecoder, mEncoder, mOutputFormat);
-    }
-
-    @Nullable
-    @Override
-    public MediaFormat getDeterminedFormat() {
-        return mActualOutputFormat;
+        mAudioChannel = new AudioChannel(mDecoder, mEncoder, desiredOutputFormat);
     }
 
     @Override
@@ -185,14 +177,14 @@ public class AudioTrackTranscoder implements TrackTranscoder {
             mEncoder.releaseOutputBuffer(result, false);
             return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
-        mMuxer.writeSampleData(SAMPLE_TYPE, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
+        mMuxer.write(SAMPLE_TYPE, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
         mWrittenPresentationTimeUs = mBufferInfo.presentationTimeUs;
         mEncoder.releaseOutputBuffer(result, false);
         return DRAIN_STATE_CONSUMED;
     }
 
     @Override
-    public long getWrittenPresentationTimeUs() {
+    public long getLastWrittenPresentationTime() {
         return mWrittenPresentationTimeUs;
     }
 

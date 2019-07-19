@@ -17,13 +17,14 @@ package com.otaliastudios.transcoder.engine;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.MediaTranscoder;
-import com.otaliastudios.transcoder.MediaTranscoderOptions;
+import com.otaliastudios.transcoder.Transcoder;
+import com.otaliastudios.transcoder.TranscoderListener;
+import com.otaliastudios.transcoder.TranscoderOptions;
 
 /**
  * One of the exceptions possibly thrown by
- * {@link MediaTranscoder#transcode(MediaTranscoderOptions)}, which means it can be
- * passed to {@link MediaTranscoder.Listener#onTranscodeFailed(Throwable)}.
+ * {@link Transcoder#transcode(TranscoderOptions)}, which means it can be
+ * passed to {@link TranscoderListener#onTranscodeFailed(Throwable)}.
  */
 @SuppressWarnings("WeakerAccess")
 public class InvalidOutputFormatException extends RuntimeException {

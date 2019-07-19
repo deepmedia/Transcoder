@@ -17,7 +17,7 @@ package com.otaliastudios.transcoder;
 
 import android.os.Handler;
 
-import com.otaliastudios.transcoder.engine.MediaTranscoderEngine;
+import com.otaliastudios.transcoder.engine.TranscoderEngine;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
@@ -34,24 +34,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
 
-public class MediaTranscoder {
-    private static final String TAG = "MediaTranscoder";
+public class Transcoder {
+    private static final String TAG = Transcoder.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     /**
-     * Constant for {@link Listener#onTranscodeCompleted(int)}.
+     * Constant for {@link TranscoderListener#onTranscodeCompleted(int)}.
      * Transcoding was executed successfully.
      */
     public static final int SUCCESS_TRANSCODED = 0;
 
     /**
-     * Constant for {@link Listener#onTranscodeCompleted(int)}:
+     * Constant for {@link TranscoderListener#onTranscodeCompleted(int)}:
      * transcoding was not executed because it was considered
      * not necessary by the {@link Validator}.
      */
     public static final int SUCCESS_NOT_NEEDED = 1;
 
-    private static volatile MediaTranscoder sMediaTranscoder;
+    private static volatile Transcoder sTranscoder;
 
     private class Factory implements ThreadFactory {
         private AtomicInteger count = new AtomicInteger(1);
@@ -64,7 +64,7 @@ public class MediaTranscoder {
 
     private ThreadPoolExecutor mExecutor;
 
-    private MediaTranscoder() {
+    private Transcoder() {
         // This executor will execute at most 'pool' tasks concurrently,
         // then queue all the others. CPU + 1 is used by AsyncTask.
         int pool = Runtime.getRuntime().availableProcessors() + 1;
@@ -76,15 +76,15 @@ public class MediaTranscoder {
 
     @SuppressWarnings("WeakerAccess")
     @NonNull
-    public static MediaTranscoder getInstance() {
-        if (sMediaTranscoder == null) {
-            synchronized (MediaTranscoder.class) {
-                if (sMediaTranscoder == null) {
-                    sMediaTranscoder = new MediaTranscoder();
+    public static Transcoder getInstance() {
+        if (sTranscoder == null) {
+            synchronized (Transcoder.class) {
+                if (sTranscoder == null) {
+                    sTranscoder = new Transcoder();
                 }
             }
         }
-        return sMediaTranscoder;
+        return sTranscoder;
     }
 
     /**
@@ -95,8 +95,8 @@ public class MediaTranscoder {
      * @return an options builder
      */
     @NonNull
-    public static MediaTranscoderOptions.Builder into(@NonNull String outPath) {
-        return new MediaTranscoderOptions.Builder(outPath);
+    public static TranscoderOptions.Builder into(@NonNull String outPath) {
+        return new TranscoderOptions.Builder(outPath);
     }
 
     /**
@@ -106,15 +106,15 @@ public class MediaTranscoder {
      * @return a Future that completes when transcoding is completed
      */
     @NonNull
-    public Future<Void> transcode(@NonNull final MediaTranscoderOptions options) {
-        final Listener listenerWrapper = new ListenerWrapper(options.listenerHandler,
+    public Future<Void> transcode(@NonNull final TranscoderOptions options) {
+        final TranscoderListener listenerWrapper = new ListenerWrapper(options.listenerHandler,
                 options.listener, options.getDataSource());
         return mExecutor.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
                 try {
-                    MediaTranscoderEngine engine = new MediaTranscoderEngine();
-                    engine.setProgressCallback(new MediaTranscoderEngine.ProgressCallback() {
+                    TranscoderEngine engine = new TranscoderEngine();
+                    engine.setProgressCallback(new TranscoderEngine.ProgressCallback() {
                         @Override
                         public void onProgress(final double progress) {
                             listenerWrapper.onTranscodeProgress(progress);
@@ -163,50 +163,18 @@ public class MediaTranscoder {
     }
 
     /**
-     * Listeners for transcoder events. All the callbacks are called on the handler
-     * specified with {@link MediaTranscoderOptions.Builder#setListenerHandler(Handler)}.
-     */
-    public interface Listener {
-        /**
-         * Called to notify progress.
-         *
-         * @param progress Progress in [0.0, 1.0] range, or negative value if progress is unknown.
-         */
-        void onTranscodeProgress(double progress);
-
-        /**
-         * Called when transcode completed. The success code can be either
-         * {@link #SUCCESS_TRANSCODED} or {@link #SUCCESS_NOT_NEEDED}.
-         *
-         * @param successCode the success code
-         */
-        void onTranscodeCompleted(int successCode);
-
-        /**
-         * Called when transcode canceled.
-         */
-        void onTranscodeCanceled();
-
-        /**
-         * Called when transcode failed.
-         * @param exception the failure exception
-         */
-        void onTranscodeFailed(@NonNull Throwable exception);
-    }
-
-    /**
-     * Wraps a Listener and a DataSource object, ensuring that the source
+     * Wraps a TranscoderListener and a DataSource object, ensuring that the source
      * is released when transcoding ends, fails or is canceled.
      *
      * It posts events on the given handler.
      */
-    private static class ListenerWrapper implements Listener {
+    private static class ListenerWrapper implements TranscoderListener {
 
         private Handler mHandler;
-        private Listener mListener;
+        private TranscoderListener mListener;
         private DataSource mDataSource;
 
-        private ListenerWrapper(@NonNull Handler handler, @NonNull Listener listener, @NonNull DataSource source) {
+        private ListenerWrapper(@NonNull Handler handler, @NonNull TranscoderListener listener, @NonNull DataSource source) {
             mHandler = handler;
             mListener = listener;
             mDataSource = source;

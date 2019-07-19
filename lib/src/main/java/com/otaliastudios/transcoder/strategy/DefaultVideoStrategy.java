@@ -4,6 +4,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
 
+import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.AtMostResizer;
 import com.otaliastudios.transcoder.strategy.size.ExactResizer;
 import com.otaliastudios.transcoder.strategy.size.ExactSize;
@@ -33,7 +34,6 @@ public class DefaultVideoStrategy implements OutputStrategy {
     @SuppressWarnings("WeakerAccess")
     public final static float DEFAULT_I_FRAME_INTERVAL = 3;
 
-    @SuppressWarnings("WeakerAccess")
     public final static int DEFAULT_FRAME_RATE = 30;
 
     /**
@@ -73,6 +73,19 @@ public class DefaultVideoStrategy implements OutputStrategy {
     @SuppressWarnings("unused")
     public static Builder fraction(float fraction) {
         return new Builder(new FractionResizer(fraction));
+    }
+
+    /**
+     * Creates a new {@link Builder} with a {@link AspectRatioResizer}
+     * using given aspect ratio value.
+     *
+     * @param aspectRatio the desired aspect ratio
+     * @return a strategy builder
+     */
+    @NonNull
+    @SuppressWarnings("unused")
+    public static Builder aspectRatio(float aspectRatio) {
+        return new Builder(new AspectRatioResizer(aspectRatio));
     }
 
     /**
@@ -149,7 +162,6 @@ public class DefaultVideoStrategy implements OutputStrategy {
          * @return this for chaining
          */
         @NonNull
-        @SuppressWarnings("WeakerAccess")
         public Builder frameRate(int frameRate) {
             targetFrameRate = frameRate;
             return this;
@@ -179,7 +191,6 @@ public class DefaultVideoStrategy implements OutputStrategy {
         }
 
         @NonNull
-        @SuppressWarnings("WeakerAccess")
         public DefaultVideoStrategy build() {
             return new DefaultVideoStrategy(options());
         }

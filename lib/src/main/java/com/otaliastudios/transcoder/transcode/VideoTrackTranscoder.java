@@ -19,8 +19,11 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
+import androidx.annotation.NonNull;
+
+import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
-import com.otaliastudios.transcoder.engine.QueuedMuxer;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
 import com.otaliastudios.transcoder.internal.Logger;
@@ -30,7 +33,8 @@ import java.io.IOException;
 
 // Refer: https://android.googlesource.com/platform/cts/+/lollipop-release/tests/tests/media/src/android/media/cts/ExtractDecodeEditEncodeMuxTest.java
 public class VideoTrackTranscoder implements TrackTranscoder {
-    private static final String TAG = "VideoTrackTranscoder";
+
+    private static final String TAG = VideoTrackTranscoder.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     private static final int DRAIN_STATE_NONE = 0;
@@ -39,8 +43,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
 
     private final MediaExtractor mExtractor;
     private final int mTrackIndex;
-    private final MediaFormat mOutputFormat;
-    private final QueuedMuxer mMuxer;
+    private final TranscoderMuxer mMuxer;
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private MediaCodec mDecoder;
     private MediaCodec mEncoder;
@@ -66,28 +69,29 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private long mLastRenderedUs;
     private long mLastStep;
 
-    public VideoTrackTranscoder(MediaExtractor extractor, int trackIndex,
-                                MediaFormat outputFormat, QueuedMuxer muxer) {
+    public VideoTrackTranscoder(
+            @NonNull MediaExtractor extractor,
+            int trackIndex,
+            @NonNull TranscoderMuxer muxer) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
-        mOutputFormat = outputFormat;
         mMuxer = muxer;
-
-        int frameRate = outputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
-        mTargetAvgStep = (1F / frameRate) * 1000 * 1000;
     }
 
     @Override
-    public void setup() {
+    public void setUp(@NonNull MediaFormat desiredOutputFormat) {
         mExtractor.selectTrack(mTrackIndex);
+
+        int frameRate = desiredOutputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
+        mTargetAvgStep = (1F / frameRate) * 1000 * 1000;
 
         // Configure encoder.
         try {
-            mEncoder = MediaCodec.createEncoderByType(mOutputFormat.getString(MediaFormat.KEY_MIME));
+            mEncoder = MediaCodec.createEncoderByType(desiredOutputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        mEncoder.configure(mOutputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        mEncoder.configure(desiredOutputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         mEncoderInputSurface = new VideoEncoderInput(mEncoder.createInputSurface());
         mEncoder.start();
         mEncoderStarted = true;
@@ -101,7 +105,22 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
             inputFormat.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         }
-        mDecoderOutputSurface = new VideoDecoderOutput();
+        // Cropping support.
+        float inputWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        float inputHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        float inputRatio = inputWidth / inputHeight;
+        float outputWidth = desiredOutputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        float outputHeight = desiredOutputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        float outputRatio = outputWidth / outputHeight;
+        float scaleX = 1, scaleY = 1;
+        if (inputRatio > outputRatio) { // Input wider. We have a scaleX.
+            scaleX = inputRatio / outputRatio;
+        } else if (inputRatio < outputRatio) { // Input taller. We have a scaleY.
+            scaleY = outputRatio / inputRatio;
+        }
+        // I don't think we should consider rotation and flip these - we operate on non-rotated
+        // surfaces and pass the input rotation metadata to the output muxer, see TranscoderEngine.setupMetadata.
+        mDecoderOutputSurface = new VideoDecoderOutput(scaleX, scaleY);
         try {
             mDecoder = MediaCodec.createDecoderByType(inputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
@@ -111,11 +130,6 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         mDecoder.start();
         mDecoderStarted = true;
         mDecoderBuffers = new MediaCodecBuffers(mDecoder);
-    }
-
-    @Override
-    public MediaFormat getDeterminedFormat() {
-        return mActualOutputFormat;
     }
 
     @Override
@@ -134,7 +148,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public long getWrittenPresentationTimeUs() {
+    public long getLastWrittenPresentationTime() {
         return mWrittenPresentationTimeUs;
     }
 
@@ -258,7 +272,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
                 if (mActualOutputFormat != null)
                     throw new RuntimeException("Video output format changed twice.");
                 mActualOutputFormat = mEncoder.getOutputFormat();
-                mMuxer.setOutputFormat(QueuedMuxer.SampleType.VIDEO, mActualOutputFormat);
+                mMuxer.setOutputFormat(TrackType.VIDEO, mActualOutputFormat);
                 return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
             case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                 mEncoderBuffers.onOutputBuffersChanged();
@@ -277,7 +291,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             mEncoder.releaseOutputBuffer(result, false);
             return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
-        mMuxer.writeSampleData(QueuedMuxer.SampleType.VIDEO, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
+        mMuxer.write(TrackType.VIDEO, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
         mWrittenPresentationTimeUs = mBufferInfo.presentationTimeUs;
         mEncoder.releaseOutputBuffer(result, false);
         return DRAIN_STATE_CONSUMED;

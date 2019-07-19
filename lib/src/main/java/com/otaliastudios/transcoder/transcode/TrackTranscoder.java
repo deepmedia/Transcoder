@@ -17,20 +17,12 @@ package com.otaliastudios.transcoder.transcode;
 
 import android.media.MediaFormat;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public interface TrackTranscoder {
 
-    void setup();
-
-    /**
-     * Get actual MediaFormat which is used to write to muxer.
-     * To determine you should call {@link #stepPipeline()} several times.
-     *
-     * @return Actual output format determined by coder, or {@code null} if not yet determined.
-     */
-    @Nullable
-    MediaFormat getDeterminedFormat();
+    void setUp(@NonNull MediaFormat desiredOutputFormat);
 
     /**
      * Step pipeline if output is available in any step of it.
@@ -45,7 +37,7 @@ public interface TrackTranscoder {
      *
      * @return Presentation time in micro-second. Return value is undefined if finished writing.
      */
-    long getWrittenPresentationTimeUs();
+    long getLastWrittenPresentationTime();
 
     boolean isFinished();
 

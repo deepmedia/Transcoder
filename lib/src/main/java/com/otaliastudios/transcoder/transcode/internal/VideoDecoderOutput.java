@@ -2,6 +2,7 @@ package com.otaliastudios.transcoder.transcode.internal;
 
 
 import android.graphics.SurfaceTexture;
+import android.opengl.Matrix;
 import android.view.Surface;
 
 import androidx.annotation.GuardedBy;
@@ -39,6 +40,9 @@ public class VideoDecoderOutput {
     private EglTextureProgram mProgram;
     private EglDrawable mDrawable;
 
+    private final float mScaleX;
+    private final float mScaleY;
+
     private int mTextureId;
     private float[] mTextureTransform = new float[16];
 
@@ -50,11 +54,14 @@ public class VideoDecoderOutput {
      * Creates an VideoDecoderOutput using the current EGL context (rather than establishing a
      * new one). Creates a Surface that can be passed to MediaCodec.configure().
      */
-    public VideoDecoderOutput() {
+    public VideoDecoderOutput(float scaleX, float scaleY) {
         mScene = new EglScene();
         mProgram = new EglTextureProgram();
         mDrawable = new EglRect();
         mTextureId = mProgram.createTexture();
+
+        mScaleX = scaleX;
+        mScaleY = scaleY;
 
         // Even if we don't access the SurfaceTexture after the constructor returns, we
         // still need to keep a reference to it.  The Surface doesn't retain a reference
@@ -143,6 +150,15 @@ public class VideoDecoderOutput {
      */
     private void drawNewFrame() {
         mSurfaceTexture.getTransformMatrix(mTextureTransform);
+        // Invert the scale.
+        float glScaleX = 1F / mScaleX;
+        float glScaleY = 1F / mScaleY;
+        // Compensate before scaling.
+        float glTranslX = (1F - glScaleX) / 2F;
+        float glTranslY = (1F - glScaleY) / 2F;
+        Matrix.translateM(mTextureTransform, 0, glTranslX, glTranslY, 0);
+        // Scale and draw.
+        Matrix.scaleM(mTextureTransform, 0, glScaleX, glScaleY, 1);
         mScene.drawTexture(mDrawable, mProgram, mTextureId, mTextureTransform);
     }
 }

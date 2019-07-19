@@ -22,18 +22,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * Collects transcoding options consumed by {@link MediaTranscoder}.
+ * Collects transcoding options consumed by {@link Transcoder}.
  */
-public class MediaTranscoderOptions {
+public class TranscoderOptions {
 
-    private MediaTranscoderOptions() {}
+    private TranscoderOptions() {}
 
     private String outPath;
     private DataSource dataSource;
     private OutputStrategy audioOutputStrategy;
     private OutputStrategy videoOutputStrategy;
     private Validator validator;
-    MediaTranscoder.Listener listener;
+    TranscoderListener listener;
     Handler listenerHandler;
 
     @NonNull
@@ -65,7 +65,7 @@ public class MediaTranscoderOptions {
     public static class Builder {
         private String outPath;
         private DataSource dataSource;
-        private MediaTranscoder.Listener listener;
+        private TranscoderListener listener;
         private Handler listenerHandler;
         private OutputStrategy audioOutputStrategy;
         private OutputStrategy videoOutputStrategy;
@@ -132,13 +132,13 @@ public class MediaTranscoderOptions {
         }
 
         @NonNull
-        public Builder setListener(@NonNull MediaTranscoder.Listener listener) {
+        public Builder setListener(@NonNull TranscoderListener listener) {
             this.listener = listener;
             return this;
         }
 
         /**
-         * Sets an handler for {@link MediaTranscoder.Listener} callbacks.
+         * Sets an handler for {@link TranscoderListener} callbacks.
          * If null, this will default to the thread that starts the transcoding, if it
          * has a looper, or the UI thread otherwise.
          *
@@ -169,7 +169,7 @@ public class MediaTranscoderOptions {
 
         @NonNull
         @SuppressWarnings("WeakerAccess")
-        public MediaTranscoderOptions build() {
+        public TranscoderOptions build() {
             if (listener == null) throw new IllegalStateException("listener can't be null");
             if (dataSource == null) throw new IllegalStateException("data source can't be null");
             if (outPath == null) throw new IllegalStateException("out path can't be null");
@@ -181,7 +181,7 @@ public class MediaTranscoderOptions {
             if (audioOutputStrategy == null) audioOutputStrategy = new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS);
             if (videoOutputStrategy == null) videoOutputStrategy = DefaultVideoStrategies.for720x1280();
             if (validator == null) validator = new DefaultValidator();
-            MediaTranscoderOptions options = new MediaTranscoderOptions();
+            TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
             options.dataSource = dataSource;
             options.outPath = outPath;
@@ -194,7 +194,7 @@ public class MediaTranscoderOptions {
 
         @NonNull
         public Future<Void> transcode() {
-            return MediaTranscoder.getInstance().transcode(build());
+            return Transcoder.getInstance().transcode(build());
         }
     }
 }

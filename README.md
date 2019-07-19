@@ -13,12 +13,12 @@ implementation 'com.otaliastudios:transcoder:0.4.0'
 Using Transcoder in the most basic form is pretty simple:
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setDataSource(context, uri) // or...
         .setDataSource(filePath) // or...
         .setDataSource(fileDescriptor) // or...
         .setDataSource(dataSource)
-        .setListener(new MediaTranscoder.Listener() {
+        .setListener(new TranscoderListener() {
              public void onTranscodeProgress(double progress) {}
              public void onTranscodeCompleted(int successCode) {}
              public void onTranscodeCanceled() {}
@@ -32,6 +32,7 @@ Take a look at the demo app for a real example or keep reading below for documen
 It features a lot of improvements over the original project, including:*
 
 - *Multithreading support*
+- *Crop to any aspect ratio*
 - *Various bugs fixed*
 - *[Input](#data-sources): Accept content Uris and other types*
 - *[Real error handling](#listening-for-events) instead of errors being thrown*
@@ -83,9 +84,9 @@ Transcoding will happen on a background thread, but we will send updates through
 interface, which can be applied when building the request:
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setListenerHandler(handler)
-        .setListener(new MediaTranscoder.Listener() {
+        .setListener(new TranscoderListener() {
              public void onTranscodeProgress(double progress) {}
              public void onTranscodeCompleted(int successCode) {}
              public void onTranscodeCanceled() {}
@@ -137,7 +138,7 @@ Validators tell the engine whether the transcoding process should start or not b
 of the audio and video track.
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setValidator(validator)
         // ...
 ```
@@ -184,7 +185,7 @@ Output strategies return options for each track (audio or video) for the engine 
 and **if** this track should be transcoded, and whether the whole process should be aborted.
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setVideoOutputStrategy(videoStrategy)
         .setAudioOutputStrategy(audioStrategy)
         // ...
@@ -217,7 +218,7 @@ The default internal strategy for audio is a `DefaultAudioStrategy`, which conve
 audio stream to AAC format with the specified number of channels.
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setAudioOutputStrategy(DefaultAudioStrategy(1)) // or..
         .setAudioOutputStrategy(DefaultAudioStrategy(2)) // or..
         .setAudioOutputStrategy(DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
@@ -229,8 +230,9 @@ Take a look at the source code to understand how to manage the `android.media.Me
 ## Video Strategies
 
 The default internal strategy for video is a `DefaultVideoStrategy`, which converts the
-video stream to AVC format and is very configurable. The class helps in defining an output size
-that matches the aspect ratio of the input stream size, which is a basic requirement for video strategies.
+video stream to AVC format and is very configurable. The class helps in defining an output size.
+If the output size does not match the aspect ratio of the input stream size, `Transcoder` will
+crop part of the input so it matches the final ratio.
 
 ### Video Size
 
@@ -239,7 +241,7 @@ We provide helpers for common tasks:
 ```java
 DefaultVideoStrategy strategy;
 
-// Sets an exact size. Of course this is risky if you don't read the input size first.
+// Sets an exact size. If aspect ratio does not match, cropping will take place.
 strategy = DefaultVideoStrategy.exact(1080, 720).build()
 
 // Keeps the aspect ratio, but scales down the input size with the given fraction.
@@ -257,7 +259,8 @@ resizer. We offer handy resizers:
 
 |Name|Description|
 |----|-----------|
-|`ExactResizer`|Returns the dimensions passed to the constructor. Throws if aspect ratio does not match.|
+|`ExactResizer`|Returns the exact dimensions passed to the constructor.|
+|`AspectRatioResizer`|Crops the input size to match the given aspect ratio.|
 |`FractionResizer`|Reduces the input size by the given fraction (0..1).|
 |`AtMostResizer`|If needed, reduces the input size so that the "at most" constraints are matched. Aspect ratio is kept.|
 |`PassThroughResizer`|Returns the input size unchanged.|
@@ -269,12 +272,18 @@ You can also group resizers through `MultiResizer`, which applies resizers in ch
 Resizer resizer = new MultiResizer()
 resizer.addResizer(new FractionResizer(0.5F))
 resizer.addResizer(new AtMostResizer(1000))
+
+// First makes it 16:9, then ensures size is at most 1000. Order matters!
+Resizer resizer = new MultiResizer()
+resizer.addResizer(new AspectRatioResizer(16F / 9F))
+resizer.addResizer(new AtMostResizer(1000))
 ```
 
 This option is already available through the DefaultVideoStrategy builder, so you can do:
 
 ```java
 DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
+        .addResizer(new AspectRatioResizer(16F / 9F))
         .addResizer(new FractionResizer(0.5F))
         .addResizer(new AtMostResizer(1000))
         .build()
@@ -305,7 +314,7 @@ Only a few codecs and sizes are strictly required to work.
 We collect common presets in the `DefaultVideoStrategies` class:
 
 ```java
-MediaTranscoder.into(filePath)
+Transcoder.into(filePath)
         .setVideoOutputStrategy(DefaultVideoStrategies.for720x1280()) // 16:9
         .setVideoOutputStrategy(DefaultVideoStrategies.for360x480()) // 4:3
         // ...
