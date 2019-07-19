@@ -1,7 +1,28 @@
 package com.otaliastudios.transcoder.engine;
 
+/**
+ * Represents the status of a given track inside the transcoding operation.
+ */
 public enum TrackStatus {
-    ABSENT, REMOVING, PASS_THROUGH, COMPRESSING;
+    /**
+     * Track was absent in the source.
+     */
+    ABSENT,
+
+    /**
+     * We are removing the track in the output.
+     */
+    REMOVING,
+
+    /**
+     * We are not touching the track.
+     */
+    PASS_THROUGH,
+
+    /**
+     * We are compressing the track in the output.
+     */
+    COMPRESSING;
 
     /**
      * This is used to understand whether we should select this track

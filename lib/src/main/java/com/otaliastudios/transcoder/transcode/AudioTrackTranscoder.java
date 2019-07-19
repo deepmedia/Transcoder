@@ -4,6 +4,9 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
 import com.otaliastudios.transcoder.engine.QueuedMuxer;
 
@@ -40,8 +43,10 @@ public class AudioTrackTranscoder implements TrackTranscoder {
 
     private AudioChannel mAudioChannel;
 
-    public AudioTrackTranscoder(MediaExtractor extractor, int trackIndex,
-                                MediaFormat outputFormat, QueuedMuxer muxer) {
+    public AudioTrackTranscoder(@NonNull MediaExtractor extractor,
+                                int trackIndex,
+                                @NonNull MediaFormat outputFormat,
+                                @NonNull QueuedMuxer muxer) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
         mOutputFormat = outputFormat;
@@ -75,6 +80,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
         mAudioChannel = new AudioChannel(mDecoder, mEncoder, mOutputFormat);
     }
 
+    @Nullable
     @Override
     public MediaFormat getDeterminedFormat() {
         return mActualOutputFormat;
@@ -98,6 +104,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
         return busy;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private int drainExtractor(long timeoutUs) {
         if (mIsExtractorEOS) return DRAIN_STATE_NONE;
         int trackIndex = mExtractor.getSampleTrackIndex();
@@ -120,6 +127,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
         return DRAIN_STATE_CONSUMED;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private int drainDecoder(long timeoutUs) {
         if (mIsDecoderEOS) return DRAIN_STATE_NONE;
 
@@ -143,6 +151,7 @@ public class AudioTrackTranscoder implements TrackTranscoder {
         return DRAIN_STATE_CONSUMED;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private int drainEncoder(long timeoutUs) {
         if (mIsEncoderEOS) return DRAIN_STATE_NONE;
 

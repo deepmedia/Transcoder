@@ -15,26 +15,32 @@
  */
 package com.otaliastudios.transcoder.strategy;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * Base class for exceptions thrown by {@link OutputStrategy}.
- * These are caught internally.
+ * Base class for exceptions thrown by {@link OutputStrategy} by any
+ * strategy implementors.
+ *
+ * These are later caught internally.
  */
-@SuppressWarnings("WeakerAccess")
 public class OutputStrategyException extends RuntimeException {
 
+    @SuppressWarnings("WeakerAccess")
     public final static int TYPE_UNAVAILABLE = 0;
+
     public final static int TYPE_ALREADY_COMPRESSED = 1;
 
     private int type;
 
-    public OutputStrategyException(int type, String detailMessage) {
+    @SuppressWarnings("WeakerAccess")
+    public OutputStrategyException(int type, @Nullable String detailMessage) {
         super(detailMessage);
         this.type = type;
     }
 
-    public OutputStrategyException(int type, Exception cause) {
+    @SuppressWarnings("WeakerAccess")
+    public OutputStrategyException(int type, @Nullable Exception cause) {
         super(cause);
         this.type = type;
     }
@@ -43,10 +49,14 @@ public class OutputStrategyException extends RuntimeException {
         return type;
     }
 
+    @NonNull
+    @SuppressWarnings("WeakerAccess")
     public static OutputStrategyException unavailable(@Nullable Exception cause) {
         return new OutputStrategyException(TYPE_UNAVAILABLE, cause);
     }
 
+    @NonNull
+    @SuppressWarnings("WeakerAccess")
     public static OutputStrategyException alreadyCompressed(@Nullable String detailMessage) {
         return new OutputStrategyException(TYPE_ALREADY_COMPRESSED, detailMessage);
     }

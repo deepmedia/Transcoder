@@ -1,5 +1,7 @@
 package com.otaliastudios.transcoder.remix;
 
+import androidx.annotation.NonNull;
+
 import java.nio.ShortBuffer;
 
 /**
@@ -8,7 +10,7 @@ import java.nio.ShortBuffer;
 public class UpMixAudioRemixer implements AudioRemixer {
 
     @Override
-    public void remix(final ShortBuffer inSBuff, final ShortBuffer outSBuff) {
+    public void remix(@NonNull final ShortBuffer inSBuff, @NonNull final ShortBuffer outSBuff) {
         // Up-mix mono to stereo
         final int inRemaining = inSBuff.remaining();
         final int outSpace = outSBuff.remaining() / 2;

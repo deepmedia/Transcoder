@@ -1,5 +1,7 @@
 package com.otaliastudios.transcoder.validator;
 
+import androidx.annotation.NonNull;
+
 import com.otaliastudios.transcoder.engine.TrackStatus;
 
 /**
@@ -16,6 +18,6 @@ public interface Validator {
      * @param audioStatus the status of the audio track
      * @return true to proceed
      */
-    boolean validate(TrackStatus videoStatus, TrackStatus audioStatus);
+    boolean validate(@NonNull TrackStatus videoStatus, @NonNull TrackStatus audioStatus);
 
 }

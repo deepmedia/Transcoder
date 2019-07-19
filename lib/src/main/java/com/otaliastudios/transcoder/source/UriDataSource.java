@@ -5,7 +5,6 @@ import android.media.MediaExtractor;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
 
 import androidx.annotation.NonNull;
@@ -25,12 +24,12 @@ public class UriDataSource implements DataSource {
     }
 
     @Override
-    public void apply(MediaExtractor extractor) throws IOException  {
+    public void apply(@NonNull MediaExtractor extractor) throws IOException  {
         extractor.setDataSource(context, uri, null);
     }
 
     @Override
-    public void apply(MediaMetadataRetriever retriever) {
+    public void apply(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(context, uri);
     }
 

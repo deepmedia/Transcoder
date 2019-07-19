@@ -21,12 +21,12 @@ public class FileDescriptorDataSource implements DataSource {
     }
 
     @Override
-    public void apply(MediaExtractor extractor) throws IOException  {
+    public void apply(@NonNull MediaExtractor extractor) throws IOException  {
         extractor.setDataSource(descriptor);
     }
 
     @Override
-    public void apply(MediaMetadataRetriever retriever) {
+    public void apply(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(descriptor);
     }
 

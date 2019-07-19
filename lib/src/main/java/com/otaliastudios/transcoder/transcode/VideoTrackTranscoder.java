@@ -164,6 +164,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         }
     }
 
+    @SuppressWarnings("SameParameterValue")
     private int drainExtractor(long timeoutUs) {
         if (mIsExtractorEOS) return DRAIN_STATE_NONE;
         int trackIndex = mExtractor.getSampleTrackIndex();
@@ -184,6 +185,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         return DRAIN_STATE_CONSUMED;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private int drainDecoder(long timeoutUs) {
         if (mIsDecoderEOS) return DRAIN_STATE_NONE;
         int result = mDecoder.dequeueOutputBuffer(mBufferInfo, timeoutUs);
@@ -245,6 +247,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         }
     }
 
+    @SuppressWarnings("SameParameterValue")
     private int drainEncoder(long timeoutUs) {
         if (mIsEncoderEOS) return DRAIN_STATE_NONE;
         int result = mEncoder.dequeueOutputBuffer(mBufferInfo, timeoutUs);

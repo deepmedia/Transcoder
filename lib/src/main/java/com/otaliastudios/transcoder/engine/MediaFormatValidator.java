@@ -30,7 +30,7 @@ class MediaFormatValidator {
     private static final String TAG = "MediaFormatValidator";
     private static final Logger LOG = new Logger(TAG);
 
-    static void validateVideoOutputFormat(@Nullable MediaFormat format) {
+    void validateVideoOutputFormat(@Nullable MediaFormat format) {
         if (format == null) return;
         String mime = format.getString(MediaFormat.KEY_MIME);
         // Refer: http://developer.android.com/guide/appendix/media-formats.html#core
@@ -54,7 +54,7 @@ class MediaFormatValidator {
         }
     }
 
-    static void validateAudioOutputFormat(@Nullable MediaFormat format) {
+    void validateAudioOutputFormat(@Nullable MediaFormat format) {
         if (format == null) return;
         String mime = format.getString(MediaFormat.KEY_MIME);
         if (!MediaFormatConstants.MIMETYPE_AUDIO_AAC.equals(mime)) {

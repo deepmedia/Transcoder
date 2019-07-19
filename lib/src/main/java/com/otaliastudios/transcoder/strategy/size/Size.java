@@ -15,6 +15,7 @@ public class Size {
      * @param firstSize one dimension
      * @param secondSize the other
      */
+    @SuppressWarnings("WeakerAccess")
     public Size(int firstSize, int secondSize) {
         mMajor = Math.max(firstSize, secondSize);
         mMinor = Math.min(firstSize, secondSize);

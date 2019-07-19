@@ -1,5 +1,7 @@
 package com.otaliastudios.transcoder.remix;
 
+import androidx.annotation.NonNull;
+
 import java.nio.ShortBuffer;
 
 /**
@@ -9,7 +11,7 @@ import java.nio.ShortBuffer;
  */
 public interface AudioRemixer {
 
-    void remix(final ShortBuffer inSBuff, final ShortBuffer outSBuff);
+    void remix(@NonNull final ShortBuffer inSBuff, @NonNull final ShortBuffer outSBuff);
 
     AudioRemixer DOWNMIX = new DownMixAudioRemixer();
 

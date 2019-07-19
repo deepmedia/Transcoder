@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
  * Note that this is risky, as the track type might not be supported by
  * the mp4 container.
  */
+@SuppressWarnings("unused")
 public class PassThroughTrackStrategy implements OutputStrategy {
 
     @Nullable

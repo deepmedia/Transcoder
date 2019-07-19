@@ -3,6 +3,8 @@ package com.otaliastudios.transcoder.transcode;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 
+import androidx.annotation.NonNull;
+
 import com.otaliastudios.transcoder.internal.MediaCodecBufferCompat;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
 
@@ -27,7 +29,7 @@ class AudioChannel {
         ShortBuffer data;
     }
 
-    public static final int BUFFER_INDEX_END_OF_STREAM = -1;
+    static final int BUFFER_INDEX_END_OF_STREAM = -1;
 
     private static final int BYTES_PER_SHORT = 2;
     private static final long MICROSECS_PER_SEC = 1000000;
@@ -53,8 +55,9 @@ class AudioChannel {
     private MediaFormat mActualDecodedFormat;
 
 
-    public AudioChannel(final MediaCodec decoder,
-                        final MediaCodec encoder, final MediaFormat encodeFormat) {
+    AudioChannel(@NonNull final MediaCodec decoder,
+                 @NonNull final MediaCodec encoder,
+                 @NonNull final MediaFormat encodeFormat) {
         mDecoder = decoder;
         mEncoder = encoder;
         mEncodeFormat = encodeFormat;
@@ -63,7 +66,7 @@ class AudioChannel {
         mEncoderBuffers = new MediaCodecBufferCompat(mEncoder);
     }
 
-    public void setActualDecodedFormat(final MediaFormat decodedFormat) {
+    void setActualDecodedFormat(@NonNull final MediaFormat decodedFormat) {
         mActualDecodedFormat = decodedFormat;
 
         // TODO I think these exceptions are either useless or not in the right place.
@@ -96,14 +99,13 @@ class AudioChannel {
         mOverflowBuffer.presentationTimeUs = 0;
     }
 
-    public void drainDecoderBufferAndQueue(final int bufferIndex, final long presentationTimeUs) {
+    void drainDecoderBufferAndQueue(final int bufferIndex, final long presentationTimeUs) {
         if (mActualDecodedFormat == null) {
             throw new RuntimeException("Buffer received before format!");
         }
 
-        final ByteBuffer data =
-                bufferIndex == BUFFER_INDEX_END_OF_STREAM ?
-                        null : mDecoderBuffers.getOutputBuffer(bufferIndex);
+        final ByteBuffer data = bufferIndex == BUFFER_INDEX_END_OF_STREAM ?
+                null : mDecoderBuffers.getOutputBuffer(bufferIndex);
 
         AudioBuffer buffer = mEmptyBuffers.poll();
         if (buffer == null) {
@@ -115,6 +117,8 @@ class AudioChannel {
         buffer.data = data == null ? null : data.asShortBuffer();
 
         if (mOverflowBuffer.data == null) {
+            // data should be null only on BUFFER_INDEX_END_OF_STREAM
+            //noinspection ConstantConditions
             mOverflowBuffer.data = ByteBuffer
                     .allocateDirect(data.capacity())
                     .order(ByteOrder.nativeOrder())
@@ -125,7 +129,7 @@ class AudioChannel {
         mFilledBuffers.add(buffer);
     }
 
-    public boolean feedEncoder(long timeoutUs) {
+    boolean feedEncoder(@SuppressWarnings("SameParameterValue") long timeoutUs) {
         final boolean hasOverflow = mOverflowBuffer.data != null && mOverflowBuffer.data.hasRemaining();
         if (mFilledBuffers.isEmpty() && !hasOverflow) {
             // No audio data - Bail out
@@ -149,6 +153,9 @@ class AudioChannel {
         }
 
         final AudioBuffer inBuffer = mFilledBuffers.poll();
+        // At this point inBuffer is not null, because we checked mFilledBuffers.isEmpty()
+        // and we don't have overflow (if we had, we got out).
+        //noinspection ConstantConditions
         if (inBuffer.bufferIndex == BUFFER_INDEX_END_OF_STREAM) {
             mEncoder.queueInputBuffer(encoderInBuffIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             return false;
@@ -158,27 +165,27 @@ class AudioChannel {
         mEncoder.queueInputBuffer(encoderInBuffIndex,
                 0, outBuffer.position() * BYTES_PER_SHORT,
                 presentationTimeUs, 0);
-        if (inBuffer != null) {
-            mDecoder.releaseOutputBuffer(inBuffer.bufferIndex, false);
-            mEmptyBuffers.add(inBuffer);
-        }
-
+        mDecoder.releaseOutputBuffer(inBuffer.bufferIndex, false);
+        mEmptyBuffers.add(inBuffer);
         return true;
     }
 
-    private static long sampleCountToDurationUs(final int sampleCount,
-                                                final int sampleRate,
-                                                final int channelCount) {
+    private static long sampleCountToDurationUs(
+            final int sampleCount,
+            final int sampleRate,
+            final int channelCount) {
         return (sampleCount / (sampleRate * MICROSECS_PER_SEC)) / channelCount;
     }
 
-    private long drainOverflow(final ShortBuffer outBuff) {
+    private long drainOverflow(@NonNull final ShortBuffer outBuff) {
         final ShortBuffer overflowBuff = mOverflowBuffer.data;
         final int overflowLimit = overflowBuff.limit();
         final int overflowSize = overflowBuff.remaining();
 
         final long beginPresentationTimeUs = mOverflowBuffer.presentationTimeUs +
-                sampleCountToDurationUs(overflowBuff.position(), mInputSampleRate, mOutputChannelCount);
+                sampleCountToDurationUs(overflowBuff.position(),
+                        mInputSampleRate,
+                        mOutputChannelCount);
 
         outBuff.clear();
         // Limit overflowBuff to outBuff's capacity

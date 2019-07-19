@@ -114,7 +114,7 @@ public class QueuedMuxer {
         }
     }
 
-    public void writeSampleData(SampleType sampleType, ByteBuffer byteBuf, MediaCodec.BufferInfo bufferInfo) {
+    public void writeSampleData(@NonNull SampleType sampleType, @NonNull ByteBuffer byteBuf, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mMuxerStarted) {
             mMuxer.writeSampleData(getTrackIndexForSampleType(sampleType), byteBuf, bufferInfo);
         } else {
@@ -129,7 +129,7 @@ public class QueuedMuxer {
         }
     }
 
-    private int getTrackIndexForSampleType(SampleType sampleType) {
+    private int getTrackIndexForSampleType(@NonNull SampleType sampleType) {
         switch (sampleType) {
             case VIDEO:
                 return mVideoTrackIndex;
@@ -140,7 +140,9 @@ public class QueuedMuxer {
         }
     }
 
-    public enum SampleType {VIDEO, AUDIO}
+    public enum SampleType {
+        VIDEO, AUDIO
+    }
 
     private static class SampleInfo {
         private final SampleType mSampleType;
@@ -148,14 +150,14 @@ public class QueuedMuxer {
         private final long mPresentationTimeUs;
         private final int mFlags;
 
-        private SampleInfo(SampleType sampleType, int size, MediaCodec.BufferInfo bufferInfo) {
+        private SampleInfo(@NonNull SampleType sampleType, int size, @NonNull MediaCodec.BufferInfo bufferInfo) {
             mSampleType = sampleType;
             mSize = size;
             mPresentationTimeUs = bufferInfo.presentationTimeUs;
             mFlags = bufferInfo.flags;
         }
 
-        private void writeToBufferInfo(MediaCodec.BufferInfo bufferInfo, int offset) {
+        private void writeToBufferInfo(@NonNull MediaCodec.BufferInfo bufferInfo, int offset) {
             bufferInfo.set(offset, mSize, mPresentationTimeUs, mFlags);
         }
     }

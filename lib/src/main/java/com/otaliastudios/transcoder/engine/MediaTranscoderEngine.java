@@ -31,11 +31,11 @@ import com.otaliastudios.transcoder.transcode.TrackTranscoder;
 import com.otaliastudios.transcoder.transcode.VideoTrackTranscoder;
 import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.validator.ValidatorException;
 
 import java.io.IOException;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Internal engine, do not use this directly.
@@ -61,14 +61,13 @@ public class MediaTranscoderEngine {
     /**
      * Do not use this constructor unless you know what you are doing.
      */
-    public MediaTranscoderEngine() {
-    }
+    public MediaTranscoderEngine() { }
 
-    public void setDataSource(DataSource dataSource) {
+    public void setDataSource(@NonNull DataSource dataSource) {
         mDataSource = dataSource;
     }
 
-    public void setProgressCallback(ProgressCallback progressCallback) {
+    public void setProgressCallback(@Nullable ProgressCallback progressCallback) {
         mProgressCallback = progressCallback;
     }
 
@@ -76,6 +75,7 @@ public class MediaTranscoderEngine {
      * NOTE: This method is thread safe.
      * @return the current progress
      */
+    @SuppressWarnings("unused")
     public double getProgress() {
         return mProgress;
     }
@@ -97,7 +97,7 @@ public class MediaTranscoderEngine {
             // NOTE: use single extractor to keep from running out audio track fast.
             mExtractor = new MediaExtractor();
             mDataSource.apply(mExtractor);
-            mMuxer = new MediaMuxer(options.outPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            mMuxer = new MediaMuxer(options.getOutputPath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
             setupMetadata();
             setupTrackTranscoders(options);
             runPipelines();
@@ -163,14 +163,14 @@ public class MediaTranscoderEngine {
         LOG.v("Duration (us): " + mDurationUs);
     }
 
-    @SuppressWarnings("CaughtExceptionImmediatelyRethrown")
-    private void setupTrackTranscoders(MediaTranscoderOptions options) {
+    private void setupTrackTranscoders(@NonNull MediaTranscoderOptions options) {
         mTracksInfo = TracksInfo.fromExtractor(mExtractor);
         QueuedMuxer queuedMuxer = new QueuedMuxer(mMuxer, mTracksInfo, new QueuedMuxer.Listener() {
             @Override
             public void onDetermineOutputFormat() {
-                MediaFormatValidator.validateVideoOutputFormat(mVideoTrackTranscoder.getDeterminedFormat());
-                MediaFormatValidator.validateAudioOutputFormat(mAudioTrackTranscoder.getDeterminedFormat());
+                MediaFormatValidator formatValidator = new MediaFormatValidator();
+                formatValidator.validateVideoOutputFormat(mVideoTrackTranscoder.getDeterminedFormat());
+                formatValidator.validateAudioOutputFormat(mAudioTrackTranscoder.getDeterminedFormat());
             }
         });
         TrackStatus videoStatus, audioStatus;
@@ -181,7 +181,7 @@ public class MediaTranscoderEngine {
             videoStatus = TrackStatus.ABSENT;
         } else {
             try {
-                MediaFormat videoFormat = options.videoOutputStrategy.createOutputFormat(mTracksInfo.videoTrackFormat);
+                MediaFormat videoFormat = options.getVideoOutputStrategy().createOutputFormat(mTracksInfo.videoTrackFormat);
                 if (videoFormat == null) {
                     mVideoTrackTranscoder = new NoOpTrackTranscoder();
                     videoStatus = TrackStatus.REMOVING;
@@ -214,7 +214,7 @@ public class MediaTranscoderEngine {
             audioStatus = TrackStatus.ABSENT;
         } else {
             try {
-                MediaFormat audioFormat = options.audioOutputStrategy.createOutputFormat(mTracksInfo.audioTrackFormat);
+                MediaFormat audioFormat = options.getAudioOutputStrategy().createOutputFormat(mTracksInfo.audioTrackFormat);
                 if (audioFormat == null) {
                     mAudioTrackTranscoder = new NoOpTrackTranscoder();
                     audioStatus = TrackStatus.REMOVING;
@@ -241,7 +241,7 @@ public class MediaTranscoderEngine {
         mTracksInfo.audioTrackStatus = audioStatus;
         mAudioTrackTranscoder.setup();
 
-        if (!options.validator.validate(videoStatus, audioStatus)) {
+        if (!options.getValidator().validate(videoStatus, audioStatus)) {
             throw new ValidatorException("Validator returned false.");
         }
 
@@ -272,7 +272,7 @@ public class MediaTranscoderEngine {
         }
     }
 
-    private double getTranscoderProgress(TrackTranscoder transcoder, TrackStatus status) {
+    private double getTranscoderProgress(@NonNull TrackTranscoder transcoder, @NonNull TrackStatus status) {
         if (!status.isTranscoding()) return 0.0;
         if (transcoder.isFinished()) return 1.0;
         return Math.min(1.0, (double) transcoder.getWrittenPresentationTimeUs() / mDurationUs);

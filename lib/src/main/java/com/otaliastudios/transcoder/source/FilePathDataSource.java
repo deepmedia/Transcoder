@@ -36,12 +36,12 @@ public class FilePathDataSource implements DataSource {
     }
 
     @Override
-    public void apply(MediaExtractor extractor) throws IOException {
+    public void apply(@NonNull MediaExtractor extractor) throws IOException {
         descriptor.apply(extractor);
     }
 
     @Override
-    public void apply(MediaMetadataRetriever retriever) {
+    public void apply(@NonNull MediaMetadataRetriever retriever) {
         descriptor.apply(retriever);
     }
 
