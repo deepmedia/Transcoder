@@ -68,19 +68,15 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private long mLastRenderedUs;
     private long mLastStep;
 
-    private float mInputAspectRatio;
-
     public VideoTrackTranscoder(
             @NonNull MediaExtractor extractor,
             int trackIndex,
             @NonNull MediaFormat outputFormat,
-            @NonNull TranscoderMuxer muxer,
-            float inputAspectRatio) {
+            @NonNull TranscoderMuxer muxer) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
         mOutputFormat = outputFormat;
         mMuxer = muxer;
-        mInputAspectRatio = inputAspectRatio;
 
         int frameRate = outputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
         mTargetAvgStep = (1F / frameRate) * 1000 * 1000;
@@ -110,7 +106,21 @@ public class VideoTrackTranscoder implements TrackTranscoder {
             // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
             inputFormat.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         }
-        mDecoderOutputSurface = new VideoDecoderOutput();
+
+        float inputWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        float inputHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        float inputRatio = inputWidth / inputHeight;
+        float outputWidth = mOutputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        float outputHeight = mOutputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        float outputRatio = outputWidth / outputHeight;
+        float scaleX = 1, scaleY = 1;
+        if (inputRatio > outputRatio) { // Input wider. We have a scaleX.
+            scaleX = inputRatio / outputRatio;
+        } else if (inputRatio < outputRatio) { // Input taller. We have a scaleY.
+            scaleY = outputRatio / inputRatio;
+        }
+        // TODO should consider rotation? Not clear to me ATM
+        mDecoderOutputSurface = new VideoDecoderOutput(scaleX, scaleY);
         try {
             mDecoder = MediaCodec.createDecoderByType(inputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {

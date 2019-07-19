@@ -186,20 +186,24 @@ public class TranscoderEngine {
                     videoStatus = TrackStatus.REMOVING;
                 } else if (videoFormat == mTracksInfo.videoTrackFormat) {
                     mVideoTrackTranscoder = new PassThroughTrackTranscoder(mExtractor,
-                            mTracksInfo.videoTrackIndex, transcoderMuxer, TranscoderMuxer.SampleType.VIDEO);
+                            mTracksInfo.videoTrackIndex,
+                            transcoderMuxer,
+                            TranscoderMuxer.SampleType.VIDEO);
                     videoStatus = TrackStatus.PASS_THROUGH;
                 } else {
-                    float inWidth = mTracksInfo.videoTrackFormat.getInteger(MediaFormat.KEY_WIDTH);
-                    float inHeight = mTracksInfo.videoTrackFormat.getInteger(MediaFormat.KEY_HEIGHT);
                     mVideoTrackTranscoder = new VideoTrackTranscoder(mExtractor,
-                            mTracksInfo.videoTrackIndex, videoFormat, transcoderMuxer, inWidth / inHeight);
+                            mTracksInfo.videoTrackIndex,
+                            videoFormat,
+                            transcoderMuxer);
                     videoStatus = TrackStatus.COMPRESSING;
                 }
             } catch (OutputStrategyException strategyException) {
                 if (strategyException.getType() == OutputStrategyException.TYPE_ALREADY_COMPRESSED) {
                     // Should not abort, because the other track might need compression. Use a pass through.
                     mVideoTrackTranscoder = new PassThroughTrackTranscoder(mExtractor,
-                            mTracksInfo.videoTrackIndex, transcoderMuxer, TranscoderMuxer.SampleType.VIDEO);
+                            mTracksInfo.videoTrackIndex,
+                            transcoderMuxer,
+                            TranscoderMuxer.SampleType.VIDEO);
                     videoStatus = TrackStatus.PASS_THROUGH;
                 } else { // Abort.
                     throw strategyException;
