@@ -232,18 +232,16 @@ public class TranscoderEngine {
 
         TrackStatus videoStatus = mTracks.status(TrackType.VIDEO);
         TrackStatus audioStatus = mTracks.status(TrackType.AUDIO);
+        boolean ignoreValidatorResult = false;
 
-        // If we have to apply some rotation, we must pass a COMPRESSING status to the validator
-        // so it does not take wrong decisions. Video can't be PASS_THROUGH in this case.
-        TrackStatus videoStatusForValidator = videoStatus;
-        if (options.getRotation() != 0) {
-            if (videoStatus == TrackStatus.PASS_THROUGH) {
-                videoStatusForValidator = TrackStatus.COMPRESSING;
-            }
-        }
+        // If we have to apply some rotation, and the video should be transcoded,
+        // ignore any Validator trying to abort the operation. The operation must happen
+        // because we must apply the rotation.
+        ignoreValidatorResult = videoStatus.isTranscoding() && options.getRotation() != 0;
 
         // Validate and go on.
-        if (!options.getValidator().validate(videoStatusForValidator, audioStatus)) {
+        if (!options.getValidator().validate(videoStatus, audioStatus)
+                && !ignoreValidatorResult) {
             throw new ValidatorException("Validator returned false.");
         }
         if (videoStatus.isTranscoding()) mExtractor.selectTrack(mTracks.index(TrackType.VIDEO));
