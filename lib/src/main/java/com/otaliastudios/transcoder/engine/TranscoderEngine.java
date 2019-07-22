@@ -110,7 +110,7 @@ public class TranscoderEngine {
             mExtractor = new MediaExtractor();
             mDataSource.apply(mExtractor);
             mMuxer = new MediaMuxer(options.getOutputPath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-            setUpMetadata();
+            setUpMetadata(options);
             setupTrackTranscoders(options);
             runPipelines();
             mMuxer.stop();
@@ -142,16 +142,16 @@ public class TranscoderEngine {
         }
     }
 
-    private void setUpMetadata() {
+    private void setUpMetadata(@NonNull TranscoderOptions options) {
         MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
         mDataSource.apply(mediaMetadataRetriever);
 
         String rotationString = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+        int rotation = 0;
         try {
-            mMuxer.setOrientationHint(Integer.parseInt(rotationString));
-        } catch (NumberFormatException e) {
-            // skip
-        }
+            rotation = Integer.parseInt(rotationString);
+        } catch (NumberFormatException ignore) {}
+        mMuxer.setOrientationHint((rotation + options.getRotation()) % 360);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             String locationString = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LOCATION);
@@ -232,7 +232,16 @@ public class TranscoderEngine {
 
         TrackStatus videoStatus = mTracks.status(TrackType.VIDEO);
         TrackStatus audioStatus = mTracks.status(TrackType.AUDIO);
-        if (!options.getValidator().validate(videoStatus, audioStatus)) {
+        boolean ignoreValidatorResult = false;
+
+        // If we have to apply some rotation, and the video should be transcoded,
+        // ignore any Validator trying to abort the operation. The operation must happen
+        // because we must apply the rotation.
+        ignoreValidatorResult = videoStatus.isTranscoding() && options.getRotation() != 0;
+
+        // Validate and go on.
+        if (!options.getValidator().validate(videoStatus, audioStatus)
+                && !ignoreValidatorResult) {
             throw new ValidatorException("Validator returned false.");
         }
         if (videoStatus.isTranscoding()) mExtractor.selectTrack(mTracks.index(TrackType.VIDEO));

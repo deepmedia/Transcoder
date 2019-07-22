@@ -33,6 +33,8 @@ public class TranscoderOptions {
     private OutputStrategy audioOutputStrategy;
     private OutputStrategy videoOutputStrategy;
     private Validator validator;
+    private int rotation;
+
     TranscoderListener listener;
     Handler listenerHandler;
 
@@ -62,6 +64,10 @@ public class TranscoderOptions {
         return validator;
     }
 
+    public int getRotation() {
+        return rotation;
+    }
+
     public static class Builder {
         private String outPath;
         private DataSource dataSource;
@@ -70,6 +76,7 @@ public class TranscoderOptions {
         private OutputStrategy audioOutputStrategy;
         private OutputStrategy videoOutputStrategy;
         private Validator validator;
+        private int rotation;
 
         Builder(@NonNull String outPath) {
             this.outPath = outPath;
@@ -167,20 +174,46 @@ public class TranscoderOptions {
             return this;
         }
 
+        /**
+         * The clockwise rotation to be applied to the input video frames.
+         * @param rotation either 0, 90, 180 or 270
+         * @return this for chaining
+         */
         @NonNull
-        @SuppressWarnings("WeakerAccess")
+        @SuppressWarnings("unused")
+        public Builder setRotation(int rotation) {
+            this.rotation = rotation;
+            return this;
+        }
+
+        @NonNull
         public TranscoderOptions build() {
-            if (listener == null) throw new IllegalStateException("listener can't be null");
-            if (dataSource == null) throw new IllegalStateException("data source can't be null");
-            if (outPath == null) throw new IllegalStateException("out path can't be null");
+            if (listener == null) {
+                throw new IllegalStateException("listener can't be null");
+            }
+            if (dataSource == null) {
+                throw new IllegalStateException("data source can't be null");
+            }
+            if (outPath == null) {
+                throw new IllegalStateException("out path can't be null");
+            }
+            if (rotation != 0 && rotation != 90 && rotation != 180 && rotation != 270) {
+                throw new IllegalArgumentException("Accepted values for rotation are 0, 90, 180, 270");
+            }
             if (listenerHandler == null) {
                 Looper looper = Looper.myLooper();
                 if (looper == null) looper = Looper.getMainLooper();
                 listenerHandler = new Handler(looper);
             }
-            if (audioOutputStrategy == null) audioOutputStrategy = new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS);
-            if (videoOutputStrategy == null) videoOutputStrategy = DefaultVideoStrategies.for720x1280();
-            if (validator == null) validator = new DefaultValidator();
+            if (audioOutputStrategy == null) {
+                audioOutputStrategy = new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS);
+            }
+            if (videoOutputStrategy == null) {
+                videoOutputStrategy = DefaultVideoStrategies.for720x1280();
+            }
+            if (validator == null) {
+                validator = new DefaultValidator();
+            }
             TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
             options.dataSource = dataSource;
@@ -189,6 +222,7 @@ public class TranscoderOptions {
             options.audioOutputStrategy = audioOutputStrategy;
             options.videoOutputStrategy = videoOutputStrategy;
             options.validator = validator;
+            options.rotation = rotation;
             return options;
         }
 

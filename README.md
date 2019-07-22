@@ -33,6 +33,7 @@ It features a lot of improvements over the original project, including:*
 
 - *Multithreading support*
 - *Crop to any aspect ratio*
+- *Set output video rotation*
 - *Various bugs fixed*
 - *[Input](#data-sources): Accept content Uris and other types*
 - *[Real error handling](#listening-for-events) instead of errors being thrown*
@@ -300,6 +301,19 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .frameRate(frameRate) // will be capped to the input frameRate
         .iFrameInterval(interval) // interval between I-frames in seconds
         .build()
+```
+
+## Other Options
+
+#### Video rotation
+
+You can set the output video rotation with the `setRotation(int)` method. This will apply a clockwise
+rotation to the input video frames. Accepted values are `0`, `90`, `180`, `270`:
+
+```java
+Transcoder.into(filePath)
+        .setRotation(rotation) // 0, 90, 180, 270
+        // ...
 ```
 
 ## Compatibility
