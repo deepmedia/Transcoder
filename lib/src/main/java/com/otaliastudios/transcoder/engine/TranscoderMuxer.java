@@ -20,6 +20,7 @@ import android.media.MediaFormat;
 import android.media.MediaMuxer;
 
 import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.time.TimeInterpolator;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -61,10 +62,12 @@ public class TranscoderMuxer {
     private boolean mMuxerStarted;
     private final List<QueuedSample> mQueue = new ArrayList<>();
     private ByteBuffer mQueueBuffer;
+    private TimeInterpolator mTimeInterpolator;
 
-    TranscoderMuxer(@NonNull MediaMuxer muxer, @NonNull Tracks info) {
+    TranscoderMuxer(@NonNull MediaMuxer muxer, @NonNull Tracks info, @NonNull TimeInterpolator timeInterpolator) {
         mMuxer = muxer;
         mTracks = info;
+        mTimeInterpolator = timeInterpolator;
     }
 
     /**
@@ -110,6 +113,7 @@ public class TranscoderMuxer {
 
     public void write(@NonNull TrackType type, @NonNull ByteBuffer byteBuf, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mMuxerStarted) {
+            bufferInfo.presentationTimeUs = mTimeInterpolator.interpolate(type, bufferInfo.presentationTimeUs);
             mMuxer.writeSampleData(mTracks.outputIndex(type), byteBuf, bufferInfo);
         } else {
             enqueue(type, byteBuf, bufferInfo);

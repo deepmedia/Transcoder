@@ -226,7 +226,7 @@ public class TranscoderEngine {
 
     private void setupTrackTranscoders(@NonNull TranscoderOptions options) {
         mTracks = Tracks.create(mExtractor);
-        TranscoderMuxer muxer = new TranscoderMuxer(mMuxer, mTracks);
+        TranscoderMuxer muxer = new TranscoderMuxer(mMuxer, mTracks, options.getTimeInterpolator());
         setUpTrackTranscoder(options, muxer, TrackType.VIDEO);
         setUpTrackTranscoder(options, muxer, TrackType.AUDIO);
 
