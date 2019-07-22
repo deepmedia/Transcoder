@@ -13,6 +13,7 @@ import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
 import com.otaliastudios.transcoder.strategy.OutputStrategy;
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator;
+import com.otaliastudios.transcoder.time.SpeedTimeInterpolator;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.validator.DefaultValidator;
 import com.otaliastudios.transcoder.validator.Validator;
@@ -206,9 +207,24 @@ public class TranscoderOptions {
          * @return this for chaining
          */
         @NonNull
+        @SuppressWarnings("WeakerAccess")
         public Builder setTimeInterpolator(@NonNull TimeInterpolator timeInterpolator) {
             this.timeInterpolator = timeInterpolator;
             return this;
+        }
+
+        /**
+         * Shorthand for calling {@link #setTimeInterpolator(TimeInterpolator)}
+         * and passing a {@link com.otaliastudios.transcoder.time.SpeedTimeInterpolator}.
+         * This interpolator can modify the video speed by the given factor.
+         *
+         * @param speedFactor a factor, greather than 0
+         * @return this for chaining
+         */
+        @NonNull
+        @SuppressWarnings("unused")
+        public Builder setSpeed(float speedFactor) {
+            return setTimeInterpolator(new SpeedTimeInterpolator(speedFactor));
         }
 
         @NonNull
