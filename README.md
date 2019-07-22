@@ -34,6 +34,7 @@ It features a lot of improvements over the original project, including:*
 - *Multithreading support*
 - *Crop to any aspect ratio*
 - *Set output video rotation*
+- *Change output video speed (0.5x, 2x or any float)*
 - *Various bugs fixed*
 - *[Input](#data-sources): Accept content Uris and other types*
 - *[Real error handling](#listening-for-events) instead of errors being thrown*
@@ -313,6 +314,52 @@ rotation to the input video frames. Accepted values are `0`, `90`, `180`, `270`:
 ```java
 Transcoder.into(filePath)
         .setRotation(rotation) // 0, 90, 180, 270
+        // ...
+```
+
+#### Time interpolation
+
+We offer APIs to change the timestamp of each video and audio frame. You can pass a `TimeInterpolator`
+to the transcoder builder to be able to receive the frame timestamp as input, and return a new one
+as output.
+
+```java
+Transcoder.into(filePath)
+        .setTimeInterpolator(timeInterpolator)
+        // ...
+```
+
+As an example, this is the implementation of the default interpolator, called `DefaultTimeInterpolator`,
+that will just return the input time unchanged:
+
+```java
+@Override
+public long interpolate(@NonNull TrackType type, long time) {
+    // Receive input time in microseconds and return a possibly different one.
+    return time;
+}
+```
+
+It should be obvious that returning invalid times can make the process crash at any point, or at least
+the transcoding operation fail.
+
+#### Video speed
+
+We also offer a special time interpolator called `SpeedTimeInterpolator` that accepts a `float` parameter
+and will modify the video speed.
+
+- A speed factor equal to 1 will leave speed unchanged
+- A speed factor < 1 will slow the video down
+- A speed factor > 1 will accelerate the video
+
+This interpolator can be set using `setTimeInterpolator(TimeInterpolator)`, or, as a shorthand, 
+using `setSpeed(float)`:
+
+```java
+Transcoder.into(filePath)
+        .setSpeed(0.5F) // 0.5x
+        .setSpeed(1F) // Unchanged
+        .setSpeed(2F) // Twice as fast
         // ...
 ```
 
