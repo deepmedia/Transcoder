@@ -44,6 +44,8 @@ public class TranscoderActivity extends AppCompatActivity implements
     private RadioGroup mVideoResolutionGroup;
     private RadioGroup mVideoAspectGroup;
     private RadioGroup mVideoRotationGroup;
+    private RadioGroup mSpeedGroup;
+
     private ProgressBar mProgressView;
     private TextView mButtonView;
 
@@ -79,6 +81,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         mVideoResolutionGroup = findViewById(R.id.resolution);
         mVideoAspectGroup = findViewById(R.id.aspect);
         mVideoRotationGroup = findViewById(R.id.rotation);
+        mSpeedGroup = findViewById(R.id.speed);
+
         mAudioChannelsGroup.setOnCheckedChangeListener(this);
         mVideoFramesGroup.setOnCheckedChangeListener(this);
         mVideoResolutionGroup.setOnCheckedChangeListener(this);
@@ -166,6 +170,13 @@ public class TranscoderActivity extends AppCompatActivity implements
             default: rotation = 0;
         }
 
+        float speed;
+        switch (mSpeedGroup.getCheckedRadioButtonId()) {
+            case R.id.speed_05x: speed = 0.5F; break;
+            case R.id.speed_2x: speed = 2F; break;
+            default: speed = 1F;
+        }
+
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
@@ -175,6 +186,7 @@ public class TranscoderActivity extends AppCompatActivity implements
                 .setAudioOutputStrategy(mTranscodeAudioStrategy)
                 .setVideoOutputStrategy(mTranscodeVideoStrategy)
                 .setRotation(rotation)
+                .setSpeed(speed)
                 .transcode();
     }
 
