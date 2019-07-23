@@ -30,51 +30,53 @@ public class AudioChannel {
         boolean endOfStream;
     }
 
+    private static long sampleCountToDurationUs(
+            final int sampleCount,
+            final int sampleRate,
+            final int channelCount) {
+        return (sampleCount / (sampleRate * MICROSECONDS_PER_SECOND)) / channelCount;
+    }
+
     private static final int BYTES_PER_SHORT = 2;
-    private static final long MICROSECS_PER_SEC = 1000000;
+    private static final long MICROSECONDS_PER_SECOND = 1000000;
 
     private final Queue<AudioBuffer> mEmptyBuffers = new ArrayDeque<>();
     private final Queue<AudioBuffer> mFilledBuffers = new ArrayDeque<>();
-
     private final MediaCodec mDecoder;
     private final MediaCodec mEncoder;
-
-    private int mInputSampleRate;
-    private int mOutputSampleRate;
-    private int mInputChannelCount;
-    private int mOutputChannelCount;
-
-    private AudioRemixer mRemixer;
-
     private final AudioBuffer mOverflowBuffer = new AudioBuffer();
+    private final int mSampleRate;
+    private final int mInputChannelCount;
+    private final int mOutputChannelCount;
+    private final AudioRemixer mRemixer;
+
 
     public AudioChannel(@NonNull final MediaCodec decoder,
-                 @NonNull final MediaCodec encoder,
-                 @NonNull final MediaFormat outputFormat) {
+                        @NonNull final MediaFormat decoderOutputFormat,
+                        @NonNull final MediaCodec encoder,
+                        @NonNull final MediaFormat encoderOutputFormat) {
         mDecoder = decoder;
         mEncoder = encoder;
 
-        mOutputSampleRate = outputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-        mOutputChannelCount = outputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        // Get and check sample rate.
+        int outputSampleRate = encoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        int inputSampleRate = decoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        if (inputSampleRate != outputSampleRate) {
+            throw new UnsupportedOperationException("Audio sample rate conversion not supported yet.");
+        }
+        mSampleRate = inputSampleRate;
+
+        // Check channel count.
+        mOutputChannelCount = encoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        mInputChannelCount = decoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
         if (mOutputChannelCount != 1 && mOutputChannelCount != 2) {
             throw new UnsupportedOperationException("Output channel count (" + mOutputChannelCount + ") not supported.");
         }
-    }
-
-    /**
-     * Should be the first method to be called, when we get the {@link MediaCodec#INFO_OUTPUT_FORMAT_CHANGED}
-     * event from MediaCodec.
-     * @param decoderOutputFormat the output format
-     */
-    public void onDecoderOutputFormat(@NonNull final MediaFormat decoderOutputFormat) {
-        mInputSampleRate = decoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-        if (mInputSampleRate != mOutputSampleRate) {
-            throw new UnsupportedOperationException("Audio sample rate conversion not supported yet.");
-        }
-        mInputChannelCount = decoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
         if (mInputChannelCount != 1 && mInputChannelCount != 2) {
             throw new UnsupportedOperationException("Input channel count (" + mInputChannelCount + ") not supported.");
         }
+
+        // Create remixer.
         if (mInputChannelCount > mOutputChannelCount) {
             mRemixer = AudioRemixer.DOWNMIX;
         } else if (mInputChannelCount < mOutputChannelCount) {
@@ -83,6 +85,7 @@ public class AudioChannel {
             mRemixer = AudioRemixer.PASSTHROUGH;
         }
         mOverflowBuffer.presentationTimeUs = 0;
+
     }
 
     /**
@@ -127,115 +130,124 @@ public class AudioChannel {
      * @return true if we want to keep working
      */
     public boolean feedEncoder(@NonNull MediaCodecBuffers encoderBuffers, long timeoutUs) {
-        final boolean hasOverflow = mOverflowBuffer.data != null && mOverflowBuffer.data.hasRemaining();
-        if (mFilledBuffers.isEmpty() && !hasOverflow) {
-            // No audio data - Bail out
-            return false;
-        }
+        final boolean hasOverflow = hasOverflow();
+        final boolean hasBuffers = hasBuffers();
+        if (!hasBuffers && !hasOverflow) return false;
 
-        final int encoderInBuffIndex = mEncoder.dequeueInputBuffer(timeoutUs);
-        if (encoderInBuffIndex < 0) {
-            // Encoder is full - Bail out
-            return false;
-        }
+        // Prepare to encode - see if encoder has buffers.
+        final int encoderBufferIndex = mEncoder.dequeueInputBuffer(timeoutUs);
+        if (encoderBufferIndex < 0) return false;
+        ShortBuffer encoderBuffer = encoderBuffers.getInputBuffer(encoderBufferIndex).asShortBuffer();
 
-        // Drain overflow first
-        final ShortBuffer outBuffer = encoderBuffers.getInputBuffer(encoderInBuffIndex).asShortBuffer();
+        // If we have overflow data, process that first.
         if (hasOverflow) {
-            final long presentationTimeUs = drainOverflow(outBuffer);
-            mEncoder.queueInputBuffer(encoderInBuffIndex,
-                    0, outBuffer.position() * BYTES_PER_SHORT,
-                    presentationTimeUs, 0);
+            long presentationTimeUs = drainOverflow(encoderBuffer);
+            mEncoder.queueInputBuffer(encoderBufferIndex,
+                    0,
+                    encoderBuffer.position() * BYTES_PER_SHORT,
+                    presentationTimeUs,
+                    0);
             return true;
         }
 
-        final AudioBuffer inBuffer = mFilledBuffers.poll();
-        // At this point inBuffer is not null, because we checked mFilledBuffers.isEmpty()
+        // At this point buffer is not null, because we checked hasBuffers()
         // and we don't have overflow (if we had, we got out).
+        final AudioBuffer decoderBuffer = mFilledBuffers.poll();
+
+        // When endOfStream, just signal EOS and return false.
         //noinspection ConstantConditions
-        if (inBuffer.endOfStream) {
-            mEncoder.queueInputBuffer(encoderInBuffIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+        if (decoderBuffer.endOfStream) {
+            mEncoder.queueInputBuffer(encoderBufferIndex,
+                    0,
+                    0,
+                    0,
+                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             return false;
         }
 
-        final long presentationTimeUs = remixAndMaybeFillOverflow(inBuffer, outBuffer);
-        mEncoder.queueInputBuffer(encoderInBuffIndex,
+        // If not, process data and return true.
+        process(decoderBuffer.data, encoderBuffer, decoderBuffer.presentationTimeUs);
+        mEncoder.queueInputBuffer(encoderBufferIndex,
                 0,
-                outBuffer.position() * BYTES_PER_SHORT,
-                presentationTimeUs,
+                encoderBuffer.position() * BYTES_PER_SHORT,
+                decoderBuffer.presentationTimeUs,
                 0);
-        mDecoder.releaseOutputBuffer(inBuffer.bufferIndex, false);
-        mEmptyBuffers.add(inBuffer);
+        mDecoder.releaseOutputBuffer(decoderBuffer.bufferIndex, false);
+        mEmptyBuffers.add(decoderBuffer);
         return true;
     }
 
-    private static long sampleCountToDurationUs(
-            final int sampleCount,
-            final int sampleRate,
-            final int channelCount) {
-        return (sampleCount / (sampleRate * MICROSECS_PER_SEC)) / channelCount;
+    /**
+     * Returns true if we have overflow data to be drained and set to the encoder.
+     * The overflow data is already processed.
+     *
+     * @return true if data
+     */
+    private boolean hasOverflow() {
+        return mOverflowBuffer.data != null && mOverflowBuffer.data.hasRemaining();
     }
 
-    private long drainOverflow(@NonNull final ShortBuffer outBuff) {
-        final ShortBuffer overflowBuff = mOverflowBuffer.data;
-        final int overflowLimit = overflowBuff.limit();
-        final int overflowSize = overflowBuff.remaining();
+    /**
+     * Returns true if we have filled buffers to be processed.
+     * @return true if we have
+     */
+    private boolean hasBuffers() {
+        return !mFilledBuffers.isEmpty();
+    }
 
+    /**
+     * Drains the overflow data into the given {@link ShortBuffer}.The overflow data is
+     * already processed, it must just be copied into the given buffer.
+     *
+     * @param outBuffer output buffer
+     * @return the frame timestamp
+     */
+    private long drainOverflow(@NonNull final ShortBuffer outBuffer) {
+        final ShortBuffer overflowBuffer = mOverflowBuffer.data;
+        final int overflowLimit = overflowBuffer.limit();
+        final int overflowSize = overflowBuffer.remaining();
         final long beginPresentationTimeUs = mOverflowBuffer.presentationTimeUs +
-                sampleCountToDurationUs(overflowBuff.position(),
-                        mInputSampleRate,
+                sampleCountToDurationUs(overflowBuffer.position(),
+                        mSampleRate,
                         mOutputChannelCount);
-
-        outBuff.clear();
-        // Limit overflowBuff to outBuff's capacity
-        overflowBuff.limit(outBuff.capacity());
-        // Load overflowBuff onto outBuff
-        outBuff.put(overflowBuff);
-
-        if (overflowSize >= outBuff.capacity()) {
-            // Overflow fully consumed - Reset
-            overflowBuff.clear().limit(0);
+        outBuffer.clear();
+        overflowBuffer.limit(outBuffer.capacity()); // Limit overflowBuffer to outBuffer's capacity
+        outBuffer.put(overflowBuffer); // Load overflowBuffer onto outBuffer
+        if (overflowSize >= outBuffer.capacity()) {
+            overflowBuffer.clear().limit(0); // Overflow fully consumed - Reset
         } else {
-            // Only partially consumed - Keep position & restore previous limit
-            overflowBuff.limit(overflowLimit);
+            overflowBuffer.limit(overflowLimit); // Only partially consumed - Keep position & restore previous limit
         }
 
         return beginPresentationTimeUs;
     }
 
-    private long remixAndMaybeFillOverflow(final AudioBuffer input,
-                                           final ShortBuffer outBuff) {
-        final ShortBuffer inBuff = input.data;
-        final ShortBuffer overflowBuff = mOverflowBuffer.data;
+    private void process(@NonNull final ShortBuffer inputBuffer,
+                         @NonNull final ShortBuffer outputBuffer,
+                         long inputPresentationTimeUs) {
+        // Reset position to 0 and set limit to capacity (Since MediaCodec doesn't do that for us)
+        outputBuffer.clear();
+        inputBuffer.clear();
 
-        outBuff.clear();
-
-        // Reset position to 0, and set limit to capacity (Since MediaCodec doesn't do that for us)
-        inBuff.clear();
-
-        if (inBuff.remaining() > outBuff.remaining()) {
-            // Overflow
-            // Limit inBuff to outBuff's capacity
-            inBuff.limit(outBuff.capacity());
-            mRemixer.remix(inBuff, outBuff);
-
-            // Reset limit to its own capacity & Keep position
-            inBuff.limit(inBuff.capacity());
-
-            // Remix the rest onto overflowBuffer
-            // NOTE: We should only reach this point when overflow buffer is empty
-            final long consumedDurationUs =
-                    sampleCountToDurationUs(inBuff.position(), mInputSampleRate, mInputChannelCount);
-            mRemixer.remix(inBuff, overflowBuff);
-
-            // Seal off overflowBuff & mark limit
-            overflowBuff.flip();
-            mOverflowBuffer.presentationTimeUs = input.presentationTimeUs + consumedDurationUs;
+        if (inputBuffer.remaining() <= outputBuffer.remaining()) {
+            // Safe case. Just remix.
+            mRemixer.remix(inputBuffer, outputBuffer);
         } else {
-            // No overflow
-            mRemixer.remix(inBuff, outBuff);
-        }
+            // Overflow!
+            // First remix all we can.
+            inputBuffer.limit(outputBuffer.capacity());
+            mRemixer.remix(inputBuffer, outputBuffer);
+            inputBuffer.limit(inputBuffer.capacity());
 
-        return input.presentationTimeUs;
+            // Then remix the rest into mOverflowBuffer.
+            // NOTE: We should only reach this point when overflow buffer is empty
+            final long consumedDurationUs = sampleCountToDurationUs(inputBuffer.position(), mSampleRate, mInputChannelCount);
+            mRemixer.remix(inputBuffer, mOverflowBuffer.data);
+
+            // Flip the overflow buffer and mark the presentation time.
+            mOverflowBuffer.data.flip();
+            mOverflowBuffer.presentationTimeUs = inputPresentationTimeUs + consumedDurationUs;
+
+        }
     }
 }

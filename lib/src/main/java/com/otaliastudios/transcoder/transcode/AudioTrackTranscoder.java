@@ -16,6 +16,8 @@ import java.nio.ByteBuffer;
 public class AudioTrackTranscoder extends BaseTrackTranscoder {
 
     private AudioChannel mAudioChannel;
+    private MediaCodec mEncoder; // to create the channel
+    private MediaFormat mEncoderOutputFormat; // to create the channel
 
     public AudioTrackTranscoder(@NonNull MediaExtractor extractor,
                                 int trackIndex,
@@ -26,7 +28,8 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
     @Override
     protected void onCodecsStarted(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat, @NonNull MediaCodec decoder, @NonNull MediaCodec encoder) {
         super.onCodecsStarted(inputFormat, outputFormat, decoder, encoder);
-        mAudioChannel = new AudioChannel(decoder, encoder, outputFormat);
+        mEncoder = encoder;
+        mEncoderOutputFormat = outputFormat;
     }
 
     @Override
@@ -35,9 +38,11 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
     }
 
     @Override
-    protected void onDecoderOutputFormatChanged(@NonNull MediaFormat format) {
-        super.onDecoderOutputFormatChanged(format);
-        mAudioChannel.onDecoderOutputFormat(format);
+    protected void onDecoderOutputFormatChanged(@NonNull MediaCodec decoder, @NonNull MediaFormat format) {
+        super.onDecoderOutputFormatChanged(decoder, format);
+        mAudioChannel = new AudioChannel(decoder, format, mEncoder, mEncoderOutputFormat);
+        mEncoder = null;
+        mEncoderOutputFormat = null;
     }
 
     @Override

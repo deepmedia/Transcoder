@@ -184,7 +184,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
      * @param format format
      */
     @CallSuper
-    protected void onDecoderOutputFormatChanged(@NonNull MediaFormat format) {}
+    protected void onDecoderOutputFormatChanged(@NonNull MediaCodec decoder, @NonNull MediaFormat format) {}
 
     /**
      * Called when the encoder has defined its actual output format.
@@ -192,7 +192,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
      */
     @CallSuper
     @SuppressWarnings("WeakerAccess")
-    protected void onEncoderOutputFormatChanged(@NonNull MediaFormat format) {
+    protected void onEncoderOutputFormatChanged(@NonNull MediaCodec encoder, @NonNull MediaFormat format) {
         if (mActualOutputFormat != null) {
             throw new RuntimeException("Audio output format changed twice.");
         }
@@ -236,7 +236,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             case MediaCodec.INFO_TRY_AGAIN_LATER:
                 return DRAIN_STATE_NONE;
             case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
-                onDecoderOutputFormatChanged(mDecoder.getOutputFormat());
+                onDecoderOutputFormatChanged(mDecoder, mDecoder.getOutputFormat());
                 return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
             case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                 return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
@@ -264,7 +264,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             case MediaCodec.INFO_TRY_AGAIN_LATER:
                 return DRAIN_STATE_NONE;
             case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
-                onEncoderOutputFormatChanged(mEncoder.getOutputFormat());
+                onEncoderOutputFormatChanged(mEncoder, mEncoder.getOutputFormat());
                 return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
             case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                 mEncoderBuffers.onOutputBuffersChanged();
