@@ -4,6 +4,9 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A {@link TimeInterpolator} that modifies the playback speed by the given
  * float factor. A factor less than 1 will slow down, while a bigger factor will
@@ -11,7 +14,8 @@ import com.otaliastudios.transcoder.engine.TrackType;
  */
 public class SpeedTimeInterpolator implements TimeInterpolator {
 
-    private float mFactor;
+    private double mFactor;
+    private final Map<TrackType, TrackData> mTrackData = new HashMap<>();
 
     /**
      * Creates a new speed interpolator for the given factor.
@@ -25,8 +29,36 @@ public class SpeedTimeInterpolator implements TimeInterpolator {
         mFactor = factor;
     }
 
+    /**
+     * Returns the factor passed to the constructor.
+     * @return the factor
+     */
+    @SuppressWarnings("unused")
+    public float getFactor() {
+        return (float) mFactor;
+    }
+
     @Override
     public long interpolate(@NonNull TrackType type, long time) {
-        return time;
+        if (!mTrackData.containsKey(type)) {
+            mTrackData.put(type, new TrackData());
+        }
+        TrackData data = mTrackData.get(type);
+        //noinspection ConstantConditions
+        if (data.lastRealTime == Long.MIN_VALUE) {
+            data.lastRealTime = time;
+            data.lastCorrectedTime = time;
+        } else {
+            long realDelta = time - data.lastRealTime;
+            long correctedDelta = (long) ((double) realDelta * mFactor);
+            data.lastRealTime = time;
+            data.lastCorrectedTime += correctedDelta;
+        }
+        return data.lastCorrectedTime;
+    }
+
+    private static class TrackData {
+        private long lastRealTime = Long.MIN_VALUE;
+        private long lastCorrectedTime = Long.MIN_VALUE;
     }
 }
