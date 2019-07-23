@@ -5,8 +5,10 @@ import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
+import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
+import com.otaliastudios.transcoder.time.TimeInterpolator;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -60,6 +62,8 @@ public class AudioEngine {
     private final int mInputChannelCount;
     private final int mOutputChannelCount;
     private final AudioRemixer mRemixer;
+    private final TimeInterpolator mTimeInterpolator;
+
 
     /**
      * The AudioEngine should be created when we know the actual decoded format,
@@ -70,12 +74,14 @@ public class AudioEngine {
      * @param encoder an encoder
      * @param encoderOutputFormat the encoder output format
      */
-    public AudioEngine(@NonNull final MediaCodec decoder,
-                       @NonNull final MediaFormat decoderOutputFormat,
-                       @NonNull final MediaCodec encoder,
-                       @NonNull final MediaFormat encoderOutputFormat) {
+    public AudioEngine(@NonNull MediaCodec decoder,
+                       @NonNull MediaFormat decoderOutputFormat,
+                       @NonNull MediaCodec encoder,
+                       @NonNull MediaFormat encoderOutputFormat,
+                       @NonNull TimeInterpolator timeInterpolator) {
         mDecoder = decoder;
         mEncoder = encoder;
+        mTimeInterpolator = timeInterpolator;
 
         // Get and check sample rate.
         int outputSampleRate = encoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
@@ -185,11 +191,12 @@ public class AudioEngine {
         }
 
         // If not, process data and return true.
-        process(decoderBuffer.data, encoderBuffer, decoderBuffer.presentationTimeUs);
+        long inputPresentationTime = decoderBuffer.presentationTimeUs;
+        long outputPresentationTime = process(decoderBuffer.data, encoderBuffer, inputPresentationTime);
         mEncoder.queueInputBuffer(encoderBufferIndex,
                 0,
                 encoderBuffer.position() * BYTES_PER_SHORT,
-                decoderBuffer.presentationTimeUs,
+                outputPresentationTime,
                 0);
         mDecoder.releaseOutputBuffer(decoderBuffer.bufferIndex, false);
         mEmptyBuffers.add(decoderBuffer);
@@ -241,12 +248,15 @@ public class AudioEngine {
         return beginPresentationTimeUs;
     }
 
-    private void process(@NonNull final ShortBuffer inputBuffer,
+    private long process(@NonNull final ShortBuffer inputBuffer,
                          @NonNull final ShortBuffer outputBuffer,
                          long inputPresentationTimeUs) {
+        long outputPresentationTime = mTimeInterpolator.interpolate(TrackType.AUDIO, inputPresentationTimeUs);
+
         // Reset position to 0 and set limit to capacity (Since MediaCodec doesn't do that for us)
         outputBuffer.clear();
         inputBuffer.clear();
+
 
         if (inputBuffer.remaining() <= outputBuffer.remaining()) {
             // Safe case. Just remix.
@@ -258,6 +268,7 @@ public class AudioEngine {
             mRemixer.remix(inputBuffer, outputBuffer);
             inputBuffer.limit(inputBuffer.capacity());
 
+            // TODO check the time logic below if interpolator changes time.
             // Then remix the rest into mOverflowBuffer.
             // NOTE: We should only reach this point when overflow buffer is empty
             long consumedDurationUs = shortsToUs(inputBuffer.position(), mSampleRate, mInputChannelCount);
@@ -265,8 +276,8 @@ public class AudioEngine {
 
             // Flip the overflow buffer and mark the presentation time.
             mOverflowBuffer.data.flip();
-            mOverflowBuffer.presentationTimeUs = inputPresentationTimeUs + consumedDurationUs;
-
+            mOverflowBuffer.presentationTimeUs = outputPresentationTime + consumedDurationUs;
         }
+        return outputPresentationTime;
     }
 }

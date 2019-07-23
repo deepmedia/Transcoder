@@ -20,7 +20,6 @@ import android.media.MediaFormat;
 import android.media.MediaMuxer;
 
 import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.time.TimeInterpolator;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -62,12 +61,10 @@ public class TranscoderMuxer {
     private boolean mMuxerStarted;
     private final List<QueuedSample> mQueue = new ArrayList<>();
     private ByteBuffer mQueueBuffer;
-    private TimeInterpolator mTimeInterpolator;
 
-    TranscoderMuxer(@NonNull MediaMuxer muxer, @NonNull Tracks info, @NonNull TimeInterpolator timeInterpolator) {
+    TranscoderMuxer(@NonNull MediaMuxer muxer, @NonNull Tracks info) {
         mMuxer = muxer;
         mTracks = info;
-        mTimeInterpolator = timeInterpolator;
     }
 
     /**
@@ -111,16 +108,8 @@ public class TranscoderMuxer {
         drainQueue();
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     public void write(@NonNull TrackType type, @NonNull ByteBuffer byteBuf, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mMuxerStarted) {
-            boolean isEos = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
-            if (isEos && bufferInfo.presentationTimeUs == 0) {
-                // Do not pass this to the interpolator, it needs increasing timestamps,
-                // this is not a real buffer, just a signal.
-            } else {
-                bufferInfo.presentationTimeUs = mTimeInterpolator.interpolate(type, bufferInfo.presentationTimeUs);
-            }
             mMuxer.writeSampleData(mTracks.outputIndex(type), byteBuf, bufferInfo);
         } else {
             enqueue(type, byteBuf, bufferInfo);

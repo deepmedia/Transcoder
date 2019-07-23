@@ -133,7 +133,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public final long getLastWrittenPresentationTime() {
+    public final long getLastPresentationTime() {
         return mWrittenPresentationTimeUs;
     }
 

@@ -34,7 +34,7 @@ public class NoOpTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public long getLastWrittenPresentationTime() {
+    public long getLastPresentationTime() {
         return 0;
     }
 

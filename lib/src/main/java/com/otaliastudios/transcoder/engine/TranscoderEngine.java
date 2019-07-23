@@ -197,12 +197,12 @@ public class TranscoderEngine {
                     transcoder = new NoOpTrackTranscoder();
                     status = TrackStatus.REMOVING;
                 } else if (outputFormat == inputFormat) {
-                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, muxer, type);
+                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, muxer, type, options.getTimeInterpolator());
                     status = TrackStatus.PASS_THROUGH;
                 } else {
                     switch (type) {
-                        case VIDEO: transcoder = new VideoTrackTranscoder(mExtractor, muxer, index); break;
-                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, muxer, index); break;
+                        case VIDEO: transcoder = new VideoTrackTranscoder(mExtractor, muxer, index, options.getTimeInterpolator()); break;
+                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, muxer, index, options.getTimeInterpolator()); break;
                         default: throw new RuntimeException("Unknown type: " + type);
                     }
                     status = TrackStatus.COMPRESSING;
@@ -210,7 +210,7 @@ public class TranscoderEngine {
             } catch (OutputStrategyException strategyException) {
                 if (strategyException.getType() == OutputStrategyException.TYPE_ALREADY_COMPRESSED) {
                     // Should not abort, because the other track might need compression. Use a pass through.
-                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, muxer, type);
+                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, muxer, type, options.getTimeInterpolator());
                     status = TrackStatus.PASS_THROUGH;
                 } else { // Abort.
                     throw strategyException;
@@ -226,7 +226,7 @@ public class TranscoderEngine {
 
     private void setupTrackTranscoders(@NonNull TranscoderOptions options) {
         mTracks = Tracks.create(mExtractor);
-        TranscoderMuxer muxer = new TranscoderMuxer(mMuxer, mTracks, options.getTimeInterpolator());
+        TranscoderMuxer muxer = new TranscoderMuxer(mMuxer, mTracks);
         setUpTrackTranscoder(options, muxer, TrackType.VIDEO);
         setUpTrackTranscoder(options, muxer, TrackType.AUDIO);
 
@@ -277,7 +277,7 @@ public class TranscoderEngine {
     private double getTranscoderProgress(@NonNull TrackTranscoder transcoder, @NonNull TrackStatus status) {
         if (!status.isTranscoding()) return 0.0;
         if (transcoder.isFinished()) return 1.0;
-        return Math.min(1.0, (double) transcoder.getLastWrittenPresentationTime() / mDurationUs);
+        return Math.min(1.0, (double) transcoder.getLastPresentationTime() / mDurationUs);
     }
 
     private int getTranscodersCount() {

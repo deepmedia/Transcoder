@@ -9,20 +9,24 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.AudioEngine;
 
 import java.nio.ByteBuffer;
 
 public class AudioTrackTranscoder extends BaseTrackTranscoder {
 
+    private TimeInterpolator mTimeInterpolator;
     private AudioEngine mAudioEngine;
     private MediaCodec mEncoder; // to create the channel
     private MediaFormat mEncoderOutputFormat; // to create the channel
 
     public AudioTrackTranscoder(@NonNull MediaExtractor extractor,
                                 @NonNull TranscoderMuxer muxer,
-                                int trackIndex) {
+                                int trackIndex,
+                                @NonNull TimeInterpolator timeInterpolator) {
         super(extractor, muxer, TrackType.AUDIO, trackIndex);
+        mTimeInterpolator = timeInterpolator;
     }
 
     @Override
@@ -41,9 +45,10 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
     @Override
     protected void onDecoderOutputFormatChanged(@NonNull MediaCodec decoder, @NonNull MediaFormat format) {
         super.onDecoderOutputFormatChanged(decoder, format);
-        mAudioEngine = new AudioEngine(decoder, format, mEncoder, mEncoderOutputFormat);
+        mAudioEngine = new AudioEngine(decoder, format, mEncoder, mEncoderOutputFormat, mTimeInterpolator);
         mEncoder = null;
         mEncoderOutputFormat = null;
+        mTimeInterpolator = null;
     }
 
     @Override

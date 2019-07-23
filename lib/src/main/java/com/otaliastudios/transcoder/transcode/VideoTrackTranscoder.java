@@ -24,6 +24,7 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
 import com.otaliastudios.transcoder.internal.Logger;
@@ -43,11 +44,15 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     private VideoEncoderInput mEncoderInputSurface;
     private MediaCodec mEncoder; // Keep this since we want to signal EOS on it.
     private VideoFrameDropper mFrameDropper;
+    private TimeInterpolator mTimeInterpolator;
 
     public VideoTrackTranscoder(
             @NonNull MediaExtractor extractor,
-            @NonNull TranscoderMuxer muxer, int trackIndex) {
+            @NonNull TranscoderMuxer muxer,
+            int trackIndex,
+            @NonNull TimeInterpolator timeInterpolator) {
         super(extractor, muxer, TrackType.VIDEO, trackIndex);
+        mTimeInterpolator = timeInterpolator;
     }
 
     @Override
@@ -120,8 +125,9 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
             decoder.releaseOutputBuffer(bufferIndex, false);
         } else if (mFrameDropper.shouldRenderFrame(presentationTimeUs)) {
             decoder.releaseOutputBuffer(bufferIndex, true);
+            long interpolatedTimeUs = mTimeInterpolator.interpolate(TrackType.VIDEO, presentationTimeUs);
             mDecoderOutputSurface.drawFrame();
-            mEncoderInputSurface.onFrame(presentationTimeUs);
+            mEncoderInputSurface.onFrame(interpolatedTimeUs);
         }
     }
 }

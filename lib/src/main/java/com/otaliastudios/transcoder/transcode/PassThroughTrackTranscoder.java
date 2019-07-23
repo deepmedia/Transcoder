@@ -24,6 +24,7 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.engine.TranscoderMuxer;
+import com.otaliastudios.transcoder.time.TimeInterpolator;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -41,10 +42,13 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     private final MediaFormat mActualOutputFormat;
     private boolean mFirstStepPipeline = true;
 
+    private TimeInterpolator mTimeInterpolator;
+
     public PassThroughTrackTranscoder(@NonNull MediaExtractor extractor,
                                       int trackIndex,
                                       @NonNull TranscoderMuxer muxer,
-                                      @NonNull TrackType trackType) {
+                                      @NonNull TrackType trackType,
+                                      @NonNull TimeInterpolator timeInterpolator) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
         mMuxer = muxer;
@@ -53,6 +57,8 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         mActualOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
         mBufferSize = mActualOutputFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         mBuffer = ByteBuffer.allocateDirect(mBufferSize).order(ByteOrder.nativeOrder());
+
+        mTimeInterpolator = timeInterpolator;
     }
 
     @Override
@@ -82,16 +88,18 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         assert sampleSize <= mBufferSize;
         boolean isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
         int flags = isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0;
-        mBufferInfo.set(0, sampleSize, mExtractor.getSampleTime(), flags);
+        long realTimestampUs = mExtractor.getSampleTime();
+        long timestampUs = mTimeInterpolator.interpolate(mTrackType, realTimestampUs);
+        mBufferInfo.set(0, sampleSize, timestampUs, flags);
         mMuxer.write(mTrackType, mBuffer, mBufferInfo);
-        mWrittenPresentationTimeUs = mBufferInfo.presentationTimeUs;
+        mWrittenPresentationTimeUs = realTimestampUs;
 
         mExtractor.advance();
         return true;
     }
 
     @Override
-    public long getLastWrittenPresentationTime() {
+    public long getLastPresentationTime() {
         return mWrittenPresentationTimeUs;
     }
 
