@@ -40,8 +40,8 @@ public class VideoDecoderOutput {
     private EglTextureProgram mProgram;
     private EglDrawable mDrawable;
 
-    private final float mScaleX;
-    private final float mScaleY;
+    private float mScaleX = 1F;
+    private float mScaleY = 1F;
 
     private int mTextureId;
     private float[] mTextureTransform = new float[16];
@@ -54,14 +54,11 @@ public class VideoDecoderOutput {
      * Creates an VideoDecoderOutput using the current EGL context (rather than establishing a
      * new one). Creates a Surface that can be passed to MediaCodec.configure().
      */
-    public VideoDecoderOutput(float scaleX, float scaleY) {
+    public VideoDecoderOutput() {
         mScene = new EglScene();
         mProgram = new EglTextureProgram();
         mDrawable = new EglRect();
         mTextureId = mProgram.createTexture();
-
-        mScaleX = scaleX;
-        mScaleY = scaleY;
 
         // Even if we don't access the SurfaceTexture after the constructor returns, we
         // still need to keep a reference to it.  The Surface doesn't retain a reference
@@ -82,6 +79,16 @@ public class VideoDecoderOutput {
             }
         });
         mSurface = new Surface(mSurfaceTexture);
+    }
+
+    /**
+     * Sets the frame scale along the two axes.
+     * @param scaleX x scale
+     * @param scaleY y scale
+     */
+    public void setScale(float scaleX, float scaleY) {
+        mScaleX = scaleX;
+        mScaleY = scaleY;
     }
 
     /**
