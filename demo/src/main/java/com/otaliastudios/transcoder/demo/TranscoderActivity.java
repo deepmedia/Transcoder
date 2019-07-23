@@ -11,13 +11,16 @@ import android.widget.Toast;
 
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
+import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.OutputStrategy;
+import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
 import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.FractionResizer;
 import com.otaliastudios.transcoder.strategy.size.PassThroughResizer;
+import com.otaliastudios.transcoder.validator.DefaultValidator;
 
 import java.io.File;
 import java.io.IOException;
@@ -176,6 +179,8 @@ public class TranscoderActivity extends AppCompatActivity implements
             case R.id.speed_2x: speed = 2F; break;
             default: speed = 1F;
         }
+        OutputStrategy audioStrategy = speed == 1F ? mTranscodeAudioStrategy : new RemoveTrackStrategy();
+        OutputStrategy videoStrategy = mTranscodeVideoStrategy;
 
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
@@ -183,8 +188,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         mTranscodeFuture = Transcoder.into(mTranscodeOutputFile.getAbsolutePath())
                 .setDataSource(this, mTranscodeInputUri)
                 .setListener(this)
-                .setAudioOutputStrategy(mTranscodeAudioStrategy)
-                .setVideoOutputStrategy(mTranscodeVideoStrategy)
+                .setAudioOutputStrategy(audioStrategy)
+                .setVideoOutputStrategy(videoStrategy)
                 .setRotation(rotation)
                 .setSpeed(speed)
                 .transcode();

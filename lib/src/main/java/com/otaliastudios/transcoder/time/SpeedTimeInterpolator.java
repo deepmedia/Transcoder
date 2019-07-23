@@ -1,5 +1,7 @@
 package com.otaliastudios.transcoder.time;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
@@ -50,10 +52,11 @@ public class SpeedTimeInterpolator implements TimeInterpolator {
             data.lastCorrectedTime = time;
         } else {
             long realDelta = time - data.lastRealTime;
-            long correctedDelta = (long) ((double) realDelta * mFactor);
+            long correctedDelta = (long) ((double) realDelta / mFactor);
             data.lastRealTime = time;
             data.lastCorrectedTime += correctedDelta;
         }
+        Log.e("SpeedTimeInterpolator", "Input time: " + time + ", output time: " + data.lastCorrectedTime);
         return data.lastCorrectedTime;
     }
 

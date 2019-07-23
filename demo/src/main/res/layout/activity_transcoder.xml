@@ -218,7 +218,7 @@
                 android:padding="16dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Speed" />
+                android:text="Playback speed" />
             <RadioGroup
                 android:id="@+id/speed"
                 android:checkedButton="@id/speed_1x"

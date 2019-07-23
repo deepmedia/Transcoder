@@ -319,6 +319,8 @@ Transcoder.into(filePath)
 
 #### Time interpolation
 
+**Note: when time is changed, you must make sure to remove the audio track or the process breaks.**
+
 We offer APIs to change the timestamp of each video and audio frame. You can pass a `TimeInterpolator`
 to the transcoder builder to be able to receive the frame timestamp as input, and return a new one
 as output.
@@ -344,6 +346,8 @@ It should be obvious that returning invalid times can make the process crash at 
 the transcoding operation fail.
 
 #### Video speed
+
+**Note: when time is changed, you must make sure to remove the audio track or the process breaks.**
 
 We also offer a special time interpolator called `SpeedTimeInterpolator` that accepts a `float` parameter
 and will modify the video speed.

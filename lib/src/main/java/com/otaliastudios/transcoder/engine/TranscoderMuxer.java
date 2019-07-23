@@ -111,9 +111,16 @@ public class TranscoderMuxer {
         drainQueue();
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     public void write(@NonNull TrackType type, @NonNull ByteBuffer byteBuf, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mMuxerStarted) {
-            bufferInfo.presentationTimeUs = mTimeInterpolator.interpolate(type, bufferInfo.presentationTimeUs);
+            boolean isEos = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
+            if (isEos && bufferInfo.presentationTimeUs == 0) {
+                // Do not pass this to the interpolator, it needs increasing timestamps,
+                // this is not a real buffer, just a signal.
+            } else {
+                bufferInfo.presentationTimeUs = mTimeInterpolator.interpolate(type, bufferInfo.presentationTimeUs);
+            }
             mMuxer.writeSampleData(mTracks.outputIndex(type), byteBuf, bufferInfo);
         } else {
             enqueue(type, byteBuf, bufferInfo);
