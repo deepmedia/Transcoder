@@ -21,7 +21,7 @@ import java.util.Queue;
  * We currently support upmixing from mono to stereo & downmixing from stereo to mono.
  * Sample rate conversion is not supported yet.
  */
-public class AudioChannel {
+public class AudioEngine {
 
     private static class AudioBuffer {
         int bufferIndex;
@@ -30,15 +30,26 @@ public class AudioChannel {
         boolean endOfStream;
     }
 
-    private static long sampleCountToDurationUs(
-            final int sampleCount,
-            final int sampleRate,
-            final int channelCount) {
-        return (sampleCount / (sampleRate * MICROSECONDS_PER_SECOND)) / channelCount;
+    private static long bytesToUs(
+            int bytes /* [bytes] */,
+            int sampleRate /* [samples/sec] */,
+            int channels /* [channel] */
+    ) {
+        int bytesPerSamplePerChannel = 2; // [bytes/sample/channel] Assuming 16bit audio so 2
+        int byteRatePerChannel = sampleRate * bytesPerSamplePerChannel; // [bytes/sec/channel]
+        int byteRate = byteRatePerChannel * channels; // [bytes/sec]
+        return MICROSECONDS_PER_SECOND * bytes / byteRate; // [usec]
+    }
+
+    private static long shortsToUs(
+            int shorts,
+            int sampleRate,
+            int channels) {
+        return bytesToUs(shorts * BYTES_PER_SHORT, sampleRate, channels);
     }
 
     private static final int BYTES_PER_SHORT = 2;
-    private static final long MICROSECONDS_PER_SECOND = 1000000;
+    private static final long MICROSECONDS_PER_SECOND = 1000000L;
 
     private final Queue<AudioBuffer> mEmptyBuffers = new ArrayDeque<>();
     private final Queue<AudioBuffer> mFilledBuffers = new ArrayDeque<>();
@@ -50,11 +61,19 @@ public class AudioChannel {
     private final int mOutputChannelCount;
     private final AudioRemixer mRemixer;
 
-
-    public AudioChannel(@NonNull final MediaCodec decoder,
-                        @NonNull final MediaFormat decoderOutputFormat,
-                        @NonNull final MediaCodec encoder,
-                        @NonNull final MediaFormat encoderOutputFormat) {
+    /**
+     * The AudioEngine should be created when we know the actual decoded format,
+     * which means that the decoder has reached {@link MediaCodec#INFO_OUTPUT_FORMAT_CHANGED}.
+     *
+     * @param decoder a decoder
+     * @param decoderOutputFormat the decoder output format
+     * @param encoder an encoder
+     * @param encoderOutputFormat the encoder output format
+     */
+    public AudioEngine(@NonNull final MediaCodec decoder,
+                       @NonNull final MediaFormat decoderOutputFormat,
+                       @NonNull final MediaCodec encoder,
+                       @NonNull final MediaFormat encoderOutputFormat) {
         mDecoder = decoder;
         mEncoder = encoder;
 
@@ -207,7 +226,7 @@ public class AudioChannel {
         final int overflowLimit = overflowBuffer.limit();
         final int overflowSize = overflowBuffer.remaining();
         final long beginPresentationTimeUs = mOverflowBuffer.presentationTimeUs +
-                sampleCountToDurationUs(overflowBuffer.position(),
+                shortsToUs(overflowBuffer.position(),
                         mSampleRate,
                         mOutputChannelCount);
         outBuffer.clear();
@@ -241,7 +260,7 @@ public class AudioChannel {
 
             // Then remix the rest into mOverflowBuffer.
             // NOTE: We should only reach this point when overflow buffer is empty
-            final long consumedDurationUs = sampleCountToDurationUs(inputBuffer.position(), mSampleRate, mInputChannelCount);
+            long consumedDurationUs = shortsToUs(inputBuffer.position(), mSampleRate, mInputChannelCount);
             mRemixer.remix(inputBuffer, mOverflowBuffer.data);
 
             // Flip the overflow buffer and mark the presentation time.

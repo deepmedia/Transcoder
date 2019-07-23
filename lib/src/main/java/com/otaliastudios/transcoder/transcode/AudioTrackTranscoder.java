@@ -9,13 +9,13 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
-import com.otaliastudios.transcoder.transcode.internal.AudioChannel;
+import com.otaliastudios.transcoder.transcode.internal.AudioEngine;
 
 import java.nio.ByteBuffer;
 
 public class AudioTrackTranscoder extends BaseTrackTranscoder {
 
-    private AudioChannel mAudioChannel;
+    private AudioEngine mAudioEngine;
     private MediaCodec mEncoder; // to create the channel
     private MediaFormat mEncoderOutputFormat; // to create the channel
 
@@ -34,19 +34,20 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
 
     @Override
     protected boolean onFeedEncoder(@NonNull MediaCodec encoder, @NonNull MediaCodecBuffers encoderBuffers, long timeoutUs) {
-        return mAudioChannel.feedEncoder(encoderBuffers, timeoutUs);
+        if (mAudioEngine == null) return false;
+        return mAudioEngine.feedEncoder(encoderBuffers, timeoutUs);
     }
 
     @Override
     protected void onDecoderOutputFormatChanged(@NonNull MediaCodec decoder, @NonNull MediaFormat format) {
         super.onDecoderOutputFormatChanged(decoder, format);
-        mAudioChannel = new AudioChannel(decoder, format, mEncoder, mEncoderOutputFormat);
+        mAudioEngine = new AudioEngine(decoder, format, mEncoder, mEncoderOutputFormat);
         mEncoder = null;
         mEncoderOutputFormat = null;
     }
 
     @Override
     protected void onDrainDecoder(@NonNull MediaCodec decoder, int bufferIndex, @NonNull ByteBuffer bufferData, long presentationTimeUs, boolean endOfStream) {
-        mAudioChannel.drainDecoder(bufferIndex, bufferData, presentationTimeUs, endOfStream);
+        mAudioEngine.drainDecoder(bufferIndex, bufferData, presentationTimeUs, endOfStream);
     }
 }
