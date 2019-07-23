@@ -13,6 +13,7 @@ import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * A base implementation of {@link TrackTranscoder} that reads
@@ -53,26 +54,6 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         mTrackIndex = trackIndex;
         mMuxer = muxer;
         mTrackType = trackType;
-    }
-
-    /**
-     * Returns the encoder, if we have one at this point.
-     * @return encoder or null
-     */
-    @Nullable
-    @SuppressWarnings("WeakerAccess")
-    protected MediaCodec getEncoder() {
-        return mEncoder;
-    }
-
-    /**
-     * Returns the decoder, if we have one at this point.
-     * @return decoder or null
-     */
-    @Nullable
-    @SuppressWarnings("unused")
-    protected MediaCodec getDecoder() {
-        return mDecoder;
     }
 
     @Override
@@ -244,7 +225,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
 
     @SuppressWarnings("SameParameterValue")
     private boolean feedEncoder(long timeoutUs) {
-        return onFeedEncoder(mEncoder, timeoutUs);
+        return onFeedEncoder(mEncoder, mEncoderBuffers, timeoutUs);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -265,7 +246,11 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         boolean hasSize = mBufferInfo.size > 0;
         if (isEos) mIsDecoderEOS = true;
         if (isEos || hasSize) {
-            onDrainDecoder(mDecoder, result, mBufferInfo.presentationTimeUs, isEos);
+            onDrainDecoder(mDecoder,
+                    result,
+                    mDecoderBuffers.getOutputBuffer(result),
+                    mBufferInfo.presentationTimeUs,
+                    isEos);
         }
         return DRAIN_STATE_CONSUMED;
     }
@@ -311,11 +296,13 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
      *
      * @param decoder the decoder
      * @param bufferIndex the buffer index to be released
+     * @param bufferData  the buffer data
      * @param presentationTimeUs frame timestamp
      * @param endOfStream whether we are in end of stream
      */
     protected abstract void onDrainDecoder(@NonNull MediaCodec decoder,
                                            int bufferIndex,
+                                           @NonNull ByteBuffer bufferData,
                                            long presentationTimeUs,
                                            boolean endOfStream);
 
@@ -326,5 +313,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
      * @param timeoutUs a timeout for this op
      * @return true if we want to keep working
      */
-    protected abstract boolean onFeedEncoder(@NonNull MediaCodec encoder, long timeoutUs);
+    protected abstract boolean onFeedEncoder(@NonNull MediaCodec encoder,
+                                             @NonNull MediaCodecBuffers encoderBuffers,
+                                             long timeoutUs);
 }

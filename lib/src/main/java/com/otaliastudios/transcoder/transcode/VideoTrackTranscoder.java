@@ -23,10 +23,13 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.engine.TranscoderMuxer;
+import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
+
+import java.nio.ByteBuffer;
 
 // Refer: https://android.googlesource.com/platform/cts/+/lollipop-release/tests/tests/media/src/android/media/cts/ExtractDecodeEditEncodeMuxTest.java
 public class VideoTrackTranscoder extends BaseTrackTranscoder {
@@ -108,13 +111,13 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     }
 
     @Override
-    protected boolean onFeedEncoder(@NonNull MediaCodec encoder, long timeoutUs) {
+    protected boolean onFeedEncoder(@NonNull MediaCodec encoder, @NonNull MediaCodecBuffers encoderBuffers, long timeoutUs) {
         // We do not feed the encoder, see below.
         return false;
     }
 
     @Override
-    protected void onDrainDecoder(@NonNull MediaCodec decoder, int bufferIndex, long presentationTimeUs, boolean endOfStream) {
+    protected void onDrainDecoder(@NonNull MediaCodec decoder, int bufferIndex, @NonNull ByteBuffer bufferData, long presentationTimeUs, boolean endOfStream) {
         if (endOfStream) {
             mEncoder.signalEndOfInputStream();
             decoder.releaseOutputBuffer(bufferIndex, false);

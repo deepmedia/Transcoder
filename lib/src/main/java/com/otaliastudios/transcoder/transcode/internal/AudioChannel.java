@@ -27,9 +27,8 @@ public class AudioChannel {
         int bufferIndex;
         long presentationTimeUs;
         ShortBuffer data;
+        boolean endOfStream;
     }
-
-    public static final int BUFFER_INDEX_END_OF_STREAM = -1;
 
     private static final int BYTES_PER_SHORT = 2;
     private static final long MICROSECS_PER_SEC = 1000000;
@@ -39,54 +38,43 @@ public class AudioChannel {
 
     private final MediaCodec mDecoder;
     private final MediaCodec mEncoder;
-    private final MediaFormat mEncodeFormat;
 
     private int mInputSampleRate;
+    private int mOutputSampleRate;
     private int mInputChannelCount;
     private int mOutputChannelCount;
 
     private AudioRemixer mRemixer;
 
-    private final MediaCodecBuffers mDecoderBuffers;
-    private final MediaCodecBuffers mEncoderBuffers;
-
     private final AudioBuffer mOverflowBuffer = new AudioBuffer();
-
-    private MediaFormat mActualDecodedFormat;
 
     public AudioChannel(@NonNull final MediaCodec decoder,
                  @NonNull final MediaCodec encoder,
-                 @NonNull final MediaFormat encodeFormat) {
+                 @NonNull final MediaFormat outputFormat) {
         mDecoder = decoder;
         mEncoder = encoder;
-        mEncodeFormat = encodeFormat;
 
-        mDecoderBuffers = new MediaCodecBuffers(mDecoder);
-        mEncoderBuffers = new MediaCodecBuffers(mEncoder);
-    }
-
-    public void setActualDecodedFormat(@NonNull final MediaFormat decodedFormat) {
-        mActualDecodedFormat = decodedFormat;
-
-        // TODO I think these exceptions are either useless or not in the right place.
-        // We have MediaFormatValidator doing this kind of stuff.
-
-        mInputSampleRate = mActualDecodedFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-        if (mInputSampleRate != mEncodeFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)) {
-            throw new UnsupportedOperationException("Audio sample rate conversion not supported yet.");
-        }
-
-        mInputChannelCount = mActualDecodedFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-        mOutputChannelCount = mEncodeFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-
-        if (mInputChannelCount != 1 && mInputChannelCount != 2) {
-            throw new UnsupportedOperationException("Input channel count (" + mInputChannelCount + ") not supported.");
-        }
-
+        mOutputSampleRate = outputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        mOutputChannelCount = outputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
         if (mOutputChannelCount != 1 && mOutputChannelCount != 2) {
             throw new UnsupportedOperationException("Output channel count (" + mOutputChannelCount + ") not supported.");
         }
+    }
 
+    /**
+     * Should be the first method to be called, when we get the {@link MediaCodec#INFO_OUTPUT_FORMAT_CHANGED}
+     * event from MediaCodec.
+     * @param decoderOutputFormat the output format
+     */
+    public void onDecoderOutputFormat(@NonNull final MediaFormat decoderOutputFormat) {
+        mInputSampleRate = decoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        if (mInputSampleRate != mOutputSampleRate) {
+            throw new UnsupportedOperationException("Audio sample rate conversion not supported yet.");
+        }
+        mInputChannelCount = decoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        if (mInputChannelCount != 1 && mInputChannelCount != 2) {
+            throw new UnsupportedOperationException("Input channel count (" + mInputChannelCount + ") not supported.");
+        }
         if (mInputChannelCount > mOutputChannelCount) {
             mRemixer = AudioRemixer.DOWNMIX;
         } else if (mInputChannelCount < mOutputChannelCount) {
@@ -94,41 +82,51 @@ public class AudioChannel {
         } else {
             mRemixer = AudioRemixer.PASSTHROUGH;
         }
-
         mOverflowBuffer.presentationTimeUs = 0;
     }
 
-    public void drainDecoderBufferAndQueue(final int bufferIndex, final long presentationTimeUs) {
-        if (mActualDecodedFormat == null) {
-            throw new RuntimeException("Buffer received before format!");
-        }
-
-        final ByteBuffer data = bufferIndex == BUFFER_INDEX_END_OF_STREAM ?
-                null : mDecoderBuffers.getOutputBuffer(bufferIndex);
-
+    /**
+     * Drains the decoder, which means scheduling data for processing.
+     * We fill a new {@link AudioBuffer} with data (not a copy, just a view of it)
+     * and add it to the filled buffers queue.
+     *
+     * @param bufferIndex the buffer index
+     * @param bufferData the buffer data
+     * @param presentationTimeUs the presentation time
+     * @param endOfStream true if end of stream
+     */
+    public void drainDecoder(final int bufferIndex,
+                             @NonNull ByteBuffer bufferData,
+                             final long presentationTimeUs,
+                             final boolean endOfStream) {
+        if (mRemixer == null) throw new RuntimeException("Buffer received before format!");
         AudioBuffer buffer = mEmptyBuffers.poll();
         if (buffer == null) {
             buffer = new AudioBuffer();
         }
-
         buffer.bufferIndex = bufferIndex;
-        buffer.presentationTimeUs = presentationTimeUs;
-        buffer.data = data == null ? null : data.asShortBuffer();
+        buffer.presentationTimeUs = endOfStream ? 0 : presentationTimeUs;
+        buffer.data = endOfStream ? null : bufferData.asShortBuffer();
+        buffer.endOfStream = endOfStream;
 
         if (mOverflowBuffer.data == null) {
-            // data should be null only on BUFFER_INDEX_END_OF_STREAM
-            //noinspection ConstantConditions
-            mOverflowBuffer.data = ByteBuffer
-                    .allocateDirect(data.capacity())
+            mOverflowBuffer.data = ByteBuffer.allocateDirect(bufferData.capacity())
                     .order(ByteOrder.nativeOrder())
                     .asShortBuffer();
             mOverflowBuffer.data.clear().flip();
         }
-
         mFilledBuffers.add(buffer);
     }
 
-    public boolean feedEncoder(@SuppressWarnings("SameParameterValue") long timeoutUs) {
+    /**
+     * Feeds the encoder, which in our case means processing a filled buffer from {@link #mFilledBuffers},
+     * then releasing it and adding it back to {@link #mEmptyBuffers}.
+     *
+     * @param encoderBuffers the encoder buffers
+     * @param timeoutUs a timeout for this operation
+     * @return true if we want to keep working
+     */
+    public boolean feedEncoder(@NonNull MediaCodecBuffers encoderBuffers, long timeoutUs) {
         final boolean hasOverflow = mOverflowBuffer.data != null && mOverflowBuffer.data.hasRemaining();
         if (mFilledBuffers.isEmpty() && !hasOverflow) {
             // No audio data - Bail out
@@ -142,7 +140,7 @@ public class AudioChannel {
         }
 
         // Drain overflow first
-        final ShortBuffer outBuffer = mEncoderBuffers.getInputBuffer(encoderInBuffIndex).asShortBuffer();
+        final ShortBuffer outBuffer = encoderBuffers.getInputBuffer(encoderInBuffIndex).asShortBuffer();
         if (hasOverflow) {
             final long presentationTimeUs = drainOverflow(outBuffer);
             mEncoder.queueInputBuffer(encoderInBuffIndex,
@@ -155,15 +153,17 @@ public class AudioChannel {
         // At this point inBuffer is not null, because we checked mFilledBuffers.isEmpty()
         // and we don't have overflow (if we had, we got out).
         //noinspection ConstantConditions
-        if (inBuffer.bufferIndex == BUFFER_INDEX_END_OF_STREAM) {
+        if (inBuffer.endOfStream) {
             mEncoder.queueInputBuffer(encoderInBuffIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             return false;
         }
 
         final long presentationTimeUs = remixAndMaybeFillOverflow(inBuffer, outBuffer);
         mEncoder.queueInputBuffer(encoderInBuffIndex,
-                0, outBuffer.position() * BYTES_PER_SHORT,
-                presentationTimeUs, 0);
+                0,
+                outBuffer.position() * BYTES_PER_SHORT,
+                presentationTimeUs,
+                0);
         mDecoder.releaseOutputBuffer(inBuffer.bufferIndex, false);
         mEmptyBuffers.add(inBuffer);
         return true;
