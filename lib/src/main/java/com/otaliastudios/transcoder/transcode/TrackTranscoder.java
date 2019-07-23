@@ -33,7 +33,8 @@ public interface TrackTranscoder {
     boolean stepPipeline();
 
     /**
-     * Get presentation time of last sample written to muxer.
+     * Get presentation time of last sample taken from encoder.
+     * This presentation time should not be affected by {@link com.otaliastudios.transcoder.time.TimeInterpolator}s.
      *
      * @return Presentation time in micro-second. Return value is undefined if finished writing.
      */

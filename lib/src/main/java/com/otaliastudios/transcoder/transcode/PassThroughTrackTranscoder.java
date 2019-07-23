@@ -38,9 +38,11 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     private int mBufferSize;
     private ByteBuffer mBuffer;
     private boolean mIsEOS;
-    private long mWrittenPresentationTimeUs;
-    private final MediaFormat mActualOutputFormat;
-    private boolean mFirstStepPipeline = true;
+
+    private long mLastPresentationTime;
+
+    private final MediaFormat mOutputFormat;
+    private boolean mOutputFormatSet = false;
 
     private TimeInterpolator mTimeInterpolator;
 
@@ -54,24 +56,23 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         mMuxer = muxer;
         mTrackType = trackType;
 
-        mActualOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
-        mBufferSize = mActualOutputFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+        mOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
+        mBufferSize = mOutputFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         mBuffer = ByteBuffer.allocateDirect(mBufferSize).order(ByteOrder.nativeOrder());
 
         mTimeInterpolator = timeInterpolator;
     }
 
     @Override
-    public void setUp(@NonNull MediaFormat desiredOutputFormat) {
-    }
+    public void setUp(@NonNull MediaFormat desiredOutputFormat) { }
 
     @SuppressLint("Assert")
     @Override
     public boolean stepPipeline() {
         if (mIsEOS) return false;
-        if (mFirstStepPipeline) {
-            mMuxer.setOutputFormat(mTrackType, mActualOutputFormat);
-            mFirstStepPipeline = false;
+        if (!mOutputFormatSet) {
+            mMuxer.setOutputFormat(mTrackType, mOutputFormat);
+            mOutputFormatSet = true;
         }
         int trackIndex = mExtractor.getSampleTrackIndex();
         if (trackIndex < 0) {
@@ -92,7 +93,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         long timestampUs = mTimeInterpolator.interpolate(mTrackType, realTimestampUs);
         mBufferInfo.set(0, sampleSize, timestampUs, flags);
         mMuxer.write(mTrackType, mBuffer, mBufferInfo);
-        mWrittenPresentationTimeUs = realTimestampUs;
+        mLastPresentationTime = realTimestampUs;
 
         mExtractor.advance();
         return true;
@@ -100,7 +101,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
 
     @Override
     public long getLastPresentationTime() {
-        return mWrittenPresentationTimeUs;
+        return mLastPresentationTime;
     }
 
     @Override

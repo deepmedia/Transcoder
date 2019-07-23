@@ -29,7 +29,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     private final TranscoderMuxer mMuxer;
     private final TrackType mTrackType;
 
-    private long mWrittenPresentationTimeUs;
+    private long mLastPresentationTimeUs;
 
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private MediaCodec mDecoder;
@@ -134,7 +134,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
 
     @Override
     public final long getLastPresentationTime() {
-        return mWrittenPresentationTimeUs;
+        return mLastPresentationTimeUs;
     }
 
     @Override
@@ -284,7 +284,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
         mMuxer.write(mTrackType, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
-        mWrittenPresentationTimeUs = mBufferInfo.presentationTimeUs;
+        mLastPresentationTimeUs = mBufferInfo.presentationTimeUs;
         mEncoder.releaseOutputBuffer(result, false);
         return DRAIN_STATE_CONSUMED;
     }
