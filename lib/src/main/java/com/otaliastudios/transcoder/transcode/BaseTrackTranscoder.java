@@ -6,7 +6,6 @@ import android.media.MediaFormat;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.engine.TranscoderMuxer;
@@ -47,9 +46,9 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
 
     @SuppressWarnings("WeakerAccess")
     protected BaseTrackTranscoder(@NonNull MediaExtractor extractor,
-                                  int trackIndex,
                                   @NonNull TranscoderMuxer muxer,
-                                  @NonNull TrackType trackType) {
+                                  @NonNull TrackType trackType,
+                                  int trackIndex) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
         mMuxer = muxer;

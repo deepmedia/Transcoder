@@ -28,6 +28,7 @@ import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
+import com.otaliastudios.transcoder.transcode.internal.VideoFrameDropper;
 
 import java.nio.ByteBuffer;
 
@@ -35,21 +36,18 @@ import java.nio.ByteBuffer;
 public class VideoTrackTranscoder extends BaseTrackTranscoder {
 
     private static final String TAG = VideoTrackTranscoder.class.getSimpleName();
+    @SuppressWarnings("unused")
     private static final Logger LOG = new Logger(TAG);
 
     private VideoDecoderOutput mDecoderOutputSurface;
     private VideoEncoderInput mEncoderInputSurface;
     private MediaCodec mEncoder; // Keep this since we want to signal EOS on it.
-
-    private double mInFrameRateReciprocal;
-    private double mOutFrameRateReciprocal;
-    private double mFrameRateReciprocalSum;
+    private VideoFrameDropper mFrameDropper;
 
     public VideoTrackTranscoder(
             @NonNull MediaExtractor extractor,
-            int trackIndex,
-            @NonNull TranscoderMuxer muxer) {
-        super(extractor, trackIndex, muxer, TrackType.VIDEO);
+            @NonNull TranscoderMuxer muxer, int trackIndex) {
+        super(extractor, muxer, TrackType.VIDEO, trackIndex);
     }
 
     @Override
@@ -72,6 +70,9 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     @Override
     protected void onCodecsStarted(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat, @NonNull MediaCodec decoder, @NonNull MediaCodec encoder) {
         super.onCodecsStarted(inputFormat, outputFormat, decoder, encoder);
+        mFrameDropper = VideoFrameDropper.newDropper(
+                inputFormat.getInteger(MediaFormat.KEY_FRAME_RATE),
+                outputFormat.getInteger(MediaFormat.KEY_FRAME_RATE));
         mEncoder = encoder;
 
         // Cropping support.
@@ -90,10 +91,6 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         // I don't think we should consider rotation and flip these - we operate on non-rotated
         // surfaces and pass the input rotation metadata to the output muxer, see TranscoderEngine.setupMetadata.
         mDecoderOutputSurface.setScale(scaleX, scaleY);
-
-        // Frame dropping support.
-        int frameRate = outputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
-        mTargetAvgStep = (1F / frameRate) * 1000 * 1000;
     }
 
     @Override
@@ -121,51 +118,10 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         if (endOfStream) {
             mEncoder.signalEndOfInputStream();
             decoder.releaseOutputBuffer(bufferIndex, false);
-        } else if (shouldRenderFrame(presentationTimeUs)) {
+        } else if (mFrameDropper.shouldRenderFrame(presentationTimeUs)) {
             decoder.releaseOutputBuffer(bufferIndex, true);
             mDecoderOutputSurface.drawFrame();
             mEncoderInputSurface.onFrame(presentationTimeUs);
         }
-    }
-
-    // TODO improve this. as it is now, rendering a frame after dropping many,
-    // will not decrease avgStep but rather increase it (for this single frame; then it starts decreasing).
-    // This has the effect that, when a frame is rendered, the following frame is always rendered,
-    // because the conditions are worse then before. After this second frame things go back to normal,
-    // but this is terrible logic.
-    private boolean shouldRenderFrame(long presentationTimeUs) {
-        if (mRenderedSteps > 0 && mAvgStep < mTargetAvgStep) {
-            // We are rendering too much. Drop this frame.
-            // Always render first 2 frames, we need them to compute the avg.
-            LOG.v("FRAME: Dropping. avg: " + mAvgStep + " target: " + mTargetAvgStep);
-            long newLastStep = presentationTimeUs - mLastRenderedUs;
-            float allSteps = (mAvgStep * mRenderedSteps) - mLastStep + newLastStep;
-            mAvgStep = allSteps / mRenderedSteps; // we didn't add a step, just increased the last
-            mLastStep = newLastStep;
-            return false;
-        } else {
-            // Render this frame, since our average step is too long or exact.
-            LOG.v("FRAME: RENDERING. avg: " + mAvgStep + " target: " + mTargetAvgStep + "New stepCount: " + (mRenderedSteps + 1));
-            if (mRenderedSteps >= 0) {
-                // Update the average value, since now we have mLastRenderedUs.
-                long step = presentationTimeUs - mLastRenderedUs;
-                float allSteps = (mAvgStep * mRenderedSteps) + step;
-                mAvgStep = allSteps / (mRenderedSteps + 1); // we added a step, so +1
-                mLastStep = step;
-            }
-            // Increment both
-            mRenderedSteps++;
-            mLastRenderedUs = presentationTimeUs;
-            return true;
-        }
-        if (mFrameRateReciprocalSum > mOutFrameRateReciprocal) {
-            mFrameRateReciprocalSum -= mOutFrameRateReciprocal;
-            // render frame
-            LOG.v("render this frame -> mFrameRateReciprocalSum: " + mFrameRateReciprocalSum);
-            return true;
-        }
-        // drop frame
-        LOG.v("drop this frame -> mFrameRateReciprocalSum: " + mFrameRateReciprocalSum);
-        return false;
     }
 }

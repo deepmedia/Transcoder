@@ -30,13 +30,16 @@ public class AudioEngine {
         boolean endOfStream;
     }
 
+    private static final int BYTES_PER_SAMPLE_PER_CHANNEL = 2; // Assuming 16bit audio, so 2
+    private static final int BYTES_PER_SHORT = 2;
+    private static final long MICROSECONDS_PER_SECOND = 1000000L;
+
     private static long bytesToUs(
             int bytes /* [bytes] */,
             int sampleRate /* [samples/sec] */,
             int channels /* [channel] */
     ) {
-        int bytesPerSamplePerChannel = 2; // [bytes/sample/channel] Assuming 16bit audio so 2
-        int byteRatePerChannel = sampleRate * bytesPerSamplePerChannel; // [bytes/sec/channel]
+        int byteRatePerChannel = sampleRate * BYTES_PER_SAMPLE_PER_CHANNEL; // [bytes/sec/channel]
         int byteRate = byteRatePerChannel * channels; // [bytes/sec]
         return MICROSECONDS_PER_SECOND * bytes / byteRate; // [usec]
     }
@@ -47,9 +50,6 @@ public class AudioEngine {
             int channels) {
         return bytesToUs(shorts * BYTES_PER_SHORT, sampleRate, channels);
     }
-
-    private static final int BYTES_PER_SHORT = 2;
-    private static final long MICROSECONDS_PER_SECOND = 1000000L;
 
     private final Queue<AudioBuffer> mEmptyBuffers = new ArrayDeque<>();
     private final Queue<AudioBuffer> mFilledBuffers = new ArrayDeque<>();

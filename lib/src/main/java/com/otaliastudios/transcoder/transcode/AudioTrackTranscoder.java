@@ -20,9 +20,9 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
     private MediaFormat mEncoderOutputFormat; // to create the channel
 
     public AudioTrackTranscoder(@NonNull MediaExtractor extractor,
-                                int trackIndex,
-                                @NonNull TranscoderMuxer muxer) {
-        super(extractor, trackIndex, muxer, TrackType.AUDIO);
+                                @NonNull TranscoderMuxer muxer,
+                                int trackIndex) {
+        super(extractor, muxer, TrackType.AUDIO, trackIndex);
     }
 
     @Override

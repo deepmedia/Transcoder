@@ -201,8 +201,8 @@ public class TranscoderEngine {
                     status = TrackStatus.PASS_THROUGH;
                 } else {
                     switch (type) {
-                        case VIDEO: transcoder = new VideoTrackTranscoder(mExtractor, index, muxer); break;
-                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, index, muxer); break;
+                        case VIDEO: transcoder = new VideoTrackTranscoder(mExtractor, muxer, index); break;
+                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, muxer, index); break;
                         default: throw new RuntimeException("Unknown type: " + type);
                     }
                     status = TrackStatus.COMPRESSING;
