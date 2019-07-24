@@ -114,7 +114,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
 
     @Override
     protected boolean onFeedEncoder(@NonNull MediaCodec encoder, @NonNull MediaCodecBuffers encoderBuffers, long timeoutUs) {
-        // We do not feed the encoder, see below.
+        // We do not feed the encoder, instead we wait for the encoder surface onFrameAvailable callback.
         return false;
     }
 
@@ -123,11 +123,15 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         if (endOfStream) {
             mEncoder.signalEndOfInputStream();
             decoder.releaseOutputBuffer(bufferIndex, false);
-        } else if (mFrameDropper.shouldRenderFrame(presentationTimeUs)) {
-            decoder.releaseOutputBuffer(bufferIndex, true);
+        } else {
             long interpolatedTimeUs = mTimeInterpolator.interpolate(TrackType.VIDEO, presentationTimeUs);
-            mDecoderOutputSurface.drawFrame();
-            mEncoderInputSurface.onFrame(interpolatedTimeUs);
+            if (mFrameDropper.shouldRenderFrame(interpolatedTimeUs)) {
+                decoder.releaseOutputBuffer(bufferIndex, true);
+                mDecoderOutputSurface.drawFrame();
+                mEncoderInputSurface.onFrame(interpolatedTimeUs);
+            } else {
+                decoder.releaseOutputBuffer(bufferIndex, false);
+            }
         }
     }
 }
