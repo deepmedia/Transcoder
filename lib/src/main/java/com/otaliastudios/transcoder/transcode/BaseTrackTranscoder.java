@@ -245,6 +245,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         boolean hasSize = mBufferInfo.size > 0;
         if (isEos) mIsDecoderEOS = true;
         if (isEos || hasSize) {
+            mLastPresentationTimeUs = mBufferInfo.presentationTimeUs;
             onDrainDecoder(mDecoder,
                     result,
                     mDecoderBuffers.getOutputBuffer(result),
@@ -284,7 +285,6 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
         mMuxer.write(mTrackType, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
-        mLastPresentationTimeUs = mBufferInfo.presentationTimeUs;
         mEncoder.releaseOutputBuffer(result, false);
         return DRAIN_STATE_CONSUMED;
     }

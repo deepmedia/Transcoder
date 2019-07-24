@@ -264,6 +264,7 @@ public class TranscoderEngine {
             if (mDurationUs > 0 && loopCount % PROGRESS_INTERVAL_STEPS == 0) {
                 double videoProgress = getTranscoderProgress(videoTranscoder, mTracks.status(TrackType.VIDEO));
                 double audioProgress = getTranscoderProgress(audioTranscoder, mTracks.status(TrackType.AUDIO));
+                LOG.i("progress - video:" + videoProgress + " audio:" + audioProgress);
                 double progress = (videoProgress + audioProgress) / getTranscodersCount();
                 mProgress = progress;
                 if (mProgressCallback != null) mProgressCallback.onProgress(progress);
