@@ -28,23 +28,29 @@ Transcoder.into(filePath)
 
 Take a look at the demo app for a real example or keep reading below for documentation.
 
-*Note: this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
-It features a lot of improvements over the original project, including:*
+## Features
 
-- *Multithreading support*
-- *Crop to any aspect ratio*
-- *Set output video rotation*
-- *Change output video speed (0.5x, 2x or any float)*
-- *Various bugs fixed*
-- *[Input](#data-sources): Accept content Uris and other types*
-- *[Real error handling](#listening-for-events) instead of errors being thrown*
-- *Frame dropping support, which means you can set the video frame rate*
-- *Source project is over-conservative when choosing options that *might* not be supported. We prefer to try and let the codec fail*
-- *More convenient APIs for transcoding & choosing options*
-- *Configurable [Validators](#validators) to e.g. **not** perform transcoding if the source video is already compressed enough*
-- *Expose internal logs through Logger (so they can be reported to e.g. Crashlytics)*
-- *Handy utilities for track configuration through [Output Strategies](#output-strategies)*
-- *Handy utilities for resizing*
+This project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder)
+which features a lot of improvements and new functionalities.
+
+- Fast transcoding to AAC/AVC
+- Hardware accelerated
+- Multithreaded
+- Convenient, fluent API
+- Choose output size, with automatic cropping [[docs]](#video-size)
+- Choose output rotation [[docs]](#video-rotation) 
+- Choose output speed [[docs]](#video-speed)
+- Choose output frame rate [[docs]](#other-options)
+- Choose output audio channels [[docs]](#audio-strategies)
+- Override frames timestamp, e.g. to slow down the middle part of the video [[docs]](#time-interpolation) 
+- Error handling [[docs]](#listening-for-events)
+- Configurable validators to e.g. avoid transcoding if the source is already compressed enough [[docs]](#validators)
+- Configurable video and audio strategies [[docs](#output-strategies)] 
+
+*With respect to [android-transcoder](https://github.com/ypresto/android-transcoder), which misses most
+of the functionality above, we have also fixed a huge number of bugs and are much less conservative
+when choosing options that might not be supported. The source project will always throw - for example,
+accepting only 16:9, AVC Baseline Profile videos - we prefer to try and let the codec fail if it wants to*.
 
 ## Setup
 
@@ -304,7 +310,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .build()
 ```
 
-## Other Options
+## Advanced Options
 
 #### Video rotation
 
