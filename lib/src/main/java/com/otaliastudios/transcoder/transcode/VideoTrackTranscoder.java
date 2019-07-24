@@ -61,13 +61,9 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     private VideoDecoderOutput mDecoderOutputSurface;
     private VideoEncoderInput mEncoderInputSurface;
 
-    // A step is defined as the microseconds between two frame.
-    // The average step is basically 1 / frame rate.
-    private float mAvgStep = 0;
-    private float mTargetAvgStep;
-    private int mRenderedSteps = -1; // frames - 1
-    private long mLastRenderedUs;
-    private long mLastStep;
+    private double mInFrameRateReciprocal;
+    private double mOutFrameRateReciprocal;
+    private double mFrameRateReciprocalSum;
 
     public VideoTrackTranscoder(
             @NonNull MediaExtractor extractor,
@@ -82,8 +78,11 @@ public class VideoTrackTranscoder implements TrackTranscoder {
     public void setUp(@NonNull MediaFormat desiredOutputFormat) {
         mExtractor.selectTrack(mTrackIndex);
 
-        int frameRate = desiredOutputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
-        mTargetAvgStep = (1F / frameRate) * 1000 * 1000;
+        MediaFormat trackFormat = mExtractor.getTrackFormat(mTrackIndex);
+        int inFrameRate = trackFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
+        int outFrameRate = desiredOutputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
+        mInFrameRateReciprocal = 1.0d / inFrameRate;
+        mOutFrameRateReciprocal = 1.0d / outFrameRate;
 
         // Configure encoder.
         try {
@@ -228,37 +227,22 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         return DRAIN_STATE_CONSUMED;
     }
 
-    // TODO improve this. as it is now, rendering a frame after dropping many,
-    // will not decrease avgStep but rather increase it (for this single frame; then it starts decreasing).
-    // This has the effect that, when a frame is rendered, the following frame is always rendered,
-    // because the conditions are worse then before. After this second frame things go back to normal,
-    // but this is terrible logic.
+    //Refer:https://stackoverflow.com/questions/4223766/dropping-video-frames
     private boolean shouldRenderFrame() {
         if (mBufferInfo.size <= 0) return false;
-        if (mRenderedSteps > 0 && mAvgStep < mTargetAvgStep) {
-            // We are rendering too much. Drop this frame.
-            // Always render first 2 frames, we need them to compute the avg.
-            LOG.v("FRAME: Dropping. avg: " + mAvgStep + " target: " + mTargetAvgStep);
-            long newLastStep = mBufferInfo.presentationTimeUs - mLastRenderedUs;
-            float allSteps = (mAvgStep * mRenderedSteps) - mLastStep + newLastStep;
-            mAvgStep = allSteps / mRenderedSteps; // we didn't add a step, just increased the last
-            mLastStep = newLastStep;
+        boolean firstFrame = Double.valueOf(0d).equals(mFrameRateReciprocalSum);
+        mFrameRateReciprocalSum += mInFrameRateReciprocal;
+        if (firstFrame) {
+            // render frame
             return false;
-        } else {
-            // Render this frame, since our average step is too long or exact.
-            LOG.v("FRAME: RENDERING. avg: " + mAvgStep + " target: " + mTargetAvgStep + "New stepCount: " + (mRenderedSteps + 1));
-            if (mRenderedSteps >= 0) {
-                // Update the average value, since now we have mLastRenderedUs.
-                long step = mBufferInfo.presentationTimeUs - mLastRenderedUs;
-                float allSteps = (mAvgStep * mRenderedSteps) + step;
-                mAvgStep = allSteps / (mRenderedSteps + 1); // we added a step, so +1
-                mLastStep = step;
-            }
-            // Increment both
-            mRenderedSteps++;
-            mLastRenderedUs = mBufferInfo.presentationTimeUs;
-            return true;
         }
+        if (mFrameRateReciprocalSum > mOutFrameRateReciprocal) {
+            mFrameRateReciprocalSum -= mOutFrameRateReciprocal;
+            // render frame
+            return false;
+        }
+        // drop frame
+        return true;
     }
 
     @SuppressWarnings("SameParameterValue")
