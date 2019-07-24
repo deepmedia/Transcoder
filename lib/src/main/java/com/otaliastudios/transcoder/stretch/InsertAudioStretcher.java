@@ -15,7 +15,7 @@ public class InsertAudioStretcher implements AudioStretcher {
     private final static Random NOISE = new Random();
 
     private static short noise() {
-        return (short) NOISE.nextInt(1000);
+        return (short) NOISE.nextInt(500);
     }
 
     private static float ratio(int remaining, int all) {

@@ -45,7 +45,7 @@ which features a lot of improvements and new functionalities.
 - Override frames timestamp, e.g. to slow down the middle part of the video [[docs]](#time-interpolation) 
 - Error handling [[docs]](#listening-for-events)
 - Configurable validators to e.g. avoid transcoding if the source is already compressed enough [[docs]](#validators)
-- Configurable video and audio strategies [[docs](#output-strategies)] 
+- Configurable video and audio strategies [[docs]](#output-strategies)
 
 *With respect to [android-transcoder](https://github.com/ypresto/android-transcoder), which misses most
 of the functionality above, we have also fixed a huge number of bugs and are much less conservative
