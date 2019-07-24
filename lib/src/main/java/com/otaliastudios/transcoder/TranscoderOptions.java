@@ -12,6 +12,8 @@ import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
 import com.otaliastudios.transcoder.strategy.OutputStrategy;
+import com.otaliastudios.transcoder.stretch.AudioStretcher;
+import com.otaliastudios.transcoder.stretch.DefaultAudioStretcher;
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator;
 import com.otaliastudios.transcoder.time.SpeedTimeInterpolator;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
@@ -38,6 +40,7 @@ public class TranscoderOptions {
     private Validator validator;
     private int rotation;
     private TimeInterpolator timeInterpolator;
+    private AudioStretcher audioStretcher;
 
     TranscoderListener listener;
     Handler listenerHandler;
@@ -77,6 +80,11 @@ public class TranscoderOptions {
         return timeInterpolator;
     }
 
+    @NonNull
+    public AudioStretcher getAudioStretcher() {
+        return audioStretcher;
+    }
+
     public static class Builder {
         private String outPath;
         private DataSource dataSource;
@@ -87,6 +95,7 @@ public class TranscoderOptions {
         private Validator validator;
         private int rotation;
         private TimeInterpolator timeInterpolator;
+        private AudioStretcher audioStretcher;
 
         Builder(@NonNull String outPath) {
             this.outPath = outPath;
@@ -228,6 +237,13 @@ public class TranscoderOptions {
         }
 
         @NonNull
+        @SuppressWarnings("unused")
+        public Builder setAudioStretcher(@NonNull AudioStretcher audioStretcher) {
+            this.audioStretcher = audioStretcher;
+            return this;
+        }
+
+        @NonNull
         public TranscoderOptions build() {
             if (listener == null) {
                 throw new IllegalStateException("listener can't be null");
@@ -258,6 +274,9 @@ public class TranscoderOptions {
             if (timeInterpolator == null) {
                 timeInterpolator = new DefaultTimeInterpolator();
             }
+            if (audioStretcher == null) {
+                audioStretcher = new DefaultAudioStretcher();
+            }
             TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
             options.dataSource = dataSource;
@@ -268,6 +287,7 @@ public class TranscoderOptions {
             options.validator = validator;
             options.rotation = rotation;
             options.timeInterpolator = timeInterpolator;
+            options.audioStretcher = audioStretcher;
             return options;
         }
 

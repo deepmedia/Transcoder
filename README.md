@@ -319,8 +319,6 @@ Transcoder.into(filePath)
 
 #### Time interpolation
 
-**Note: when time is changed, you must make sure to remove the audio track or the process breaks.**
-
 We offer APIs to change the timestamp of each video and audio frame. You can pass a `TimeInterpolator`
 to the transcoder builder to be able to receive the frame timestamp as input, and return a new one
 as output.
@@ -347,8 +345,6 @@ the transcoding operation fail.
 
 #### Video speed
 
-**Note: when time is changed, you must make sure to remove the audio track or the process breaks.**
-
 We also offer a special time interpolator called `SpeedTimeInterpolator` that accepts a `float` parameter
 and will modify the video speed.
 
@@ -366,6 +362,24 @@ Transcoder.into(filePath)
         .setSpeed(2F) // Twice as fast
         // ...
 ```
+
+#### Audio stretching
+
+When a time interpolator alters the frames and samples timestamps, you can either remove audio or
+stretch the audio samples to the new length. This is done through the `AudioStretcher` interface:
+
+```java
+Transcoder.into(filePath)
+        .setAudioStretcher(audioStretcher)
+        // ...
+```
+
+The default audio stretcher, `DefaultAudioStretcher`, will:
+
+- When we need to shrink a group of samples, cut the last ones
+- When we need to stretch a group of samples, insert noise samples in between
+
+Please take a look at the implementation and read class documentation.
 
 ## Compatibility
 

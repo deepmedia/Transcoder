@@ -179,8 +179,6 @@ public class TranscoderActivity extends AppCompatActivity implements
             case R.id.speed_2x: speed = 2F; break;
             default: speed = 1F;
         }
-        OutputStrategy audioStrategy = mTranscodeAudioStrategy; // speed == 1F ? mTranscodeAudioStrategy : new RemoveTrackStrategy();
-        OutputStrategy videoStrategy = mTranscodeVideoStrategy;
 
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
@@ -188,8 +186,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         mTranscodeFuture = Transcoder.into(mTranscodeOutputFile.getAbsolutePath())
                 .setDataSource(this, mTranscodeInputUri)
                 .setListener(this)
-                .setAudioOutputStrategy(audioStrategy)
-                .setVideoOutputStrategy(videoStrategy)
+                .setAudioOutputStrategy(mTranscodeAudioStrategy)
+                .setVideoOutputStrategy(mTranscodeVideoStrategy)
                 .setRotation(rotation)
                 .setSpeed(speed)
                 .transcode();

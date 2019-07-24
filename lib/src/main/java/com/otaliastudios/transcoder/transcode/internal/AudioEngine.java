@@ -9,6 +9,7 @@ import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
+import com.otaliastudios.transcoder.stretch.AudioStretcher;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 
 import java.nio.Buffer;
@@ -38,8 +39,9 @@ public class AudioEngine {
     private final MediaCodec mEncoder;
     private final int mSampleRate;
     private final int mDecoderChannels;
-    private final int mEncoderChannels;
+    @SuppressWarnings("FieldCanBeLocal") private final int mEncoderChannels;
     private final AudioRemixer mRemixer;
+    private final AudioStretcher mStretcher;
     private final TimeInterpolator mTimeInterpolator;
     private long mLastDecoderUs = Long.MIN_VALUE;
     private long mLastEncoderUs = Long.MIN_VALUE;
@@ -58,7 +60,8 @@ public class AudioEngine {
                        @NonNull MediaFormat decoderOutputFormat,
                        @NonNull MediaCodec encoder,
                        @NonNull MediaFormat encoderOutputFormat,
-                       @NonNull TimeInterpolator timeInterpolator) {
+                       @NonNull TimeInterpolator timeInterpolator,
+                       @NonNull AudioStretcher audioStretcher) {
         mDecoder = decoder;
         mEncoder = encoder;
         mTimeInterpolator = timeInterpolator;
@@ -81,7 +84,7 @@ public class AudioEngine {
             throw new UnsupportedOperationException("Input channel count (" + mDecoderChannels + ") not supported.");
         }
 
-        // Create remixer.
+        // Create remixer and stretcher.
         if (mDecoderChannels > mEncoderChannels) {
             mRemixer = AudioRemixer.DOWNMIX;
         } else if (mDecoderChannels < mEncoderChannels) {
@@ -89,6 +92,7 @@ public class AudioEngine {
         } else {
             mRemixer = AudioRemixer.PASSTHROUGH;
         }
+        mStretcher = audioStretcher;
     }
 
     /**
@@ -237,11 +241,14 @@ public class AudioEngine {
             buffer.decoderData.limit(buffer.decoderData.limit() - overflowReduction);
         }
         final int finalInputSize = buffer.decoderData.remaining();
-        LOG.i("process - inputSize:" + inputSize + " processedInputSize:" + processedInputSize + " outputSize:" + outputSize + " finalInputSize:" + finalInputSize);
+        LOG.i("process - inputSize:" + inputSize +
+                " processedInputSize:" + processedInputSize +
+                " outputSize:" + outputSize +
+                " finalInputSize:" + finalInputSize);
 
         // 4. Do the stretching. We need a bridge buffer for its output.
         ensureTempBuffer(finalInputSize + stretchShorts);
-        AudioStretcher.CUT_OR_INSERT.stretch(buffer.decoderData, mTempBuffer, mDecoderChannels);
+        mStretcher.stretch(buffer.decoderData, mTempBuffer, mDecoderChannels);
 
         // 5. Do the actual remixing.
         mTempBuffer.position(0);
@@ -255,7 +262,7 @@ public class AudioEngine {
             buffer.decoderData.limit(buffer.decoderData.limit() + overflowReduction);
         }
 
-        // 5. Write the buffer.
+        // 7. Write the buffer.
         // This is the encoder buffer: we have likely written it all, but let's use
         // encoderBuffer.position() to know how much anyway.
         mEncoder.queueInputBuffer(encoderBufferIndex,

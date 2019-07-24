@@ -202,7 +202,7 @@ public class TranscoderEngine {
                 } else {
                     switch (type) {
                         case VIDEO: transcoder = new VideoTrackTranscoder(mExtractor, muxer, index, options.getTimeInterpolator()); break;
-                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, muxer, index, options.getTimeInterpolator()); break;
+                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, muxer, index, options.getTimeInterpolator(), options.getAudioStretcher()); break;
                         default: throw new RuntimeException("Unknown type: " + type);
                     }
                     status = TrackStatus.COMPRESSING;

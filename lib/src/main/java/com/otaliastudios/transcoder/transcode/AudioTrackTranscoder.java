@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.stretch.AudioStretcher;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.AudioEngine;
 
@@ -17,6 +18,7 @@ import java.nio.ByteBuffer;
 public class AudioTrackTranscoder extends BaseTrackTranscoder {
 
     private TimeInterpolator mTimeInterpolator;
+    private AudioStretcher mAudioStretcher;
     private AudioEngine mAudioEngine;
     private MediaCodec mEncoder; // to create the channel
     private MediaFormat mEncoderOutputFormat; // to create the channel
@@ -24,9 +26,11 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
     public AudioTrackTranscoder(@NonNull MediaExtractor extractor,
                                 @NonNull TranscoderMuxer muxer,
                                 int trackIndex,
-                                @NonNull TimeInterpolator timeInterpolator) {
+                                @NonNull TimeInterpolator timeInterpolator,
+                                @NonNull AudioStretcher audioStretcher) {
         super(extractor, muxer, TrackType.AUDIO, trackIndex);
         mTimeInterpolator = timeInterpolator;
+        mAudioStretcher = audioStretcher;
     }
 
     @Override
@@ -45,10 +49,11 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
     @Override
     protected void onDecoderOutputFormatChanged(@NonNull MediaCodec decoder, @NonNull MediaFormat format) {
         super.onDecoderOutputFormatChanged(decoder, format);
-        mAudioEngine = new AudioEngine(decoder, format, mEncoder, mEncoderOutputFormat, mTimeInterpolator);
+        mAudioEngine = new AudioEngine(decoder, format, mEncoder, mEncoderOutputFormat, mTimeInterpolator, mAudioStretcher);
         mEncoder = null;
         mEncoderOutputFormat = null;
         mTimeInterpolator = null;
+        mAudioStretcher = null;
     }
 
     @Override
