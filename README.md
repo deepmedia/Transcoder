@@ -30,9 +30,6 @@ Take a look at the demo app for a real example or keep reading below for documen
 
 ## Features
 
-This project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder)
-which features a lot of improvements and new functionalities.
-
 - Fast transcoding to AAC/AVC
 - Hardware accelerated
 - Multithreaded
@@ -47,10 +44,11 @@ which features a lot of improvements and new functionalities.
 - Configurable validators to e.g. avoid transcoding if the source is already compressed enough [[docs]](#validators)
 - Configurable video and audio strategies [[docs]](#output-strategies)
 
-*With respect to [android-transcoder](https://github.com/ypresto/android-transcoder), which misses most
-of the functionality above, we have also fixed a huge number of bugs and are much less conservative
-when choosing options that might not be supported. The source project will always throw - for example,
-accepting only 16:9, AVC Baseline Profile videos - we prefer to try and let the codec fail if it wants to*.
+*This project started as a fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
+With respect to the source project, which misses most of the functionality listed above, 
+we have also fixed a huge number of bugs and are much less conservative when choosing options 
+that might not be supported. The source project will always throw - for example, accepting only 16:9,
+AVC Baseline Profile videos - we prefer to try and let the codec fail if it wants to*.
 
 ## Setup
 
@@ -135,8 +133,8 @@ Transcoding operation did succeed. The success code can be:
 
 |Code|Meaning|
 |----|-------|
-|`MediaTranscoder.SUCCESS_TRANSCODED`|Transcoding was executed successfully. Transcoded file was written to the output path.|
-|`MediaTranscoder.SUCCESS_NOT_NEEDED`|Transcoding was not executed because it was considered **not needed** by the `Validator`.|
+|`Transcoder.SUCCESS_TRANSCODED`|Transcoding was executed successfully. Transcoded file was written to the output path.|
+|`Transcoder.SUCCESS_NOT_NEEDED`|Transcoding was not executed because it was considered **not needed** by the `Validator`.|
 
 Keep reading [below](#validators) to know about `Validator`s.
 
@@ -227,9 +225,9 @@ audio stream to AAC format with the specified number of channels.
 
 ```java
 Transcoder.into(filePath)
-        .setAudioOutputStrategy(DefaultAudioStrategy(1)) // or..
-        .setAudioOutputStrategy(DefaultAudioStrategy(2)) // or..
-        .setAudioOutputStrategy(DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
+        .setAudioOutputStrategy(new DefaultAudioStrategy(1)) // or..
+        .setAudioOutputStrategy(new DefaultAudioStrategy(2)) // or..
+        .setAudioOutputStrategy(new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
         // ...
 ```
 
@@ -250,16 +248,16 @@ We provide helpers for common tasks:
 DefaultVideoStrategy strategy;
 
 // Sets an exact size. If aspect ratio does not match, cropping will take place.
-strategy = DefaultVideoStrategy.exact(1080, 720).build()
+strategy = DefaultVideoStrategy.exact(1080, 720).build();
 
 // Keeps the aspect ratio, but scales down the input size with the given fraction.
-strategy = DefaultVideoStrategy.fraction(0.5F).build()
+strategy = DefaultVideoStrategy.fraction(0.5F).build();
 
 // Ensures that each video size is at most the given value - scales down otherwise.
-strategy = DefaultVideoStrategy.atMost(1000).build()
+strategy = DefaultVideoStrategy.atMost(1000).build();
 
 // Ensures that minor and major dimension are at most the given values - scales down otherwise.
-strategy = DefaultVideoStrategy.atMost(500, 1000).build()
+strategy = DefaultVideoStrategy.atMost(500, 1000).build();
 ```
 
 In fact, all of these will simply call `new DefaultVideoStrategy.Builder(resizer)` with a special
@@ -277,14 +275,14 @@ You can also group resizers through `MultiResizer`, which applies resizers in ch
 
 ```java
 // First scales down, then ensures size is at most 1000. Order matters!
-Resizer resizer = new MultiResizer()
-resizer.addResizer(new FractionResizer(0.5F))
-resizer.addResizer(new AtMostResizer(1000))
+Resizer resizer = new MultiResizer();
+resizer.addResizer(new FractionResizer(0.5F));
+resizer.addResizer(new AtMostResizer(1000));
 
 // First makes it 16:9, then ensures size is at most 1000. Order matters!
-Resizer resizer = new MultiResizer()
-resizer.addResizer(new AspectRatioResizer(16F / 9F))
-resizer.addResizer(new AtMostResizer(1000))
+Resizer resizer = new MultiResizer();
+resizer.addResizer(new AspectRatioResizer(16F / 9F));
+resizer.addResizer(new AtMostResizer(1000));
 ```
 
 This option is already available through the DefaultVideoStrategy builder, so you can do:
@@ -294,7 +292,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .addResizer(new AspectRatioResizer(16F / 9F))
         .addResizer(new FractionResizer(0.5F))
         .addResizer(new AtMostResizer(1000))
-        .build()
+        .build();
 ```
 
 ### Other options
@@ -307,7 +305,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .bitRate(DefaultVideoStrategy.BITRATE_UNKNOWN) // tries to estimate
         .frameRate(frameRate) // will be capped to the input frameRate
         .iFrameInterval(interval) // interval between I-frames in seconds
-        .build()
+        .build();
 ```
 
 ## Advanced Options
@@ -394,7 +392,7 @@ This is a complex issue which is especially important for video strategies, as a
 to a transcoding error or corrupted file.
 
 Android platform specifies requirements for manufacturers through the [CTS (Compatibility test suite)](https://source.android.com/compatibility/cts).
-Only a few codecs and sizes are strictly required to work.
+Only a few codecs and sizes are **strictly** required to work.
 
 We collect common presets in the `DefaultVideoStrategies` class:
 
