@@ -179,7 +179,7 @@ public class TranscoderActivity extends AppCompatActivity implements
             case R.id.speed_2x: speed = 2F; break;
             default: speed = 1F;
         }
-        OutputStrategy audioStrategy = speed == 1F ? mTranscodeAudioStrategy : new RemoveTrackStrategy();
+        OutputStrategy audioStrategy = mTranscodeAudioStrategy; // speed == 1F ? mTranscodeAudioStrategy : new RemoveTrackStrategy();
         OutputStrategy videoStrategy = mTranscodeVideoStrategy;
 
         // Launch the transcoding operation.

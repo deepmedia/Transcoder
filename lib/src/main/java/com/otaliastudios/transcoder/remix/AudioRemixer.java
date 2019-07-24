@@ -11,7 +11,9 @@ import java.nio.ShortBuffer;
  */
 public interface AudioRemixer {
 
-    void remix(@NonNull final ShortBuffer inSBuff, @NonNull final ShortBuffer outSBuff);
+    void remix(@NonNull final ShortBuffer inputBuffer, @NonNull final ShortBuffer outputBuffer);
+
+    int getRemixedSize(int inputSize);
 
     AudioRemixer DOWNMIX = new DownMixAudioRemixer();
 

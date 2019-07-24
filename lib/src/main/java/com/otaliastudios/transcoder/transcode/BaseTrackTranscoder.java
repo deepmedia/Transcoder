@@ -163,7 +163,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public final boolean stepPipeline() {
+    public final boolean transcode() {
         boolean busy = false;
         int status;
         while (drainEncoder(0) != DRAIN_STATE_NONE) busy = true;

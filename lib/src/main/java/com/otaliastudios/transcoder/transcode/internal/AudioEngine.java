@@ -6,10 +6,12 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
@@ -25,45 +27,23 @@ import java.util.Queue;
  */
 public class AudioEngine {
 
-    private static class AudioBuffer {
-        int bufferIndex;
-        long presentationTimeUs;
-        ShortBuffer data;
-        boolean endOfStream;
-    }
-
-    private static final int BYTES_PER_SAMPLE_PER_CHANNEL = 2; // Assuming 16bit audio, so 2
     private static final int BYTES_PER_SHORT = 2;
-    private static final long MICROSECONDS_PER_SECOND = 1000000L;
 
-    private static long bytesToUs(
-            int bytes /* [bytes] */,
-            int sampleRate /* [samples/sec] */,
-            int channels /* [channel] */
-    ) {
-        int byteRatePerChannel = sampleRate * BYTES_PER_SAMPLE_PER_CHANNEL; // [bytes/sec/channel]
-        int byteRate = byteRatePerChannel * channels; // [bytes/sec]
-        return MICROSECONDS_PER_SECOND * bytes / byteRate; // [usec]
-    }
-
-    private static long shortsToUs(
-            int shorts,
-            int sampleRate,
-            int channels) {
-        return bytesToUs(shorts * BYTES_PER_SHORT, sampleRate, channels);
-    }
+    private static final String TAG = AudioEngine.class.getSimpleName();
+    private static final Logger LOG = new Logger(TAG);
 
     private final Queue<AudioBuffer> mEmptyBuffers = new ArrayDeque<>();
-    private final Queue<AudioBuffer> mFilledBuffers = new ArrayDeque<>();
+    private final Queue<AudioBuffer> mPendingBuffers = new ArrayDeque<>();
     private final MediaCodec mDecoder;
     private final MediaCodec mEncoder;
-    private final AudioBuffer mOverflowBuffer = new AudioBuffer();
     private final int mSampleRate;
-    private final int mInputChannelCount;
-    private final int mOutputChannelCount;
+    private final int mDecoderChannels;
+    private final int mEncoderChannels;
     private final AudioRemixer mRemixer;
     private final TimeInterpolator mTimeInterpolator;
-
+    private long mLastDecoderUs = Long.MIN_VALUE;
+    private long mLastEncoderUs = Long.MIN_VALUE;
+    private ShortBuffer mTempBuffer;
 
     /**
      * The AudioEngine should be created when we know the actual decoded format,
@@ -92,25 +72,31 @@ public class AudioEngine {
         mSampleRate = inputSampleRate;
 
         // Check channel count.
-        mOutputChannelCount = encoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-        mInputChannelCount = decoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-        if (mOutputChannelCount != 1 && mOutputChannelCount != 2) {
-            throw new UnsupportedOperationException("Output channel count (" + mOutputChannelCount + ") not supported.");
+        mEncoderChannels = encoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        mDecoderChannels = decoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        if (mEncoderChannels != 1 && mEncoderChannels != 2) {
+            throw new UnsupportedOperationException("Output channel count (" + mEncoderChannels + ") not supported.");
         }
-        if (mInputChannelCount != 1 && mInputChannelCount != 2) {
-            throw new UnsupportedOperationException("Input channel count (" + mInputChannelCount + ") not supported.");
+        if (mDecoderChannels != 1 && mDecoderChannels != 2) {
+            throw new UnsupportedOperationException("Input channel count (" + mDecoderChannels + ") not supported.");
         }
 
         // Create remixer.
-        if (mInputChannelCount > mOutputChannelCount) {
+        if (mDecoderChannels > mEncoderChannels) {
             mRemixer = AudioRemixer.DOWNMIX;
-        } else if (mInputChannelCount < mOutputChannelCount) {
+        } else if (mDecoderChannels < mEncoderChannels) {
             mRemixer = AudioRemixer.UPMIX;
         } else {
             mRemixer = AudioRemixer.PASSTHROUGH;
         }
-        mOverflowBuffer.presentationTimeUs = 0;
+    }
 
+    /**
+     * Returns true if we have raw buffers to be processed.
+     * @return true if we have
+     */
+    private boolean hasPendingBuffers() {
+        return !mPendingBuffers.isEmpty();
     }
 
     /**
@@ -129,25 +115,16 @@ public class AudioEngine {
                              final boolean endOfStream) {
         if (mRemixer == null) throw new RuntimeException("Buffer received before format!");
         AudioBuffer buffer = mEmptyBuffers.poll();
-        if (buffer == null) {
-            buffer = new AudioBuffer();
-        }
-        buffer.bufferIndex = bufferIndex;
-        buffer.presentationTimeUs = endOfStream ? 0 : presentationTimeUs;
-        buffer.data = endOfStream ? null : bufferData.asShortBuffer();
-        buffer.endOfStream = endOfStream;
-
-        if (mOverflowBuffer.data == null) {
-            mOverflowBuffer.data = ByteBuffer.allocateDirect(bufferData.capacity())
-                    .order(ByteOrder.nativeOrder())
-                    .asShortBuffer();
-            mOverflowBuffer.data.clear().flip();
-        }
-        mFilledBuffers.add(buffer);
+        if (buffer == null) buffer = new AudioBuffer();
+        buffer.decoderBufferIndex = bufferIndex;
+        buffer.decoderTimestampUs = endOfStream ? 0 : presentationTimeUs;
+        buffer.decoderData = endOfStream ? null : bufferData.asShortBuffer();
+        buffer.isEndOfStream = endOfStream;
+        mPendingBuffers.add(buffer);
     }
 
     /**
-     * Feeds the encoder, which in our case means processing a filled buffer from {@link #mFilledBuffers},
+     * Feeds the encoder, which in our case means processing a filled buffer,
      * then releasing it and adding it back to {@link #mEmptyBuffers}.
      *
      * @param encoderBuffers the encoder buffers
@@ -155,33 +132,21 @@ public class AudioEngine {
      * @return true if we want to keep working
      */
     public boolean feedEncoder(@NonNull MediaCodecBuffers encoderBuffers, long timeoutUs) {
-        final boolean hasOverflow = hasOverflow();
-        final boolean hasBuffers = hasBuffers();
-        if (!hasBuffers && !hasOverflow) return false;
+        if (!hasPendingBuffers()) return false;
 
-        // Prepare to encode - see if encoder has buffers.
+        // First of all, see if encoder has buffers that we can write into.
+        // If we don't have an output buffer, there's nothing we can do.
         final int encoderBufferIndex = mEncoder.dequeueInputBuffer(timeoutUs);
         if (encoderBufferIndex < 0) return false;
         ShortBuffer encoderBuffer = encoderBuffers.getInputBuffer(encoderBufferIndex).asShortBuffer();
+        encoderBuffer.clear();
 
-        // If we have overflow data, process that first.
-        if (hasOverflow) {
-            long presentationTimeUs = drainOverflow(encoderBuffer);
-            mEncoder.queueInputBuffer(encoderBufferIndex,
-                    0,
-                    encoderBuffer.position() * BYTES_PER_SHORT,
-                    presentationTimeUs,
-                    0);
-            return true;
-        }
-
-        // At this point buffer is not null, because we checked hasBuffers()
-        // and we don't have overflow (if we had, we got out).
-        final AudioBuffer decoderBuffer = mFilledBuffers.poll();
+        // Get the latest raw buffer to be processed.
+        AudioBuffer buffer = mPendingBuffers.peek();
 
         // When endOfStream, just signal EOS and return false.
         //noinspection ConstantConditions
-        if (decoderBuffer.endOfStream) {
+        if (buffer.isEndOfStream) {
             mEncoder.queueInputBuffer(encoderBufferIndex,
                     0,
                     0,
@@ -190,94 +155,128 @@ public class AudioEngine {
             return false;
         }
 
-        // If not, process data and return true.
-        long inputPresentationTime = decoderBuffer.presentationTimeUs;
-        long outputPresentationTime = process(decoderBuffer.data, encoderBuffer, inputPresentationTime);
+        // Process the buffer.
+        boolean overflows = process(buffer, encoderBuffer, encoderBufferIndex);
+        if (overflows) {
+            // If this buffer does overflow, we will keep it in the queue and do
+            // not release. It will be used at the next cycle (presumably soon,
+            // since we return true).
+            return true;
+        } else {
+            // If this buffer does not overflow, it can be removed from our queue,
+            // re-added to empty, and also released from the decoder buffers.
+            mPendingBuffers.remove();
+            mEmptyBuffers.add(buffer);
+            mDecoder.releaseOutputBuffer(buffer.decoderBufferIndex, false);
+            return true;
+        }
+    }
+
+    /**
+     * Processes a pending buffer.
+     *
+     * We have an output buffer of restricted size, and our input size can be already bigger
+     * or grow after a {@link TimeInterpolator} operation or a {@link AudioRemixer} one.
+     *
+     * For this reason, we instead start from the output size and compute the input size that
+     * would generate an output of that size. We then select this part of the input and only
+     * process.
+     *
+     * If input is restricted, this means that the input buffer must be processed again.
+     * We will return true in this case. At the next cycle, the input buffer should be identical
+     * to the previous, but:
+     *
+     * - {@link Buffer#position()} will be increased to exclude the already processed values
+     * - {@link AudioBuffer#decoderTimestampUs} will be increased to include the already processed values
+     *
+     * So everything should work as expected for repeated cycles.
+     *
+     * Before returning, this function should release the encoder buffer using
+     * {@link MediaCodec#queueInputBuffer(int, int, int, long, int)}.
+     *
+     * @param buffer coming from decoder. Has valid limit and position
+     * @param encoderBuffer coming from encoder. At this point this is in a cleared state
+     * @param encoderBufferIndex the index of encoderBuffer so we can release it
+     */
+    private boolean process(@NonNull AudioBuffer buffer, @NonNull ShortBuffer encoderBuffer, int encoderBufferIndex) {
+        // Only process the amount of data that can fill in the encoderBuffer.
+        final int outputSize = encoderBuffer.remaining();
+        final int inputSize = buffer.decoderData.remaining();
+        int processedInputSize = inputSize;
+
+        // 1. Perform TimeInterpolator computation
+        long encoderUs = mTimeInterpolator.interpolate(TrackType.AUDIO, buffer.decoderTimestampUs);
+        if (mLastDecoderUs == Long.MIN_VALUE) {
+            mLastDecoderUs = buffer.decoderTimestampUs;
+            mLastEncoderUs = encoderUs;
+        }
+        long decoderDeltaUs = buffer.decoderTimestampUs - mLastDecoderUs;
+        long encoderDeltaUs = encoderUs - mLastEncoderUs;
+        mLastDecoderUs = buffer.decoderTimestampUs;
+        mLastEncoderUs = encoderUs;
+        long stretchUs = encoderDeltaUs - decoderDeltaUs; // microseconds that the TimeInterpolator adds (or removes).
+        int stretchShorts = AudioConversions.usToShorts(stretchUs, mSampleRate, mDecoderChannels);
+        LOG.i("process - time stretching - decoderDeltaUs:" + decoderDeltaUs +
+                " encoderDeltaUs:" + encoderDeltaUs +
+                " stretchUs:" + stretchUs +
+                " stretchShorts:" + stretchShorts);
+        processedInputSize += stretchShorts;
+
+        // 2. Ask remixers how much space they need for the given input
+        processedInputSize = mRemixer.getRemixedSize(processedInputSize);
+
+        // 3. Compare processedInputSize and outputSize. If processedInputSize > outputSize, we overflow.
+        // In this case, isolate the valid data.
+        boolean overflow = processedInputSize > outputSize;
+        int overflowReduction = 0;
+        if (overflow) {
+            // Compute the input size that matches this output size.
+            double ratio = (double) processedInputSize / inputSize; // > 1
+            overflowReduction = inputSize - (int) Math.floor((double) outputSize / ratio);
+            LOG.w("process - overflowing! Reduction:" + overflowReduction);
+            buffer.decoderData.limit(buffer.decoderData.limit() - overflowReduction);
+        }
+        final int finalInputSize = buffer.decoderData.remaining();
+        LOG.i("process - inputSize:" + inputSize + " processedInputSize:" + processedInputSize + " outputSize:" + outputSize + " finalInputSize:" + finalInputSize);
+
+        // 4. Do the stretching. We need a bridge buffer for its output.
+        ensureTempBuffer(finalInputSize + stretchShorts);
+        AudioStretcher.CUT_OR_INSERT.stretch(buffer.decoderData, mTempBuffer, mDecoderChannels);
+
+        // 5. Do the actual remixing.
+        mTempBuffer.position(0);
+        mRemixer.remix(mTempBuffer, encoderBuffer);
+
+        // 6. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
+        // We need an updated timestamp for the next cycle, since we will cycle on the same input
+        // buffer that has overflown.
+        if (overflow) {
+            buffer.decoderTimestampUs += AudioConversions.shortsToUs(finalInputSize, mSampleRate, mDecoderChannels);
+            buffer.decoderData.limit(buffer.decoderData.limit() + overflowReduction);
+        }
+
+        // 5. Write the buffer.
+        // This is the encoder buffer: we have likely written it all, but let's use
+        // encoderBuffer.position() to know how much anyway.
         mEncoder.queueInputBuffer(encoderBufferIndex,
                 0,
                 encoderBuffer.position() * BYTES_PER_SHORT,
-                outputPresentationTime,
-                0);
-        mDecoder.releaseOutputBuffer(decoderBuffer.bufferIndex, false);
-        mEmptyBuffers.add(decoderBuffer);
-        return true;
+                encoderUs,
+                0
+        );
+
+        return overflow;
     }
 
-    /**
-     * Returns true if we have overflow data to be drained and set to the encoder.
-     * The overflow data is already processed.
-     *
-     * @return true if data
-     */
-    private boolean hasOverflow() {
-        return mOverflowBuffer.data != null && mOverflowBuffer.data.hasRemaining();
-    }
-
-    /**
-     * Returns true if we have filled buffers to be processed.
-     * @return true if we have
-     */
-    private boolean hasBuffers() {
-        return !mFilledBuffers.isEmpty();
-    }
-
-    /**
-     * Drains the overflow data into the given {@link ShortBuffer}.The overflow data is
-     * already processed, it must just be copied into the given buffer.
-     *
-     * @param outBuffer output buffer
-     * @return the frame timestamp
-     */
-    private long drainOverflow(@NonNull final ShortBuffer outBuffer) {
-        final ShortBuffer overflowBuffer = mOverflowBuffer.data;
-        final int overflowLimit = overflowBuffer.limit();
-        final int overflowSize = overflowBuffer.remaining();
-        final long beginPresentationTimeUs = mOverflowBuffer.presentationTimeUs +
-                shortsToUs(overflowBuffer.position(),
-                        mSampleRate,
-                        mOutputChannelCount);
-        outBuffer.clear();
-        overflowBuffer.limit(outBuffer.capacity()); // Limit overflowBuffer to outBuffer's capacity
-        outBuffer.put(overflowBuffer); // Load overflowBuffer onto outBuffer
-        if (overflowSize >= outBuffer.capacity()) {
-            overflowBuffer.clear().limit(0); // Overflow fully consumed - Reset
-        } else {
-            overflowBuffer.limit(overflowLimit); // Only partially consumed - Keep position & restore previous limit
+    private void ensureTempBuffer(int desiredSize) {
+        LOG.w("ensureTempBuffer - desiredSize:" + desiredSize);
+        if (mTempBuffer == null || mTempBuffer.capacity() < desiredSize) {
+            LOG.w("ensureTempBuffer - creating new buffer.");
+            mTempBuffer = ByteBuffer.allocateDirect(desiredSize * BYTES_PER_SHORT)
+                    .order(ByteOrder.nativeOrder())
+                    .asShortBuffer();
         }
-
-        return beginPresentationTimeUs;
-    }
-
-    private long process(@NonNull final ShortBuffer inputBuffer,
-                         @NonNull final ShortBuffer outputBuffer,
-                         long inputPresentationTimeUs) {
-        long outputPresentationTime = mTimeInterpolator.interpolate(TrackType.AUDIO, inputPresentationTimeUs);
-
-        // Reset position to 0 and set limit to capacity (Since MediaCodec doesn't do that for us)
-        outputBuffer.clear();
-        inputBuffer.clear();
-
-
-        if (inputBuffer.remaining() <= outputBuffer.remaining()) {
-            // Safe case. Just remix.
-            mRemixer.remix(inputBuffer, outputBuffer);
-        } else {
-            // Overflow!
-            // First remix all we can.
-            inputBuffer.limit(outputBuffer.capacity());
-            mRemixer.remix(inputBuffer, outputBuffer);
-            inputBuffer.limit(inputBuffer.capacity());
-
-            // TODO check the time logic below if interpolator changes time.
-            // Then remix the rest into mOverflowBuffer.
-            // NOTE: We should only reach this point when overflow buffer is empty
-            long consumedDurationUs = shortsToUs(inputBuffer.position(), mSampleRate, mInputChannelCount);
-            mRemixer.remix(inputBuffer, mOverflowBuffer.data);
-
-            // Flip the overflow buffer and mark the presentation time.
-            mOverflowBuffer.data.flip();
-            mOverflowBuffer.presentationTimeUs = outputPresentationTime + consumedDurationUs;
-        }
-        return outputPresentationTime;
+        mTempBuffer.clear();
+        mTempBuffer.limit(desiredSize);
     }
 }

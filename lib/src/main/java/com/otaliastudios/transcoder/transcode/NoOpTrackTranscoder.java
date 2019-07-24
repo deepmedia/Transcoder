@@ -29,7 +29,7 @@ public class NoOpTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public boolean stepPipeline() {
+    public boolean transcode() {
         return false;
     }
 

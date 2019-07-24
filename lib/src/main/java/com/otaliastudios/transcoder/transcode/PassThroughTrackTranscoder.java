@@ -68,7 +68,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
 
     @SuppressLint("Assert")
     @Override
-    public boolean stepPipeline() {
+    public boolean transcode() {
         if (mIsEOS) return false;
         if (!mOutputFormatSet) {
             mMuxer.setOutputFormat(mTrackType, mOutputFormat);

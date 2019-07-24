@@ -36,7 +36,9 @@ public class MediaCodecBuffers {
             //noinspection ConstantConditions
             return mMediaCodec.getInputBuffer(index);
         }
-        return mInputBuffers[index];
+        ByteBuffer result = mInputBuffers[index];
+        result.clear();
+        return result;
     }
 
     @NonNull

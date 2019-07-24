@@ -25,18 +25,18 @@ public interface TrackTranscoder {
     void setUp(@NonNull MediaFormat desiredOutputFormat);
 
     /**
-     * Step pipeline if output is available in any step of it.
+     * Perform transcoding if output is available in any step of it.
      * It assumes muxer has been started, so you should call muxer.start() first.
      *
      * @return true if data moved in pipeline.
      */
-    boolean stepPipeline();
+    boolean transcode();
 
     /**
      * Get presentation time of last sample taken from encoder.
      * This presentation time should not be affected by {@link com.otaliastudios.transcoder.time.TimeInterpolator}s.
      *
-     * @return Presentation time in micro-second. Return value is undefined if finished writing.
+     * @return Presentation time in microseconds. Return value is undefined if finished writing.
      */
     long getLastPresentationTime();
 
