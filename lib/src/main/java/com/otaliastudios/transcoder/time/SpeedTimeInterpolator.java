@@ -5,6 +5,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.internal.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,9 @@ import java.util.Map;
  * accelerate.
  */
 public class SpeedTimeInterpolator implements TimeInterpolator {
+
+    private final static String TAG = SpeedTimeInterpolator.class.getSimpleName();
+    private final static Logger LOG = new Logger(TAG);
 
     private double mFactor;
     private final Map<TrackType, TrackData> mTrackData = new HashMap<>();
@@ -56,7 +60,7 @@ public class SpeedTimeInterpolator implements TimeInterpolator {
             data.lastRealTime = time;
             data.lastCorrectedTime += correctedDelta;
         }
-        Log.e("SpeedTimeInterpolator", "Track:" + type + " inputTime:" + time + " outputTime:" + data.lastCorrectedTime);
+        LOG.i("Track:" + type + " inputTime:" + time + " outputTime:" + data.lastCorrectedTime);
         return data.lastCorrectedTime;
     }
 

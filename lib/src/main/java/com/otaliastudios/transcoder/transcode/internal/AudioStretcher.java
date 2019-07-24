@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import java.nio.Buffer;
 import java.nio.ShortBuffer;
+import java.util.Random;
 
 interface AudioStretcher {
 
@@ -45,12 +46,46 @@ interface AudioStretcher {
     };
 
     AudioStretcher INSERT = new AudioStretcher() {
+
+        private final Random NOISE = new Random();
+
+        private short noise() {
+            return (short) NOISE.nextInt(1000);
+        }
+
+        private float ratio(int remaining, int all) {
+            return (float) remaining / all;
+        }
+
         @Override
         public void stretch(@NonNull ShortBuffer input, @NonNull ShortBuffer output, int channels) {
             if (input.remaining() >= output.remaining()) {
                 throw new IllegalArgumentException("Illegal use of AudioStretcher.INSERT");
             }
-            throw new RuntimeException("AudioStretcher.INSERT not implemented yet.");
+            if (channels != 1 && channels != 2) {
+                throw new IllegalArgumentException("Illegal use of AudioStretcher.INSERT. Channels:" + channels);
+            }
+            final int inputSamples = input.remaining() / channels;
+            final int fakeSamples = (int) Math.floor((double) (output.remaining() - input.remaining()) / channels);
+            int remainingInputSamples = inputSamples;
+            int remainingFakeSamples = fakeSamples;
+            float remainingInputSamplesRatio = ratio(remainingInputSamples, inputSamples);
+            float remainingFakeSamplesRatio = ratio(remainingFakeSamples, fakeSamples);
+            while (remainingInputSamples > 0 && remainingFakeSamples > 0) {
+                // Will this be an input sample or a fake sample?
+                // Choose the one with the bigger ratio.
+                if (remainingInputSamplesRatio >= remainingFakeSamplesRatio) {
+                    output.put(input.get());
+                    if (channels == 2) output.put(input.get());
+                    remainingInputSamples--;
+                    remainingInputSamplesRatio = ratio(remainingInputSamples, inputSamples);
+                } else {
+                    output.put(noise());
+                    if (channels == 2) output.put(noise());
+                    remainingFakeSamples--;
+                    remainingFakeSamplesRatio = ratio(remainingFakeSamples, inputSamples);
+                }
+            }
         }
     };
 
