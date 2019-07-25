@@ -38,6 +38,8 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     private ByteBuffer mBuffer;
     private boolean mIsEOS;
     private long mWrittenPresentationTimeUs;
+    private final MediaFormat mActualOutputFormat;
+    private boolean mFirstStepPipeline = true;
 
     public PassThroughTrackTranscoder(@NonNull MediaExtractor extractor,
                                       int trackIndex,
@@ -48,8 +50,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         mMuxer = muxer;
         mTrackType = trackType;
 
-        MediaFormat mActualOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
-        mMuxer.setOutputFormat(mTrackType, mActualOutputFormat);
+        mActualOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
         mBufferSize = mActualOutputFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         mBuffer = ByteBuffer.allocateDirect(mBufferSize).order(ByteOrder.nativeOrder());
     }
@@ -62,6 +63,10 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     @Override
     public boolean stepPipeline() {
         if (mIsEOS) return false;
+        if (mFirstStepPipeline) {
+            mMuxer.setOutputFormat(mTrackType, mActualOutputFormat);
+            mFirstStepPipeline = false;
+        }
         int trackIndex = mExtractor.getSampleTrackIndex();
         if (trackIndex < 0) {
             mBuffer.clear();
