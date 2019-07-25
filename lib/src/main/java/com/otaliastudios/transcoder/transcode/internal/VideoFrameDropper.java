@@ -3,7 +3,6 @@ package com.otaliastudios.transcoder.transcode.internal;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.transcode.VideoTrackTranscoder;
 
 /**
  * Drops input frames to respect the output frame rate.
@@ -22,11 +21,16 @@ public abstract class VideoFrameDropper {
         return new Dropper1(inputFrameRate, outputFrameRate);
     }
 
+    /**
+     * A simple and more elegant dropper.
+     * Reference: https://stackoverflow.com/questions/4223766/dropping-video-frames
+     */
     private static class Dropper1 extends VideoFrameDropper {
 
         private double mInFrameRateReciprocal;
         private double mOutFrameRateReciprocal;
         private double mFrameRateReciprocalSum;
+        private int mFrameCount;
 
         private Dropper1(int inputFrameRate, int outputFrameRate) {
             mInFrameRateReciprocal = 1.0d / inputFrameRate;
@@ -36,22 +40,26 @@ public abstract class VideoFrameDropper {
 
         @Override
         public boolean shouldRenderFrame(long presentationTimeUs) {
-            boolean firstFrame = Double.valueOf(0d).equals(mFrameRateReciprocalSum);
             mFrameRateReciprocalSum += mInFrameRateReciprocal;
-            if (firstFrame) {
-                LOG.v("RENDERING - frameRateReciprocalSum:" + mFrameRateReciprocalSum);
+            if (mFrameCount++ == 0) {
+                LOG.v("RENDERING (first frame) - frameRateReciprocalSum:" + mFrameRateReciprocalSum);
                 return true;
-            }
-            if (mFrameRateReciprocalSum > mOutFrameRateReciprocal) {
+            } else if (mFrameRateReciprocalSum > mOutFrameRateReciprocal) {
                 mFrameRateReciprocalSum -= mOutFrameRateReciprocal;
                 LOG.v("RENDERING - frameRateReciprocalSum:" + mFrameRateReciprocalSum);
                 return true;
+            } else {
+                LOG.v("DROPPING - frameRateReciprocalSum:" + mFrameRateReciprocalSum);
+                return false;
             }
-            LOG.v("DROPPING - frameRateReciprocalSum:" + mFrameRateReciprocalSum);
-            return false;
         }
     }
 
+    /**
+     * The old dropper, keeping here just in case.
+     * Will test {@link Dropper1} and remove this soon.
+     */
+    @SuppressWarnings("unused")
     private static class Dropper2 extends VideoFrameDropper {
 
         // A step is defined as the microseconds between two frame.
