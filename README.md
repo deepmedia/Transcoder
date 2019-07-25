@@ -10,12 +10,13 @@ Transcodes and compresses video files into the MP4 format, with audio support, u
 implementation 'com.otaliastudios:transcoder:0.5.0'
 ```
 
+&#10240;  <!-- Hack to add whitespace -->
 
 <p align="center">
-  <img src="static/screenshot-1.png" width="250" vspace="40" hspace="20">
-  <img src="static/screenshot-2.png" width="250" vspace="40" hspace="20">
+  <img src="static/screenshot-1.png" width="250" hspace="25"><img src="static/screenshot-2.png" width="250" hspace="25">
 </p>
 
+&#10240;  <!-- Hack to add whitespace -->
 
 Using Transcoder in the most basic form is pretty simple:
 
