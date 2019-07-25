@@ -12,6 +12,11 @@ import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
 import com.otaliastudios.transcoder.strategy.OutputStrategy;
+import com.otaliastudios.transcoder.stretch.AudioStretcher;
+import com.otaliastudios.transcoder.stretch.DefaultAudioStretcher;
+import com.otaliastudios.transcoder.time.DefaultTimeInterpolator;
+import com.otaliastudios.transcoder.time.SpeedTimeInterpolator;
+import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.validator.DefaultValidator;
 import com.otaliastudios.transcoder.validator.Validator;
 
@@ -34,6 +39,8 @@ public class TranscoderOptions {
     private OutputStrategy videoOutputStrategy;
     private Validator validator;
     private int rotation;
+    private TimeInterpolator timeInterpolator;
+    private AudioStretcher audioStretcher;
 
     TranscoderListener listener;
     Handler listenerHandler;
@@ -68,6 +75,16 @@ public class TranscoderOptions {
         return rotation;
     }
 
+    @NonNull
+    public TimeInterpolator getTimeInterpolator() {
+        return timeInterpolator;
+    }
+
+    @NonNull
+    public AudioStretcher getAudioStretcher() {
+        return audioStretcher;
+    }
+
     public static class Builder {
         private String outPath;
         private DataSource dataSource;
@@ -77,6 +94,8 @@ public class TranscoderOptions {
         private OutputStrategy videoOutputStrategy;
         private Validator validator;
         private int rotation;
+        private TimeInterpolator timeInterpolator;
+        private AudioStretcher audioStretcher;
 
         Builder(@NonNull String outPath) {
             this.outPath = outPath;
@@ -176,6 +195,8 @@ public class TranscoderOptions {
 
         /**
          * The clockwise rotation to be applied to the input video frames.
+         * Defaults to 0, which leaves the input rotation unchanged.
+         *
          * @param rotation either 0, 90, 180 or 270
          * @return this for chaining
          */
@@ -183,6 +204,42 @@ public class TranscoderOptions {
         @SuppressWarnings("unused")
         public Builder setRotation(int rotation) {
             this.rotation = rotation;
+            return this;
+        }
+
+        /**
+         * Sets a {@link TimeInterpolator} to change the frames timestamps - either video or
+         * audio or both - before they are written into the output file.
+         * Defaults to {@link com.otaliastudios.transcoder.time.DefaultTimeInterpolator}.
+         *
+         * @param timeInterpolator a time interpolator
+         * @return this for chaining
+         */
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
+        public Builder setTimeInterpolator(@NonNull TimeInterpolator timeInterpolator) {
+            this.timeInterpolator = timeInterpolator;
+            return this;
+        }
+
+        /**
+         * Shorthand for calling {@link #setTimeInterpolator(TimeInterpolator)}
+         * and passing a {@link com.otaliastudios.transcoder.time.SpeedTimeInterpolator}.
+         * This interpolator can modify the video speed by the given factor.
+         *
+         * @param speedFactor a factor, greather than 0
+         * @return this for chaining
+         */
+        @NonNull
+        @SuppressWarnings("unused")
+        public Builder setSpeed(float speedFactor) {
+            return setTimeInterpolator(new SpeedTimeInterpolator(speedFactor));
+        }
+
+        @NonNull
+        @SuppressWarnings("unused")
+        public Builder setAudioStretcher(@NonNull AudioStretcher audioStretcher) {
+            this.audioStretcher = audioStretcher;
             return this;
         }
 
@@ -214,6 +271,12 @@ public class TranscoderOptions {
             if (validator == null) {
                 validator = new DefaultValidator();
             }
+            if (timeInterpolator == null) {
+                timeInterpolator = new DefaultTimeInterpolator();
+            }
+            if (audioStretcher == null) {
+                audioStretcher = new DefaultAudioStretcher();
+            }
             TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
             options.dataSource = dataSource;
@@ -223,6 +286,8 @@ public class TranscoderOptions {
             options.videoOutputStrategy = videoOutputStrategy;
             options.validator = validator;
             options.rotation = rotation;
+            options.timeInterpolator = timeInterpolator;
+            options.audioStretcher = audioStretcher;
             return options;
         }
 

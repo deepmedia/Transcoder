@@ -10,16 +10,21 @@ import java.nio.ShortBuffer;
 public class UpMixAudioRemixer implements AudioRemixer {
 
     @Override
-    public void remix(@NonNull final ShortBuffer inSBuff, @NonNull final ShortBuffer outSBuff) {
+    public void remix(@NonNull final ShortBuffer inputBuffer, @NonNull final ShortBuffer outputBuffer) {
         // Up-mix mono to stereo
-        final int inRemaining = inSBuff.remaining();
-        final int outSpace = outSBuff.remaining() / 2;
+        final int inRemaining = inputBuffer.remaining();
+        final int outSpace = outputBuffer.remaining() / 2;
 
         final int samplesToBeProcessed = Math.min(inRemaining, outSpace);
         for (int i = 0; i < samplesToBeProcessed; ++i) {
-            final short inSample = inSBuff.get();
-            outSBuff.put(inSample);
-            outSBuff.put(inSample);
+            final short inSample = inputBuffer.get();
+            outputBuffer.put(inSample);
+            outputBuffer.put(inSample);
         }
+    }
+
+    @Override
+    public int getRemixedSize(int inputSize) {
+        return inputSize * 2;
     }
 }

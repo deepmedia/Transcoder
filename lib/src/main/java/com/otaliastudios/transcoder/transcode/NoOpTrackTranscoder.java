@@ -29,12 +29,12 @@ public class NoOpTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public boolean stepPipeline() {
+    public boolean transcode() {
         return false;
     }
 
     @Override
-    public long getLastWrittenPresentationTime() {
+    public long getLastPresentationTime() {
         return 0;
     }
 

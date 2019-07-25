@@ -28,22 +28,27 @@ Transcoder.into(filePath)
 
 Take a look at the demo app for a real example or keep reading below for documentation.
 
-*Note: this project is an improved fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
-It features a lot of improvements over the original project, including:*
+## Features
 
-- *Multithreading support*
-- *Crop to any aspect ratio*
-- *Set output video rotation*
-- *Various bugs fixed*
-- *[Input](#data-sources): Accept content Uris and other types*
-- *[Real error handling](#listening-for-events) instead of errors being thrown*
-- *Frame dropping support, which means you can set the video frame rate*
-- *Source project is over-conservative when choosing options that *might* not be supported. We prefer to try and let the codec fail*
-- *More convenient APIs for transcoding & choosing options*
-- *Configurable [Validators](#validators) to e.g. **not** perform transcoding if the source video is already compressed enough*
-- *Expose internal logs through Logger (so they can be reported to e.g. Crashlytics)*
-- *Handy utilities for track configuration through [Output Strategies](#output-strategies)*
-- *Handy utilities for resizing*
+- Fast transcoding to AAC/AVC
+- Hardware accelerated
+- Multithreaded
+- Convenient, fluent API
+- Choose output size, with automatic cropping [[docs]](#video-size)
+- Choose output rotation [[docs]](#video-rotation) 
+- Choose output speed [[docs]](#video-speed)
+- Choose output frame rate [[docs]](#other-options)
+- Choose output audio channels [[docs]](#audio-strategies)
+- Override frames timestamp, e.g. to slow down the middle part of the video [[docs]](#time-interpolation) 
+- Error handling [[docs]](#listening-for-events)
+- Configurable validators to e.g. avoid transcoding if the source is already compressed enough [[docs]](#validators)
+- Configurable video and audio strategies [[docs]](#output-strategies)
+
+*This project started as a fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
+With respect to the source project, which misses most of the functionality listed above, 
+we have also fixed a huge number of bugs and are much less conservative when choosing options 
+that might not be supported. The source project will always throw - for example, accepting only 16:9,
+AVC Baseline Profile videos - we prefer to try and let the codec fail if it wants to*.
 
 ## Setup
 
@@ -128,8 +133,8 @@ Transcoding operation did succeed. The success code can be:
 
 |Code|Meaning|
 |----|-------|
-|`MediaTranscoder.SUCCESS_TRANSCODED`|Transcoding was executed successfully. Transcoded file was written to the output path.|
-|`MediaTranscoder.SUCCESS_NOT_NEEDED`|Transcoding was not executed because it was considered **not needed** by the `Validator`.|
+|`Transcoder.SUCCESS_TRANSCODED`|Transcoding was executed successfully. Transcoded file was written to the output path.|
+|`Transcoder.SUCCESS_NOT_NEEDED`|Transcoding was not executed because it was considered **not needed** by the `Validator`.|
 
 Keep reading [below](#validators) to know about `Validator`s.
 
@@ -220,9 +225,9 @@ audio stream to AAC format with the specified number of channels.
 
 ```java
 Transcoder.into(filePath)
-        .setAudioOutputStrategy(DefaultAudioStrategy(1)) // or..
-        .setAudioOutputStrategy(DefaultAudioStrategy(2)) // or..
-        .setAudioOutputStrategy(DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
+        .setAudioOutputStrategy(new DefaultAudioStrategy(1)) // or..
+        .setAudioOutputStrategy(new DefaultAudioStrategy(2)) // or..
+        .setAudioOutputStrategy(new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
         // ...
 ```
 
@@ -243,16 +248,16 @@ We provide helpers for common tasks:
 DefaultVideoStrategy strategy;
 
 // Sets an exact size. If aspect ratio does not match, cropping will take place.
-strategy = DefaultVideoStrategy.exact(1080, 720).build()
+strategy = DefaultVideoStrategy.exact(1080, 720).build();
 
 // Keeps the aspect ratio, but scales down the input size with the given fraction.
-strategy = DefaultVideoStrategy.fraction(0.5F).build()
+strategy = DefaultVideoStrategy.fraction(0.5F).build();
 
 // Ensures that each video size is at most the given value - scales down otherwise.
-strategy = DefaultVideoStrategy.atMost(1000).build()
+strategy = DefaultVideoStrategy.atMost(1000).build();
 
 // Ensures that minor and major dimension are at most the given values - scales down otherwise.
-strategy = DefaultVideoStrategy.atMost(500, 1000).build()
+strategy = DefaultVideoStrategy.atMost(500, 1000).build();
 ```
 
 In fact, all of these will simply call `new DefaultVideoStrategy.Builder(resizer)` with a special
@@ -270,14 +275,14 @@ You can also group resizers through `MultiResizer`, which applies resizers in ch
 
 ```java
 // First scales down, then ensures size is at most 1000. Order matters!
-Resizer resizer = new MultiResizer()
-resizer.addResizer(new FractionResizer(0.5F))
-resizer.addResizer(new AtMostResizer(1000))
+Resizer resizer = new MultiResizer();
+resizer.addResizer(new FractionResizer(0.5F));
+resizer.addResizer(new AtMostResizer(1000));
 
 // First makes it 16:9, then ensures size is at most 1000. Order matters!
-Resizer resizer = new MultiResizer()
-resizer.addResizer(new AspectRatioResizer(16F / 9F))
-resizer.addResizer(new AtMostResizer(1000))
+Resizer resizer = new MultiResizer();
+resizer.addResizer(new AspectRatioResizer(16F / 9F));
+resizer.addResizer(new AtMostResizer(1000));
 ```
 
 This option is already available through the DefaultVideoStrategy builder, so you can do:
@@ -287,7 +292,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .addResizer(new AspectRatioResizer(16F / 9F))
         .addResizer(new FractionResizer(0.5F))
         .addResizer(new AtMostResizer(1000))
-        .build()
+        .build();
 ```
 
 ### Other options
@@ -300,10 +305,10 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .bitRate(DefaultVideoStrategy.BITRATE_UNKNOWN) // tries to estimate
         .frameRate(frameRate) // will be capped to the input frameRate
         .iFrameInterval(interval) // interval between I-frames in seconds
-        .build()
+        .build();
 ```
 
-## Other Options
+## Advanced Options
 
 #### Video rotation
 
@@ -316,6 +321,70 @@ Transcoder.into(filePath)
         // ...
 ```
 
+#### Time interpolation
+
+We offer APIs to change the timestamp of each video and audio frame. You can pass a `TimeInterpolator`
+to the transcoder builder to be able to receive the frame timestamp as input, and return a new one
+as output.
+
+```java
+Transcoder.into(filePath)
+        .setTimeInterpolator(timeInterpolator)
+        // ...
+```
+
+As an example, this is the implementation of the default interpolator, called `DefaultTimeInterpolator`,
+that will just return the input time unchanged:
+
+```java
+@Override
+public long interpolate(@NonNull TrackType type, long time) {
+    // Receive input time in microseconds and return a possibly different one.
+    return time;
+}
+```
+
+It should be obvious that returning invalid times can make the process crash at any point, or at least
+the transcoding operation fail.
+
+#### Video speed
+
+We also offer a special time interpolator called `SpeedTimeInterpolator` that accepts a `float` parameter
+and will modify the video speed.
+
+- A speed factor equal to 1 will leave speed unchanged
+- A speed factor < 1 will slow the video down
+- A speed factor > 1 will accelerate the video
+
+This interpolator can be set using `setTimeInterpolator(TimeInterpolator)`, or, as a shorthand, 
+using `setSpeed(float)`:
+
+```java
+Transcoder.into(filePath)
+        .setSpeed(0.5F) // 0.5x
+        .setSpeed(1F) // Unchanged
+        .setSpeed(2F) // Twice as fast
+        // ...
+```
+
+#### Audio stretching
+
+When a time interpolator alters the frames and samples timestamps, you can either remove audio or
+stretch the audio samples to the new length. This is done through the `AudioStretcher` interface:
+
+```java
+Transcoder.into(filePath)
+        .setAudioStretcher(audioStretcher)
+        // ...
+```
+
+The default audio stretcher, `DefaultAudioStretcher`, will:
+
+- When we need to shrink a group of samples, cut the last ones
+- When we need to stretch a group of samples, insert noise samples in between
+
+Please take a look at the implementation and read class documentation.
+
 ## Compatibility
 
 As stated pretty much everywhere, **not all codecs/devices/manufacturers support all sizes/options**.
@@ -323,7 +392,7 @@ This is a complex issue which is especially important for video strategies, as a
 to a transcoding error or corrupted file.
 
 Android platform specifies requirements for manufacturers through the [CTS (Compatibility test suite)](https://source.android.com/compatibility/cts).
-Only a few codecs and sizes are strictly required to work.
+Only a few codecs and sizes are **strictly** required to work.
 
 We collect common presets in the `DefaultVideoStrategies` class:
 

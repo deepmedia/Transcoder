@@ -11,13 +11,16 @@ import android.widget.Toast;
 
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
+import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.OutputStrategy;
+import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
 import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.FractionResizer;
 import com.otaliastudios.transcoder.strategy.size.PassThroughResizer;
+import com.otaliastudios.transcoder.validator.DefaultValidator;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +47,8 @@ public class TranscoderActivity extends AppCompatActivity implements
     private RadioGroup mVideoResolutionGroup;
     private RadioGroup mVideoAspectGroup;
     private RadioGroup mVideoRotationGroup;
+    private RadioGroup mSpeedGroup;
+
     private ProgressBar mProgressView;
     private TextView mButtonView;
 
@@ -79,6 +84,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         mVideoResolutionGroup = findViewById(R.id.resolution);
         mVideoAspectGroup = findViewById(R.id.aspect);
         mVideoRotationGroup = findViewById(R.id.rotation);
+        mSpeedGroup = findViewById(R.id.speed);
+
         mAudioChannelsGroup.setOnCheckedChangeListener(this);
         mVideoFramesGroup.setOnCheckedChangeListener(this);
         mVideoResolutionGroup.setOnCheckedChangeListener(this);
@@ -166,6 +173,13 @@ public class TranscoderActivity extends AppCompatActivity implements
             default: rotation = 0;
         }
 
+        float speed;
+        switch (mSpeedGroup.getCheckedRadioButtonId()) {
+            case R.id.speed_05x: speed = 0.5F; break;
+            case R.id.speed_2x: speed = 2F; break;
+            default: speed = 1F;
+        }
+
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
@@ -175,6 +189,7 @@ public class TranscoderActivity extends AppCompatActivity implements
                 .setAudioOutputStrategy(mTranscodeAudioStrategy)
                 .setVideoOutputStrategy(mTranscodeVideoStrategy)
                 .setRotation(rotation)
+                .setSpeed(speed)
                 .transcode();
     }
 

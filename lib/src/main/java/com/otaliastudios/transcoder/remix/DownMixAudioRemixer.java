@@ -13,19 +13,19 @@ public class DownMixAudioRemixer implements AudioRemixer {
     private static final int UNSIGNED_SHORT_MAX = 65535;
 
     @Override
-    public void remix(@NonNull final ShortBuffer inSBuff, @NonNull final ShortBuffer outSBuff) {
+    public void remix(@NonNull final ShortBuffer inputBuffer, @NonNull final ShortBuffer outputBuffer) {
         // Down-mix stereo to mono
         // Viktor Toth's algorithm -
         // See: http://www.vttoth.com/CMS/index.php/technical-notes/68
         //      http://stackoverflow.com/a/25102339
-        final int inRemaining = inSBuff.remaining() / 2;
-        final int outSpace = outSBuff.remaining();
+        final int inRemaining = inputBuffer.remaining() / 2;
+        final int outSpace = outputBuffer.remaining();
 
         final int samplesToBeProcessed = Math.min(inRemaining, outSpace);
         for (int i = 0; i < samplesToBeProcessed; ++i) {
             // Convert to unsigned
-            final int a = inSBuff.get() + SIGNED_SHORT_LIMIT;
-            final int b = inSBuff.get() + SIGNED_SHORT_LIMIT;
+            final int a = inputBuffer.get() + SIGNED_SHORT_LIMIT;
+            final int b = inputBuffer.get() + SIGNED_SHORT_LIMIT;
             int m;
             // Pick the equation
             if ((a < SIGNED_SHORT_LIMIT) || (b < SIGNED_SHORT_LIMIT)) {
@@ -38,7 +38,12 @@ public class DownMixAudioRemixer implements AudioRemixer {
             }
             // Convert output back to signed short
             if (m == UNSIGNED_SHORT_MAX + 1) m = UNSIGNED_SHORT_MAX;
-            outSBuff.put((short) (m - SIGNED_SHORT_LIMIT));
+            outputBuffer.put((short) (m - SIGNED_SHORT_LIMIT));
         }
+    }
+
+    @Override
+    public int getRemixedSize(int inputSize) {
+        return inputSize / 2;
     }
 }

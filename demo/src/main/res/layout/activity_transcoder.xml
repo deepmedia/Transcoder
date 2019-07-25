@@ -212,6 +212,43 @@
                     android:layout_height="wrap_content" />
             </RadioGroup>
 
+
+            <!-- VIDEO ROTATION -->
+            <TextView
+                android:padding="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Playback speed" />
+            <RadioGroup
+                android:id="@+id/speed"
+                android:checkedButton="@id/speed_1x"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/speed_05x"
+                    android:text="0.5x"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/speed_1x"
+                    android:text="1x"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/speed_2x"
+                    android:text="2x"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </RadioGroup>
+
             <!-- INFO TEXT -->
             <TextView
                 android:padding="16dp"
