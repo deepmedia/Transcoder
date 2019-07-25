@@ -10,10 +10,12 @@ Transcodes and compresses video files into the MP4 format, with audio support, u
 implementation 'com.otaliastudios:transcoder:0.5.0'
 ```
 
+
 <p align="center">
   <img src="static/screenshot-1.png" width="250" vspace="40" hspace="20">
   <img src="static/screenshot-2.png" width="250" vspace="40" hspace="20">
 </p>
+
 
 Using Transcoder in the most basic form is pretty simple:
 
