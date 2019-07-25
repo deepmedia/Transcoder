@@ -83,6 +83,7 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         int outFrameRate = desiredOutputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
         mInFrameRateReciprocal = 1.0d / inFrameRate;
         mOutFrameRateReciprocal = 1.0d / outFrameRate;
+        LOG.v("mInFrameRateReciprocal: " + mInFrameRateReciprocal + " mOutFrameRateReciprocal: " + mOutFrameRateReciprocal);
 
         // Configure encoder.
         try {
@@ -234,15 +235,18 @@ public class VideoTrackTranscoder implements TrackTranscoder {
         mFrameRateReciprocalSum += mInFrameRateReciprocal;
         if (firstFrame) {
             // render frame
-            return false;
+            LOG.v("render this frame -> mFrameRateReciprocalSum: " + mFrameRateReciprocalSum);
+            return true;
         }
         if (mFrameRateReciprocalSum > mOutFrameRateReciprocal) {
             mFrameRateReciprocalSum -= mOutFrameRateReciprocal;
             // render frame
-            return false;
+            LOG.v("render this frame -> mFrameRateReciprocalSum: " + mFrameRateReciprocalSum);
+            return true;
         }
         // drop frame
-        return true;
+        LOG.v("drop this frame -> mFrameRateReciprocalSum: " + mFrameRateReciprocalSum);
+        return false;
     }
 
     @SuppressWarnings("SameParameterValue")
