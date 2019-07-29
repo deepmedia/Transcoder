@@ -35,6 +35,8 @@ public class TranscoderMuxer {
 
     private static final String TAG = TranscoderMuxer.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
+    private boolean mAudioTrackNeedsValidation = false;
+    private boolean mVideoTrackNeedsValidation = false;
 
     private static final int BUFFER_SIZE = 64 * 1024; // I have no idea whether this value is appropriate or not...
 
@@ -74,8 +76,13 @@ public class TranscoderMuxer {
      * @param trackType the sample type, either audio or video
      * @param format the new format
      */
-    public void setOutputFormat(@NonNull TrackType trackType, @NonNull MediaFormat format) {
+    public void setOutputFormat(@NonNull TrackType trackType, @NonNull MediaFormat format, boolean needsValidation) {
         mTracks.outputFormat(trackType, format);
+        if(trackType == TrackType.AUDIO) {
+            mAudioTrackNeedsValidation = needsValidation;
+        } else if(trackType == TrackType.VIDEO){
+            mVideoTrackNeedsValidation = needsValidation;
+        }
 
         // If we have both, go on.
         boolean isTranscodingVideo = mTracks.status(TrackType.VIDEO).isTranscoding();
@@ -89,9 +96,15 @@ public class TranscoderMuxer {
 
         // If both video and audio are ready, validate the formats and go on.
         // We will stop buffering data and we will start actually muxing it.
-        MediaFormatValidator formatValidator = new MediaFormatValidator();
-        formatValidator.validateVideoOutputFormat(videoOutputFormat);
-        formatValidator.validateAudioOutputFormat(audioOutputFormat);
+        if(mVideoTrackNeedsValidation||mAudioTrackNeedsValidation) {
+            MediaFormatValidator formatValidator = new MediaFormatValidator();
+            if(mVideoTrackNeedsValidation) {
+                formatValidator.validateVideoOutputFormat(videoOutputFormat);
+            }
+            if(mAudioTrackNeedsValidation) {
+                formatValidator.validateAudioOutputFormat(audioOutputFormat);
+            }
+        }
 
         if (isTranscodingVideo) {
             int videoIndex = mMuxer.addTrack(videoOutputFormat);

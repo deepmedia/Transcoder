@@ -71,7 +71,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     public boolean transcode() {
         if (mIsEOS) return false;
         if (!mOutputFormatSet) {
-            mMuxer.setOutputFormat(mTrackType, mOutputFormat);
+            mMuxer.setOutputFormat(mTrackType, mOutputFormat, false);
             mOutputFormatSet = true;
         }
         int trackIndex = mExtractor.getSampleTrackIndex();
