@@ -95,8 +95,7 @@ public class MediaMuxerDataSink implements DataSink {
     public void setTrackOutputFormat(@NonNull TrackTranscoder transcoder,
                                      @NonNull TrackType type,
                                      @NonNull MediaFormat format) {
-        boolean shouldValidate = mStatus.require(type).isTranscoding()
-                && !(transcoder instanceof PassThroughTrackTranscoder);
+        boolean shouldValidate = mStatus.require(type) == TrackStatus.COMPRESSING;
         if (shouldValidate) {
             mMuxerChecks.checkOutputFormat(type, format);
         }
