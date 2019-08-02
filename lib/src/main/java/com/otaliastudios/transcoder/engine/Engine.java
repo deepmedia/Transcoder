@@ -86,7 +86,6 @@ public class Engine {
      * @param options Transcoding options.
      * @throws InvalidOutputFormatException when output format is not supported.
      * @throws InterruptedException when cancel to transcode
-     * @throws ValidatorException if validator decides transcoding is not needed.
      */
     public void transcode(@NonNull TranscoderOptions options) throws InterruptedException {
         try {
