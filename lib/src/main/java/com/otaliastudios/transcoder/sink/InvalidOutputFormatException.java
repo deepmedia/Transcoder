@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Yuya Tanaka
+ * Copyright (C) 2015 Yuya Tanaka
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.sink;
 
-import com.otaliastudios.transcoder.strategy.OutputStrategy;
-import com.otaliastudios.transcoder.validator.Validator;
+import androidx.annotation.NonNull;
 
-import androidx.annotation.Nullable;
+import com.otaliastudios.transcoder.Transcoder;
+import com.otaliastudios.transcoder.TranscoderListener;
+import com.otaliastudios.transcoder.TranscoderOptions;
 
 /**
- * An exception thrown internally when a {@link Validator}
- * returns false. Not to be used.
+ * One of the exceptions possibly thrown by
+ * {@link Transcoder#transcode(TranscoderOptions)}, which means it can be
+ * passed to {@link TranscoderListener#onTranscodeFailed(Throwable)}.
  */
-public class ValidatorException extends RuntimeException {
-    ValidatorException(@Nullable String detailMessage) {
+public class InvalidOutputFormatException extends RuntimeException {
+    InvalidOutputFormatException(@NonNull String detailMessage) {
         super(detailMessage);
     }
 }

@@ -12,12 +12,12 @@ import androidx.annotation.Nullable;
  * Video strategies should use a {@link Resizer} instance to compute the output
  * video size.
  */
-public interface OutputStrategy {
+public interface TrackStrategy {
 
     /**
      * Create the output format for this track (either audio or video).
      * Implementors can:
-     * - throw a {@link OutputStrategyException} if the whole transcoding should be aborted
+     * - throw a {@link TrackStrategyException} if the whole transcoding should be aborted
      * - return {@code inputFormat} for remuxing this track as-is
      * - returning {@code null} for removing this track from output
      *
@@ -25,5 +25,5 @@ public interface OutputStrategy {
      * @return the output format
      */
     @Nullable
-    MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws OutputStrategyException;
+    MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException;
 }

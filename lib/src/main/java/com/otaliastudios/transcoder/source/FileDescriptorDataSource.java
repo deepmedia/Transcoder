@@ -11,12 +11,13 @@ import androidx.annotation.NonNull;
 /**
  * A {@link DataSource} backed by a file descriptor.
  */
-public class FileDescriptorDataSource implements DataSource {
+public class FileDescriptorDataSource extends AndroidDataSource {
 
     @NonNull
     private FileDescriptor descriptor;
 
     public FileDescriptorDataSource(@NonNull FileDescriptor descriptor) {
+        super();
         this.descriptor = descriptor;
     }
 
@@ -28,9 +29,5 @@ public class FileDescriptorDataSource implements DataSource {
     @Override
     public void apply(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(descriptor);
-    }
-
-    @Override
-    public void release() {
     }
 }

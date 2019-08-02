@@ -11,7 +11,7 @@ import com.otaliastudios.transcoder.source.FilePathDataSource;
 import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
-import com.otaliastudios.transcoder.strategy.OutputStrategy;
+import com.otaliastudios.transcoder.strategy.TrackStrategy;
 import com.otaliastudios.transcoder.stretch.AudioStretcher;
 import com.otaliastudios.transcoder.stretch.DefaultAudioStretcher;
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator;
@@ -35,8 +35,8 @@ public class TranscoderOptions {
 
     private String outPath;
     private DataSource dataSource;
-    private OutputStrategy audioOutputStrategy;
-    private OutputStrategy videoOutputStrategy;
+    private TrackStrategy audioTrackStrategy;
+    private TrackStrategy videoTrackStrategy;
     private Validator validator;
     private int rotation;
     private TimeInterpolator timeInterpolator;
@@ -57,13 +57,13 @@ public class TranscoderOptions {
     }
 
     @NonNull
-    public OutputStrategy getAudioOutputStrategy() {
-        return audioOutputStrategy;
+    public TrackStrategy getAudioTrackStrategy() {
+        return audioTrackStrategy;
     }
 
     @NonNull
-    public OutputStrategy getVideoOutputStrategy() {
-        return videoOutputStrategy;
+    public TrackStrategy getVideoTrackStrategy() {
+        return videoTrackStrategy;
     }
 
     @NonNull
@@ -90,8 +90,8 @@ public class TranscoderOptions {
         private DataSource dataSource;
         private TranscoderListener listener;
         private Handler listenerHandler;
-        private OutputStrategy audioOutputStrategy;
-        private OutputStrategy videoOutputStrategy;
+        private TrackStrategy audioTrackStrategy;
+        private TrackStrategy videoTrackStrategy;
         private Validator validator;
         private int rotation;
         private TimeInterpolator timeInterpolator;
@@ -133,13 +133,13 @@ public class TranscoderOptions {
          * Sets the audio output strategy. If absent, this defaults to
          * {@link com.otaliastudios.transcoder.strategy.DefaultAudioStrategy}.
          *
-         * @param outputStrategy the desired strategy
+         * @param trackStrategy the desired strategy
          * @return this for chaining
          */
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setAudioOutputStrategy(@Nullable OutputStrategy outputStrategy) {
-            this.audioOutputStrategy = outputStrategy;
+        public Builder setAudioTrackStrategy(@Nullable TrackStrategy trackStrategy) {
+            this.audioTrackStrategy = trackStrategy;
             return this;
         }
 
@@ -147,13 +147,13 @@ public class TranscoderOptions {
          * Sets the video output strategy. If absent, this defaults to the 16:9
          * strategy returned by {@link DefaultVideoStrategies#for720x1280()}.
          *
-         * @param outputStrategy the desired strategy
+         * @param trackStrategy the desired strategy
          * @return this for chaining
          */
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setVideoOutputStrategy(@Nullable OutputStrategy outputStrategy) {
-            this.videoOutputStrategy = outputStrategy;
+        public Builder setVideoTrackStrategy(@Nullable TrackStrategy trackStrategy) {
+            this.videoTrackStrategy = trackStrategy;
             return this;
         }
 
@@ -262,11 +262,11 @@ public class TranscoderOptions {
                 if (looper == null) looper = Looper.getMainLooper();
                 listenerHandler = new Handler(looper);
             }
-            if (audioOutputStrategy == null) {
-                audioOutputStrategy = new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS);
+            if (audioTrackStrategy == null) {
+                audioTrackStrategy = new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS);
             }
-            if (videoOutputStrategy == null) {
-                videoOutputStrategy = DefaultVideoStrategies.for720x1280();
+            if (videoTrackStrategy == null) {
+                videoTrackStrategy = DefaultVideoStrategies.for720x1280();
             }
             if (validator == null) {
                 validator = new DefaultValidator();
@@ -282,8 +282,8 @@ public class TranscoderOptions {
             options.dataSource = dataSource;
             options.outPath = outPath;
             options.listenerHandler = listenerHandler;
-            options.audioOutputStrategy = audioOutputStrategy;
-            options.videoOutputStrategy = videoOutputStrategy;
+            options.audioTrackStrategy = audioTrackStrategy;
+            options.videoTrackStrategy = videoTrackStrategy;
             options.validator = validator;
             options.rotation = rotation;
             options.timeInterpolator = timeInterpolator;

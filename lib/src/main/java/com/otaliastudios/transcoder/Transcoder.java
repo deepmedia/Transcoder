@@ -17,13 +17,12 @@ package com.otaliastudios.transcoder;
 
 import android.os.Handler;
 
-import com.otaliastudios.transcoder.engine.TranscoderEngine;
+import com.otaliastudios.transcoder.engine.Engine;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
-import com.otaliastudios.transcoder.engine.ValidatorException;
+import com.otaliastudios.transcoder.internal.ValidatorException;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -113,14 +112,12 @@ public class Transcoder {
             @Override
             public Void call() throws Exception {
                 try {
-                    TranscoderEngine engine = new TranscoderEngine();
-                    engine.setProgressCallback(new TranscoderEngine.ProgressCallback() {
+                    Engine engine = new Engine(options.getDataSource(), new Engine.ProgressCallback() {
                         @Override
                         public void onProgress(final double progress) {
                             listenerWrapper.onTranscodeProgress(progress);
                         }
                     });
-                    engine.setDataSource(options.getDataSource());
                     engine.transcode(options);
                     listenerWrapper.onTranscodeCompleted(SUCCESS_TRANSCODED);
 
@@ -139,12 +136,6 @@ public class Transcoder {
                     if (isInterrupted) {
                         LOG.i("Transcode canceled.", current);
                         listenerWrapper.onTranscodeCanceled();
-
-                    } else if (e instanceof IOException) {
-                        LOG.w("Transcode failed: input source (" + options.getDataSource().toString() + ") not found"
-                                + " or could not open output file ('" + options.getOutputPath() + "') .", e);
-                        listenerWrapper.onTranscodeFailed(e);
-                        throw e;
 
                     } else if (e instanceof RuntimeException) {
                         LOG.e("Fatal error while transcoding, this might be invalid format or bug in engine or Android.", e);

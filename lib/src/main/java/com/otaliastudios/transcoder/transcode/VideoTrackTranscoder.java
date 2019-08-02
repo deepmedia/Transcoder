@@ -22,8 +22,9 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.sink.DataSink;
+import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
@@ -47,11 +48,10 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     private TimeInterpolator mTimeInterpolator;
 
     public VideoTrackTranscoder(
-            @NonNull MediaExtractor extractor,
-            @NonNull TranscoderMuxer muxer,
-            int trackIndex,
+            @NonNull DataSource dataSource,
+            @NonNull DataSink dataSink,
             @NonNull TimeInterpolator timeInterpolator) {
-        super(extractor, muxer, TrackType.VIDEO, trackIndex);
+        super(dataSource, dataSink, TrackType.VIDEO);
         mTimeInterpolator = timeInterpolator;
     }
 
@@ -94,7 +94,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
             scaleY = outputRatio / inputRatio;
         }
         // I don't think we should consider rotation and flip these - we operate on non-rotated
-        // surfaces and pass the input rotation metadata to the output muxer, see TranscoderEngine.setupMetadata.
+        // surfaces and pass the input rotation metadata to the output muxer, see Engine.setupMetadata.
         mDecoderOutputSurface.setScale(scaleX, scaleY);
     }
 

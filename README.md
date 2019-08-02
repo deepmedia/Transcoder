@@ -50,7 +50,7 @@ Take a look at the demo app for a real example or keep reading below for documen
 - Override frames timestamp, e.g. to slow down the middle part of the video [[docs]](#time-interpolation) 
 - Error handling [[docs]](#listening-for-events)
 - Configurable validators to e.g. avoid transcoding if the source is already compressed enough [[docs]](#validators)
-- Configurable video and audio strategies [[docs]](#output-strategies)
+- Configurable video and audio strategies [[docs]](#track-strategies)
 
 *This project started as a fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
 With respect to the source project, which misses most of the functionality listed above, 
@@ -94,7 +94,7 @@ simply `setDataSource(path)` in the transcoding builder.
 
 ## Listening for events
 
-Transcoding will happen on a background thread, but we will send updates through the `MediaTranscoder.Listener`
+Transcoding will happen on a background thread, but we will send updates through the `TranscoderListener`
 interface, which can be applied when building the request:
 
 ```java
@@ -174,7 +174,7 @@ The TrackStatus enum contains the following values:
 |`TrackStatus.COMPRESSING`|This track is about to be processed and compressed in the target file.|
 |`TrackStatus.REMOVING`|This track will be removed in the target file.|
 
-The `TrackStatus` value depends on the [output strategy](#output-strategies) that was used.
+The `TrackStatus` value depends on the [track strategy](#track-strategies) that was used.
 We provide a few validators that can be injected for typical usage.
 
 #### `DefaultValidator`
@@ -193,19 +193,19 @@ A Validator that gives priority to the video track. Transcoding will not happen 
 even if the audio track might need it. If reducing file size is your only concern, this can avoid compressing
 files that would not benefit so much from compressing the audio track only.
 
-## Output Strategies
+## Track Strategies
 
-Output strategies return options for each track (audio or video) for the engine to understand **how**
+Track strategies return options for each track (audio or video) for the engine to understand **how**
 and **if** this track should be transcoded, and whether the whole process should be aborted.
 
 ```java
 Transcoder.into(filePath)
-        .setVideoOutputStrategy(videoStrategy)
-        .setAudioOutputStrategy(audioStrategy)
+        .setVideoTrackStrategy(videoStrategy)
+        .setAudioTrackStrategy(audioStrategy)
         // ...
 ```
 
-The point of `OutputStrategy` is to inspect the input `android.media.MediaFormat` and return
+The point of `TrackStrategy` is to inspect the input `android.media.MediaFormat` and return
 the output `android.media.MediaFormat`, filled with required options.
 
 This library offers track specific strategies that help with audio and video options (see
@@ -214,14 +214,14 @@ In addition, we have a few built-in strategies that can work for both audio and 
 
 #### `PassThroughTrackStrategy`
 
-An OutputStrategy that asks the encoder to keep this track as is, by returning the same input
+A TrackStrategy that asks the encoder to keep this track as is, by returning the same input
 format. Note that this is risky, as the input track format might not be supported my the MP4 container.
 
 This will set the `TrackStatus` to `TrackStatus.PASS_THROUGH`.
 
 #### `RemoveTrackStrategy`
 
-An OutputStrategy that asks the encoder to remove this track from the output container, by returning null.
+A TrackStrategy that asks the encoder to remove this track from the output container, by returning null.
 For instance, this can be used as an audio strategy to remove audio from video/audio streams.
 
 This will set the `TrackStatus` to `TrackStatus.REMOVING`.
@@ -233,9 +233,9 @@ audio stream to AAC format with the specified number of channels.
 
 ```java
 Transcoder.into(filePath)
-        .setAudioOutputStrategy(new DefaultAudioStrategy(1)) // or..
-        .setAudioOutputStrategy(new DefaultAudioStrategy(2)) // or..
-        .setAudioOutputStrategy(new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
+        .setAudioTrackStrategy(new DefaultAudioStrategy(1)) // or..
+        .setAudioTrackStrategy(new DefaultAudioStrategy(2)) // or..
+        .setAudioTrackStrategy(new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
         // ...
 ```
 
@@ -406,8 +406,8 @@ We collect common presets in the `DefaultVideoStrategies` class:
 
 ```java
 Transcoder.into(filePath)
-        .setVideoOutputStrategy(DefaultVideoStrategies.for720x1280()) // 16:9
-        .setVideoOutputStrategy(DefaultVideoStrategies.for360x480()) // 4:3
+        .setVideoTrackStrategy(DefaultVideoStrategies.for720x1280()) // 16:9
+        .setVideoTrackStrategy(DefaultVideoStrategies.for360x480()) // 4:3
         // ...
 ```
 

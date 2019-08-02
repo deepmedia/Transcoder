@@ -15,7 +15,7 @@ import androidx.annotation.Nullable;
 /**
  * A {@link DataSource} backed by a file absolute path.
  */
-public class FilePathDataSource implements DataSource {
+public class FilePathDataSource extends AndroidDataSource {
     private static final String TAG = "FilePathDataSource";
     private static final Logger LOG = new Logger(TAG);
 
@@ -24,6 +24,7 @@ public class FilePathDataSource implements DataSource {
     @Nullable private FileInputStream stream;
 
     public FilePathDataSource(@NonNull String path) {
+        super();
         FileDescriptor fileDescriptor;
         try {
             stream = new FileInputStream(path);
@@ -47,6 +48,7 @@ public class FilePathDataSource implements DataSource {
 
     @Override
     public void release() {
+        super.release();
         descriptor.release();
         if (stream != null) {
             try {

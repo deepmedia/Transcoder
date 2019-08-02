@@ -13,25 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.sink;
 
 import android.media.MediaFormat;
 
+import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
-import com.otaliastudios.transcoder.engine.internal.AvcCsdUtils;
-import com.otaliastudios.transcoder.engine.internal.AvcSpsUtils;
+import com.otaliastudios.transcoder.internal.AvcCsdUtils;
+import com.otaliastudios.transcoder.internal.AvcSpsUtils;
 
 import java.nio.ByteBuffer;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 
-class MediaFormatValidator {
-    private static final String TAG = "MediaFormatValidator";
+class MediaMuxerChecks {
+    private static final String TAG = MediaMuxerChecks.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
-    void validateVideoOutputFormat(@Nullable MediaFormat format) {
-        if (format == null) return;
+    void checkOutputFormat(@NonNull TrackType type, @NonNull MediaFormat format) {
+        if (type == TrackType.VIDEO) {
+            checkVideoOutputFormat(format);
+        } else if (type == TrackType.AUDIO) {
+            checkAudioOutputFormat(format);
+        }
+    }
+
+    private void checkVideoOutputFormat(@NonNull MediaFormat format) {
         String mime = format.getString(MediaFormat.KEY_MIME);
         // Refer: http://developer.android.com/guide/appendix/media-formats.html#core
         // Refer: http://en.wikipedia.org/wiki/MPEG-4_Part_14#Data_streams
@@ -54,8 +62,7 @@ class MediaFormatValidator {
         }
     }
 
-    void validateAudioOutputFormat(@Nullable MediaFormat format) {
-        if (format == null) return;
+    private void checkAudioOutputFormat(@NonNull MediaFormat format) {
         String mime = format.getString(MediaFormat.KEY_MIME);
         if (!MediaFormatConstants.MIMETYPE_AUDIO_AAC.equals(mime)) {
             throw new InvalidOutputFormatException("Audio codecs other than AAC is not supported, actual mime type: " + mime);

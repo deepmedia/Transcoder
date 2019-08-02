@@ -19,10 +19,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * An {@link OutputStrategy} for video that converts it AVC with the given size.
+ * An {@link TrackStrategy} for video that converts it AVC with the given size.
  * The input and output aspect ratio must match.
  */
-public class DefaultVideoStrategy implements OutputStrategy {
+public class DefaultVideoStrategy implements TrackStrategy {
     private final static String TAG = "DefaultVideoStrategy";
     private final static Logger LOG = new Logger(TAG);
 
@@ -205,7 +205,7 @@ public class DefaultVideoStrategy implements OutputStrategy {
 
     @Nullable
     @Override
-    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws OutputStrategyException {
+    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException {
         boolean typeDone = inputFormat.getString(MediaFormat.KEY_MIME).equals(MIME_TYPE);
 
         // Compute output size.
@@ -217,7 +217,7 @@ public class DefaultVideoStrategy implements OutputStrategy {
         try {
             outSize = options.resizer.getOutputSize(inSize);
         } catch (Exception e) {
-            throw OutputStrategyException.unavailable(e);
+            throw TrackStrategyException.unavailable(e);
         }
         int outWidth, outHeight;
         if (outSize instanceof ExactSize) {
@@ -253,7 +253,7 @@ public class DefaultVideoStrategy implements OutputStrategy {
 
         // See if we should go on.
         if (typeDone && sizeDone && frameRateDone && frameIntervalDone) {
-            throw OutputStrategyException.alreadyCompressed(
+            throw TrackStrategyException.alreadyCompressed(
                     "Input minSize: " + inSize.getMinor() + ", desired minSize: " + outSize.getMinor() +
                     "\nInput frameRate: " + inputFrameRate + ", desired frameRate: " + outFrameRate +
                     "\nInput iFrameInterval: " + inputIFrameInterval + ", desired iFrameInterval: " + options.targetIFrameInterval);

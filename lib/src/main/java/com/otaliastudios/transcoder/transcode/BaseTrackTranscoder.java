@@ -8,8 +8,9 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.sink.DataSink;
+import com.otaliastudios.transcoder.source.DataSource;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -24,9 +25,9 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     private static final int DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY = 1;
     private static final int DRAIN_STATE_CONSUMED = 2;
 
-    private final MediaExtractor mExtractor;
-    private final int mTrackIndex;
-    private final TranscoderMuxer mMuxer;
+    private final DataSource mDataSource;
+    private final DataSource.Chunk mDataChunk;
+    private final DataSink mDataSink;
     private final TrackType mTrackType;
 
     private long mLastPresentationTimeUs;
@@ -45,19 +46,17 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     private boolean mIsExtractorEOS;
 
     @SuppressWarnings("WeakerAccess")
-    protected BaseTrackTranscoder(@NonNull MediaExtractor extractor,
-                                  @NonNull TranscoderMuxer muxer,
-                                  @NonNull TrackType trackType,
-                                  int trackIndex) {
-        mExtractor = extractor;
-        mTrackIndex = trackIndex;
-        mMuxer = muxer;
+    protected BaseTrackTranscoder(@NonNull DataSource dataSource,
+                                  @NonNull DataSink dataSink,
+                                  @NonNull TrackType trackType) {
+        mDataSource = dataSource;
+        mDataSink = dataSink;
         mTrackType = trackType;
+        mDataChunk = new DataSource.Chunk();
     }
 
     @Override
     public final void setUp(@NonNull MediaFormat desiredOutputFormat) {
-        mExtractor.selectTrack(mTrackIndex);
         try {
             mEncoder = MediaCodec.createEncoderByType(desiredOutputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
@@ -66,7 +65,10 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         onConfigureEncoder(desiredOutputFormat, mEncoder);
         onStartEncoder(desiredOutputFormat, mEncoder);
 
-        final MediaFormat inputFormat = mExtractor.getTrackFormat(mTrackIndex);
+        final MediaFormat inputFormat = mDataSource.getFormat(mTrackType);
+        if (inputFormat == null) {
+            throw new IllegalArgumentException("Input format is null!");
+        }
         try {
             mDecoder = MediaCodec.createDecoderByType(inputFormat.getString(MediaFormat.KEY_MIME));
         } catch (IOException e) {
@@ -196,29 +198,37 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             throw new RuntimeException("Audio output format changed twice.");
         }
         mActualOutputFormat = format;
-        mMuxer.setOutputFormat(mTrackType, mActualOutputFormat, true);
+        mDataSink.setTrackOutputFormat(this, mTrackType, mActualOutputFormat);
     }
 
     @SuppressWarnings("SameParameterValue")
     private int feedDecoder(long timeoutUs) {
-        if (mIsExtractorEOS) return DRAIN_STATE_NONE;
-        int trackIndex = mExtractor.getSampleTrackIndex();
-        if (trackIndex >= 0 && trackIndex != mTrackIndex) {
+        if (mIsExtractorEOS) {
             return DRAIN_STATE_NONE;
         }
 
-        final int result = mDecoder.dequeueInputBuffer(timeoutUs);
-        if (result < 0) return DRAIN_STATE_NONE;
-        if (trackIndex < 0) {
+        if (mDataSource.isDrained()) {
+            int result = mDecoder.dequeueInputBuffer(timeoutUs);
+            if (result < 0) return DRAIN_STATE_NONE;
             mIsExtractorEOS = true;
             mDecoder.queueInputBuffer(result, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             return DRAIN_STATE_NONE;
         }
 
-        final int sampleSize = mExtractor.readSampleData(mDecoderBuffers.getInputBuffer(result), 0);
-        final boolean isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
-        mDecoder.queueInputBuffer(result, 0, sampleSize, mExtractor.getSampleTime(), isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0);
-        mExtractor.advance();
+        if (!mDataSource.canRead(mTrackType)) {
+            return DRAIN_STATE_NONE;
+        }
+
+        final int result = mDecoder.dequeueInputBuffer(timeoutUs);
+        if (result < 0) return DRAIN_STATE_NONE;
+
+        mDataChunk.buffer = mDecoderBuffers.getInputBuffer(result);
+        mDataSource.read(mDataChunk);
+        mDecoder.queueInputBuffer(result,
+                0,
+                mDataChunk.bytes,
+                mDataChunk.timestampUs,
+                mDataChunk.isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0);
         return DRAIN_STATE_CONSUMED;
     }
 
@@ -284,7 +294,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             mEncoder.releaseOutputBuffer(result, false);
             return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
-        mMuxer.write(mTrackType, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
+        mDataSink.write(this, mTrackType, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
         mEncoder.releaseOutputBuffer(result, false);
         return DRAIN_STATE_CONSUMED;
     }
