@@ -13,12 +13,13 @@ import androidx.annotation.NonNull;
  * A {@link DataSource} backed by an Uri, possibly
  * a content:// uri.
  */
-public class UriDataSource implements DataSource {
+public class UriDataSource extends AndroidDataSource {
 
     @NonNull private Context context;
     @NonNull private Uri uri;
 
     public UriDataSource(@NonNull Context context, @NonNull Uri uri) {
+        super();
         this.context = context.getApplicationContext();
         this.uri = uri;
     }
@@ -32,7 +33,4 @@ public class UriDataSource implements DataSource {
     public void apply(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(context, uri);
     }
-
-    @Override
-    public void release() { }
 }

@@ -16,7 +16,8 @@ public class TrackTypeMap<T> {
 
     private Map<TrackType, T> map = new HashMap<>();
 
-    public void set(@NonNull TrackType type, @NonNull T value) {
+    public void set(@NonNull TrackType type, @Nullable T value) {
+        //noinspection ConstantConditions
         map.put(type, value);
     }
 

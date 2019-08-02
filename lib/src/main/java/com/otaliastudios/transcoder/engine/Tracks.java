@@ -19,29 +19,21 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.otaliastudios.transcoder.source.DataSource;
 
 /**
  * Contains information about the tracks as read from the {@link MediaExtractor}
  * metadata, plus other track-specific information that we can store here.
  */
-@SuppressWarnings("ConstantConditions")
 class Tracks {
 
     private Tracks() { }
 
-    private TrackTypeMap<Integer> index = new TrackTypeMap<>();
     private TrackTypeMap<String> mimeType = new TrackTypeMap<>();
     private TrackTypeMap<MediaFormat> format = new TrackTypeMap<>();
     private TrackTypeMap<TrackStatus> status = new TrackTypeMap<>();
-
-    /**
-     * The index in the input file.
-     * @param type track type
-     * @return index
-     */
-    int index(@NonNull TrackType type) {
-        return index.get(type);
-    }
 
     /**
      * The mime type in the input file.
@@ -59,9 +51,9 @@ class Tracks {
      * @param type track type
      * @return format
      */
-    @NonNull
+    @Nullable
     MediaFormat format(@NonNull TrackType type) {
-        return format.require(type);
+        return format.get(type);
     }
 
     /**
@@ -89,30 +81,21 @@ class Tracks {
      * @return true if present
      */
     boolean has(@NonNull TrackType type) {
-        return index(type) >= 0;
+        return format(type) != null;
     }
 
     @NonNull
-    static Tracks create(@NonNull MediaExtractor extractor) {
+    static Tracks create(@NonNull DataSource source) {
         Tracks tracks = new Tracks();
-        tracks.index.set(TrackType.VIDEO, -1);
-        tracks.index.set(TrackType.AUDIO, -1);
-        int trackCount = extractor.getTrackCount();
-        for (int i = 0; i < trackCount; i++) {
-            MediaFormat format = extractor.getTrackFormat(i);
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            if (!tracks.has(TrackType.VIDEO) && mime.startsWith("video/")) {
-                tracks.index.set(TrackType.VIDEO, i);
-                tracks.mimeType.set(TrackType.VIDEO, mime);
-                tracks.format.set(TrackType.VIDEO, format);
-            } else if (!tracks.has(TrackType.AUDIO) && mime.startsWith("audio/")) {
-                tracks.index.set(TrackType.AUDIO, i);
-                tracks.mimeType.set(TrackType.AUDIO, mime);
-                tracks.format.set(TrackType.AUDIO, format);
-            }
-            if (tracks.has(TrackType.VIDEO) && tracks.has(TrackType.AUDIO)) {
-                break;
-            }
+        MediaFormat audioFormat = source.getFormat(TrackType.AUDIO);
+        tracks.format.set(TrackType.AUDIO, audioFormat);
+        if (audioFormat != null) {
+            tracks.mimeType.set(TrackType.AUDIO, audioFormat.getString(MediaFormat.KEY_MIME));
+        }
+        MediaFormat videoFormat = source.getFormat(TrackType.VIDEO);
+        tracks.format.set(TrackType.VIDEO, videoFormat);
+        if (videoFormat != null) {
+            tracks.mimeType.set(TrackType.VIDEO, videoFormat.getString(MediaFormat.KEY_MIME));
         }
         return tracks;
     }

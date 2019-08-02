@@ -140,12 +140,6 @@ public class Transcoder {
                         LOG.i("Transcode canceled.", current);
                         listenerWrapper.onTranscodeCanceled();
 
-                    } else if (e instanceof IOException) {
-                        LOG.w("Transcode failed: input source (" + options.getDataSource().toString() + ") not found"
-                                + " or could not open output file ('" + options.getOutputPath() + "') .", e);
-                        listenerWrapper.onTranscodeFailed(e);
-                        throw e;
-
                     } else if (e instanceof RuntimeException) {
                         LOG.e("Fatal error while transcoding, this might be invalid format or bug in engine or Android.", e);
                         listenerWrapper.onTranscodeFailed(e);

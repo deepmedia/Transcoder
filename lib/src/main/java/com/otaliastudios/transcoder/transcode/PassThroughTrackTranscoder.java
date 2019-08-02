@@ -15,7 +15,6 @@
  */
 package com.otaliastudios.transcoder.transcode;
 
-import android.annotation.SuppressLint;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -24,49 +23,45 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.sink.DataSink;
+import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class PassThroughTrackTranscoder implements TrackTranscoder {
-    private final MediaExtractor mExtractor;
-    private final int mTrackIndex;
+
+    private final DataSource mDataSource;
     private final DataSink mDataSink;
+    private final DataSource.Chunk mDataChunk;
     private final TrackType mTrackType;
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
-    private int mBufferSize;
-    private ByteBuffer mBuffer;
     private boolean mIsEOS;
-
     private long mLastPresentationTime;
-
     private final MediaFormat mOutputFormat;
     private boolean mOutputFormatSet = false;
-
     private TimeInterpolator mTimeInterpolator;
 
-    public PassThroughTrackTranscoder(@NonNull MediaExtractor extractor,
-                                      int trackIndex,
+    public PassThroughTrackTranscoder(@NonNull DataSource dataSource,
                                       @NonNull DataSink dataSink,
                                       @NonNull TrackType trackType,
                                       @NonNull TimeInterpolator timeInterpolator) {
-        mExtractor = extractor;
-        mTrackIndex = trackIndex;
+        mDataSource = dataSource;
         mDataSink = dataSink;
         mTrackType = trackType;
-
-        mOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
-        mBufferSize = mOutputFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-        mBuffer = ByteBuffer.allocateDirect(mBufferSize).order(ByteOrder.nativeOrder());
-
+        mOutputFormat = dataSource.getFormat(trackType);
+        if (mOutputFormat == null) {
+            throw new IllegalArgumentException("Output format is null!");
+        }
+        int bufferSize = mOutputFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+        mDataChunk = new DataSource.Chunk();
+        mDataChunk.buffer = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder());
         mTimeInterpolator = timeInterpolator;
     }
 
     @Override
     public void setUp(@NonNull MediaFormat desiredOutputFormat) { }
 
-    @SuppressLint("Assert")
     @Override
     public boolean transcode() {
         if (mIsEOS) return false;
@@ -74,28 +69,24 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
             mDataSink.setTrackOutputFormat(this, mTrackType, mOutputFormat);
             mOutputFormatSet = true;
         }
-        int trackIndex = mExtractor.getSampleTrackIndex();
-        if (trackIndex < 0) {
-            mBuffer.clear();
+        if (mDataSource.isDrained()) {
+            mDataChunk.buffer.clear();
             mBufferInfo.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-            mDataSink.write(this, mTrackType, mBuffer, mBufferInfo);
+            mDataSink.write(this, mTrackType, mDataChunk.buffer, mBufferInfo);
             mIsEOS = true;
             return true;
         }
-        if (trackIndex != mTrackIndex) return false;
+        if (!mDataSource.canRead(mTrackType)) {
+            return false;
+        }
 
-        mBuffer.clear();
-        int sampleSize = mExtractor.readSampleData(mBuffer, 0);
-        assert sampleSize <= mBufferSize;
-        boolean isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
-        int flags = isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0;
-        long realTimestampUs = mExtractor.getSampleTime();
-        long timestampUs = mTimeInterpolator.interpolate(mTrackType, realTimestampUs);
-        mBufferInfo.set(0, sampleSize, timestampUs, flags);
-        mDataSink.write(this, mTrackType, mBuffer, mBufferInfo);
-        mLastPresentationTime = realTimestampUs;
-
-        mExtractor.advance();
+        mDataChunk.buffer.clear();
+        mDataSource.read(mDataChunk);
+        long timestampUs = mTimeInterpolator.interpolate(mTrackType, mDataChunk.timestampUs);
+        int flags = mDataChunk.isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0;
+        mBufferInfo.set(0, mDataChunk.bytes, timestampUs, flags);
+        mDataSink.write(this, mTrackType, mDataChunk.buffer, mBufferInfo);
+        mLastPresentationTime = mDataChunk.timestampUs;
         return true;
     }
 

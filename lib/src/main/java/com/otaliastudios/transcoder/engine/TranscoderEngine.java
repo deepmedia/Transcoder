@@ -32,12 +32,7 @@ import com.otaliastudios.transcoder.transcode.NoOpTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.PassThroughTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.TrackTranscoder;
 import com.otaliastudios.transcoder.transcode.VideoTrackTranscoder;
-import com.otaliastudios.transcoder.engine.internal.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.Logger;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -67,7 +62,6 @@ public class TranscoderEngine {
     private DataSink mDataSink;
     private TrackTypeMap<TrackTranscoder> mTranscoders = new TrackTypeMap<>();
     private Tracks mTracks;
-    private MediaExtractor mExtractor;
     private volatile double mProgress;
     private ProgressCallback mProgressCallback;
     private long mDurationUs;
@@ -98,21 +92,19 @@ public class TranscoderEngine {
      * Performs transcoding. Blocks current thread.
      *
      * @param options Transcoding options.
-     * @throws IOException when input or output file could not be opened.
      * @throws InvalidOutputFormatException when output format is not supported.
      * @throws InterruptedException when cancel to transcode
      * @throws ValidatorException if validator decides transcoding is not needed.
      */
-    public void transcode(@NonNull TranscoderOptions options) throws IOException, InterruptedException {
-        if (mDataSource == null) {
-            throw new IllegalStateException("Data source is not set.");
-        }
+    public void transcode(@NonNull TranscoderOptions options) throws InterruptedException {
         try {
             // NOTE: use single extractor to keep from running out audio track fast.
-            mExtractor = new MediaExtractor();
-            mDataSource.apply(mExtractor);
             mDataSink = new MediaMuxerDataSink(options.getOutputPath());
-            setUpMetadata(options);
+            mDataSink.setOrientation((mDataSource.getOrientation() + options.getRotation()) % 360);
+            double[] location = mDataSource.getLocation();
+            if (location != null) mDataSink.setLocation(location[0], location[1]);
+            mDurationUs = mDataSource.getDurationUs();
+            LOG.v("Duration (us): " + mDurationUs);
             setUpTrackTranscoders(options);
             runPipelines();
             mDataSink.stop();
@@ -121,11 +113,6 @@ public class TranscoderEngine {
                 mTranscoders.require(TrackType.VIDEO).release();
                 mTranscoders.require(TrackType.AUDIO).release();
                 mTranscoders.clear();
-
-                if (mExtractor != null) {
-                    mExtractor.release();
-                    mExtractor = null;
-                }
             } catch (RuntimeException e) {
                 // Too fatal to make alive the app, because it may leak native resources.
                 //noinspection ThrowFromFinallyBlock
@@ -133,37 +120,6 @@ public class TranscoderEngine {
             }
             mDataSink.release();
         }
-    }
-
-    private void setUpMetadata(@NonNull TranscoderOptions options) {
-        MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
-        mDataSource.apply(mediaMetadataRetriever);
-
-        String rotationString = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
-        int rotation = 0;
-        try {
-            rotation = Integer.parseInt(rotationString);
-        } catch (NumberFormatException ignore) {}
-        mDataSink.setOrientation((rotation + options.getRotation()) % 360);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            String locationString = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LOCATION);
-            if (locationString != null) {
-                float[] location = new ISO6709LocationParser().parse(locationString);
-                if (location != null) {
-                    mDataSink.setLocation(location[0], location[1]);
-                } else {
-                    LOG.v("Failed to parse the location metadata: " + locationString);
-                }
-            }
-        }
-
-        try {
-            mDurationUs = Long.parseLong(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) * 1000;
-        } catch (NumberFormatException e) {
-            mDurationUs = -1;
-        }
-        LOG.v("Duration (us): " + mDurationUs);
     }
 
     private void setUpTrackTranscoder(@NonNull TranscoderOptions options,
@@ -176,7 +132,6 @@ public class TranscoderEngine {
             transcoder = new NoOpTrackTranscoder();
             status = TrackStatus.ABSENT;
         } else {
-            int index = mTracks.index(type);
             TrackStrategy strategy;
             switch (type) {
                 case VIDEO: strategy = options.getVideoTrackStrategy(); break;
@@ -184,17 +139,19 @@ public class TranscoderEngine {
                 default: throw new RuntimeException("Unknown type: " + type);
             }
             try {
+                // We checked has(), so the input format is not null.
+                //noinspection ConstantConditions
                 outputFormat = strategy.createOutputFormat(inputFormat);
                 if (outputFormat == null) {
                     transcoder = new NoOpTrackTranscoder();
                     status = TrackStatus.REMOVING;
                 } else if (outputFormat == inputFormat) {
-                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, mDataSink, type, options.getTimeInterpolator());
+                    transcoder = new PassThroughTrackTranscoder(mDataSource, mDataSink, type, options.getTimeInterpolator());
                     status = TrackStatus.PASS_THROUGH;
                 } else {
                     switch (type) {
-                        case VIDEO: transcoder = new VideoTrackTranscoder(mExtractor, mDataSink, index, options.getTimeInterpolator()); break;
-                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, mDataSink, index, options.getTimeInterpolator(), options.getAudioStretcher()); break;
+                        case VIDEO: transcoder = new VideoTrackTranscoder(mDataSource, mDataSink, options.getTimeInterpolator()); break;
+                        case AUDIO: transcoder = new AudioTrackTranscoder(mDataSource, mDataSink, options.getTimeInterpolator(), options.getAudioStretcher()); break;
                         default: throw new RuntimeException("Unknown type: " + type);
                     }
                     status = TrackStatus.COMPRESSING;
@@ -202,7 +159,7 @@ public class TranscoderEngine {
             } catch (TrackStrategyException strategyException) {
                 if (strategyException.getType() == TrackStrategyException.TYPE_ALREADY_COMPRESSED) {
                     // Should not abort, because the other track might need compression. Use a pass through.
-                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, mDataSink, type, options.getTimeInterpolator());
+                    transcoder = new PassThroughTrackTranscoder(mDataSource, mDataSink, type, options.getTimeInterpolator());
                     status = TrackStatus.PASS_THROUGH;
                 } else { // Abort.
                     throw strategyException;
@@ -210,15 +167,16 @@ public class TranscoderEngine {
             }
         }
         mTracks.status(type, status);
+        mDataSource.setTrackStatus(type, status);
         mDataSink.setTrackStatus(type, status);
         // Just to respect nullability in setUp().
-        if (outputFormat == null) outputFormat = inputFormat;
+        if (outputFormat == null) outputFormat = new MediaFormat();
         transcoder.setUp(outputFormat);
         mTranscoders.set(type, transcoder);
     }
 
     private void setUpTrackTranscoders(@NonNull TranscoderOptions options) {
-        mTracks = Tracks.create(mExtractor);
+        mTracks = Tracks.create(mDataSource);
         setUpTrackTranscoder(options, TrackType.VIDEO);
         setUpTrackTranscoder(options, TrackType.AUDIO);
 
@@ -236,8 +194,6 @@ public class TranscoderEngine {
                 && !ignoreValidatorResult) {
             throw new ValidatorException("Validator returned false.");
         }
-        if (videoStatus.isTranscoding()) mExtractor.selectTrack(mTracks.index(TrackType.VIDEO));
-        if (audioStatus.isTranscoding()) mExtractor.selectTrack(mTracks.index(TrackType.AUDIO));
     }
 
     private void runPipelines() throws InterruptedException {
