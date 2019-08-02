@@ -20,8 +20,8 @@ import android.media.MediaFormat;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
-import com.otaliastudios.transcoder.engine.internal.AvcCsdUtils;
-import com.otaliastudios.transcoder.engine.internal.AvcSpsUtils;
+import com.otaliastudios.transcoder.internal.AvcCsdUtils;
+import com.otaliastudios.transcoder.internal.AvcSpsUtils;
 
 import java.nio.ByteBuffer;
 

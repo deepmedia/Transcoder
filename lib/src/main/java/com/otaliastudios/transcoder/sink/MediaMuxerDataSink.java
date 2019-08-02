@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.engine.TrackTypeMap;
+import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.transcode.PassThroughTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.TrackTranscoder;
@@ -135,8 +135,7 @@ public class MediaMuxerDataSink implements DataSink {
     @Override
     public void write(@NonNull TrackTranscoder transcoder, @NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mMuxerStarted) {
-            //noinspection ConstantConditions
-            mMuxer.writeSampleData(mMuxerIndex.get(type), byteBuffer, bufferInfo);
+            mMuxer.writeSampleData(mMuxerIndex.require(type), byteBuffer, bufferInfo);
         } else {
             enqueue(transcoder, type, byteBuffer, bufferInfo);
         }

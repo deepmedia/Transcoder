@@ -9,8 +9,8 @@ import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.engine.TrackTypeMap;
-import com.otaliastudios.transcoder.engine.internal.ISO6709LocationParser;
+import com.otaliastudios.transcoder.internal.TrackTypeMap;
+import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.Logger;
 
 import java.io.IOException;

@@ -1,7 +1,9 @@
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.internal;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.otaliastudios.transcoder.engine.TrackType;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -18,6 +18,8 @@ package com.otaliastudios.transcoder.engine;
 import android.media.MediaFormat;
 
 import com.otaliastudios.transcoder.TranscoderOptions;
+import com.otaliastudios.transcoder.internal.TrackTypeMap;
+import com.otaliastudios.transcoder.internal.ValidatorException;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.InvalidOutputFormatException;
 import com.otaliastudios.transcoder.sink.MediaMuxerDataSink;

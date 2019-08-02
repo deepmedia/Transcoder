@@ -21,7 +21,7 @@ import com.otaliastudios.transcoder.engine.Engine;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
-import com.otaliastudios.transcoder.engine.ValidatorException;
+import com.otaliastudios.transcoder.internal.ValidatorException;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
