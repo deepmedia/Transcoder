@@ -35,8 +35,6 @@ public class TranscoderMuxer {
 
     private static final String TAG = TranscoderMuxer.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
-    private boolean mAudioTrackNeedsValidation = false;
-    private boolean mVideoTrackNeedsValidation = false;
 
     private static final int BUFFER_SIZE = 64 * 1024; // I have no idea whether this value is appropriate or not...
 
@@ -60,8 +58,9 @@ public class TranscoderMuxer {
 
     private final MediaMuxer mMuxer;
     private final Tracks mTracks;
-    private boolean mMuxerStarted;
+    private boolean mMuxerStarted = false;
     private final List<QueuedSample> mQueue = new ArrayList<>();
+    private final OutputFormatChecks mChecks = new OutputFormatChecks();
     private ByteBuffer mQueueBuffer;
 
     TranscoderMuxer(@NonNull MediaMuxer muxer, @NonNull Tracks info) {
@@ -77,12 +76,8 @@ public class TranscoderMuxer {
      * @param format the new format
      */
     public void setOutputFormat(@NonNull TrackType trackType, @NonNull MediaFormat format, boolean needsValidation) {
+        if (needsValidation) mChecks.checkOutputFormat(trackType, format);
         mTracks.outputFormat(trackType, format);
-        if(trackType == TrackType.AUDIO) {
-            mAudioTrackNeedsValidation = needsValidation;
-        } else if(trackType == TrackType.VIDEO){
-            mVideoTrackNeedsValidation = needsValidation;
-        }
 
         // If we have both, go on.
         boolean isTranscodingVideo = mTracks.status(TrackType.VIDEO).isTranscoding();
@@ -94,21 +89,14 @@ public class TranscoderMuxer {
         if (!isVideoReady || !isAudioReady) return;
         if (mMuxerStarted) return;
 
-        // If both video and audio are ready, validate the formats and go on.
+        // If both video and audio are ready, we can go on.
         // We will stop buffering data and we will start actually muxing it.
-        OutputFormatChecks checks = new OutputFormatChecks();
         if (isTranscodingVideo) {
-            if (mVideoTrackNeedsValidation) {
-                checks.checkVideoOutputFormat(videoOutputFormat);
-            }
             int videoIndex = mMuxer.addTrack(videoOutputFormat);
             mTracks.outputIndex(TrackType.VIDEO, videoIndex);
             LOG.v("Added track #" + videoIndex + " with " + videoOutputFormat.getString(MediaFormat.KEY_MIME) + " to muxer");
         }
         if (isTranscodingAudio) {
-            if (mAudioTrackNeedsValidation) {
-                checks.checkAudioOutputFormat(audioOutputFormat);
-            }
             int audioIndex = mMuxer.addTrack(audioOutputFormat);
             mTracks.outputIndex(TrackType.AUDIO, audioIndex);
             LOG.v("Added track #" + audioIndex + " with " + audioOutputFormat.getString(MediaFormat.KEY_MIME) + " to muxer");
