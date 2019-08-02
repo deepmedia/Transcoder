@@ -21,6 +21,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+/**
+ * A {@link DataSink} implementation that:
+ *
+ * - Uses {@link MediaMuxer} to collect data
+ * - Creates an output file with the readable media
+ */
 public class MediaMuxerDataSink implements DataSink {
 
     /**
@@ -85,10 +92,6 @@ public class MediaMuxerDataSink implements DataSink {
         mStatus.put(type, status);
     }
 
-    /**
-     * Called by {@link com.otaliastudios.transcoder.transcode.TrackTranscoder}s
-     * anytime the encoder output format changes (might actually be just once).
-     */
     @Override
     public void setTrackOutputFormat(@NonNull TrackTranscoder transcoder,
                                      @NonNull TrackType type,
