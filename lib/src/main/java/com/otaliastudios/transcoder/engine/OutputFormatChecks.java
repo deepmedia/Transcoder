@@ -24,14 +24,14 @@ import com.otaliastudios.transcoder.engine.internal.AvcSpsUtils;
 
 import java.nio.ByteBuffer;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-class MediaFormatValidator {
-    private static final String TAG = "MediaFormatValidator";
+class OutputFormatChecks {
+    private static final String TAG = OutputFormatChecks.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
-    void validateVideoOutputFormat(@Nullable MediaFormat format) {
-        if (format == null) return;
+    void checkVideoOutputFormat(@NonNull MediaFormat format) {
         String mime = format.getString(MediaFormat.KEY_MIME);
         // Refer: http://developer.android.com/guide/appendix/media-formats.html#core
         // Refer: http://en.wikipedia.org/wiki/MPEG-4_Part_14#Data_streams
@@ -54,8 +54,7 @@ class MediaFormatValidator {
         }
     }
 
-    void validateAudioOutputFormat(@Nullable MediaFormat format) {
-        if (format == null) return;
+    void checkAudioOutputFormat(@NonNull MediaFormat format) {
         String mime = format.getString(MediaFormat.KEY_MIME);
         if (!MediaFormatConstants.MIMETYPE_AUDIO_AAC.equals(mime)) {
             throw new InvalidOutputFormatException("Audio codecs other than AAC is not supported, actual mime type: " + mime);
