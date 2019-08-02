@@ -16,7 +16,6 @@
 package com.otaliastudios.transcoder.transcode;
 
 import android.media.MediaCodec;
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
@@ -49,7 +48,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         mDataSource = dataSource;
         mDataSink = dataSink;
         mTrackType = trackType;
-        mOutputFormat = dataSource.getFormat(trackType);
+        mOutputFormat = dataSource.getTrackFormat(trackType);
         if (mOutputFormat == null) {
             throw new IllegalArgumentException("Output format is null!");
         }
@@ -66,26 +65,26 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     public boolean transcode() {
         if (mIsEOS) return false;
         if (!mOutputFormatSet) {
-            mDataSink.setTrackOutputFormat(this, mTrackType, mOutputFormat);
+            mDataSink.setTrackFormat(mTrackType, mOutputFormat);
             mOutputFormatSet = true;
         }
         if (mDataSource.isDrained()) {
             mDataChunk.buffer.clear();
             mBufferInfo.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-            mDataSink.write(this, mTrackType, mDataChunk.buffer, mBufferInfo);
+            mDataSink.writeTrack(mTrackType, mDataChunk.buffer, mBufferInfo);
             mIsEOS = true;
             return true;
         }
-        if (!mDataSource.canRead(mTrackType)) {
+        if (!mDataSource.canReadTrack(mTrackType)) {
             return false;
         }
 
         mDataChunk.buffer.clear();
-        mDataSource.read(mDataChunk);
+        mDataSource.readTrack(mDataChunk);
         long timestampUs = mTimeInterpolator.interpolate(mTrackType, mDataChunk.timestampUs);
         int flags = mDataChunk.isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0;
         mBufferInfo.set(0, mDataChunk.bytes, timestampUs, flags);
-        mDataSink.write(this, mTrackType, mDataChunk.buffer, mBufferInfo);
+        mDataSink.writeTrack(mTrackType, mDataChunk.buffer, mBufferInfo);
         mLastPresentationTime = mDataChunk.timestampUs;
         return true;
     }

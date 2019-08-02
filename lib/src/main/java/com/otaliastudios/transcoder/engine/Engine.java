@@ -166,7 +166,7 @@ public class Engine {
                                       @NonNull TranscoderOptions options) {
         TrackStatus status = TrackStatus.ABSENT;
         TrackTranscoder transcoder = new NoOpTrackTranscoder();
-        final MediaFormat inputFormat = mDataSource.getFormat(type);
+        final MediaFormat inputFormat = mDataSource.getTrackFormat(type);
         MediaFormat outputFormat = new MediaFormat();
         if (inputFormat != null) {
             status = strategy.createOutputFormat(inputFormat, outputFormat);
@@ -184,7 +184,7 @@ public class Engine {
                 }
             }
         }
-        mDataSource.setTrackStatus(type, status);
+        if (status.isTranscoding()) mDataSource.selectTrack(type);
         mDataSink.setTrackStatus(type, status);
         mStatuses.set(type, status);
         transcoder.setUp(outputFormat);

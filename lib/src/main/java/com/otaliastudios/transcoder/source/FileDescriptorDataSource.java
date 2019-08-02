@@ -17,17 +17,16 @@ public class FileDescriptorDataSource extends AndroidDataSource {
     private FileDescriptor descriptor;
 
     public FileDescriptorDataSource(@NonNull FileDescriptor descriptor) {
-        super();
         this.descriptor = descriptor;
     }
 
     @Override
-    public void apply(@NonNull MediaExtractor extractor) throws IOException  {
+    public void applyExtractor(@NonNull MediaExtractor extractor) throws IOException  {
         extractor.setDataSource(descriptor);
     }
 
     @Override
-    public void apply(@NonNull MediaMetadataRetriever retriever) {
+    public void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(descriptor);
     }
 }

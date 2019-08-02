@@ -11,8 +11,6 @@ import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.transcode.PassThroughTrackTranscoder;
-import com.otaliastudios.transcoder.transcode.TrackTranscoder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,16 +32,13 @@ public class MediaMuxerDataSink implements DataSink {
      * the muxer is still being started (waiting for output formats).
      */
     private static class QueuedSample {
-        private final TrackTranscoder mTranscoder;
         private final TrackType mType;
         private final int mSize;
         private final long mTimeUs;
         private final int mFlags;
 
-        private QueuedSample(@NonNull TrackTranscoder transcoder,
-                             @NonNull TrackType type,
+        private QueuedSample(@NonNull TrackType type,
                              @NonNull MediaCodec.BufferInfo bufferInfo) {
-            mTranscoder = transcoder;
             mType = type;
             mSize = bufferInfo.size;
             mTimeUs = bufferInfo.presentationTimeUs;
@@ -92,9 +87,8 @@ public class MediaMuxerDataSink implements DataSink {
     }
 
     @Override
-    public void setTrackOutputFormat(@NonNull TrackTranscoder transcoder,
-                                     @NonNull TrackType type,
-                                     @NonNull MediaFormat format) {
+    public void setTrackFormat(@NonNull TrackType type,
+                               @NonNull MediaFormat format) {
         boolean shouldValidate = mStatus.require(type) == TrackStatus.COMPRESSING;
         if (shouldValidate) {
             mMuxerChecks.checkOutputFormat(type, format);
@@ -132,11 +126,11 @@ public class MediaMuxerDataSink implements DataSink {
     }
 
     @Override
-    public void write(@NonNull TrackTranscoder transcoder, @NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
+    public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mMuxerStarted) {
             mMuxer.writeSampleData(mMuxerIndex.require(type), byteBuffer, bufferInfo);
         } else {
-            enqueue(transcoder, type, byteBuffer, bufferInfo);
+            enqueue(type, byteBuffer, bufferInfo);
         }
     }
 
@@ -144,13 +138,11 @@ public class MediaMuxerDataSink implements DataSink {
      * Enqueues the given byffer by writing it into our own buffer and
      * just storing its position and size.
      *
-     * @param transcoder transcoder
      * @param type track type
      * @param buffer input buffer
      * @param bufferInfo input buffer info
      */
-    private void enqueue(@NonNull TrackTranscoder transcoder,
-                         @NonNull TrackType type,
+    private void enqueue(@NonNull TrackType type,
                          @NonNull ByteBuffer buffer,
                          @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mQueueBuffer == null) {
@@ -159,7 +151,7 @@ public class MediaMuxerDataSink implements DataSink {
         buffer.limit(bufferInfo.offset + bufferInfo.size);
         buffer.position(bufferInfo.offset);
         mQueueBuffer.put(buffer);
-        mQueue.add(new QueuedSample(transcoder, type, bufferInfo));
+        mQueue.add(new QueuedSample(type, bufferInfo));
     }
 
     /**
@@ -176,7 +168,7 @@ public class MediaMuxerDataSink implements DataSink {
         int offset = 0;
         for (QueuedSample sample : mQueue) {
             bufferInfo.set(offset, sample.mSize, sample.mTimeUs, sample.mFlags);
-            write(sample.mTranscoder, sample.mType, mQueueBuffer, bufferInfo);
+            writeTrack(sample.mType, mQueueBuffer, bufferInfo);
             offset += sample.mSize;
         }
         mQueue.clear();

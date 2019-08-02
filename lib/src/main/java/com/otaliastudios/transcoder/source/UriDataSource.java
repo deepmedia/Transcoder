@@ -19,18 +19,17 @@ public class UriDataSource extends AndroidDataSource {
     @NonNull private Uri uri;
 
     public UriDataSource(@NonNull Context context, @NonNull Uri uri) {
-        super();
         this.context = context.getApplicationContext();
         this.uri = uri;
     }
 
     @Override
-    public void apply(@NonNull MediaExtractor extractor) throws IOException  {
+    public void applyExtractor(@NonNull MediaExtractor extractor) throws IOException  {
         extractor.setDataSource(context, uri, null);
     }
 
     @Override
-    public void apply(@NonNull MediaMetadataRetriever retriever) {
+    public void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(context, uri);
     }
 }

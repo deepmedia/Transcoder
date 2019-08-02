@@ -65,7 +65,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         onConfigureEncoder(desiredOutputFormat, mEncoder);
         onStartEncoder(desiredOutputFormat, mEncoder);
 
-        final MediaFormat inputFormat = mDataSource.getFormat(mTrackType);
+        final MediaFormat inputFormat = mDataSource.getTrackFormat(mTrackType);
         if (inputFormat == null) {
             throw new IllegalArgumentException("Input format is null!");
         }
@@ -198,7 +198,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             throw new RuntimeException("Audio output format changed twice.");
         }
         mActualOutputFormat = format;
-        mDataSink.setTrackOutputFormat(this, mTrackType, mActualOutputFormat);
+        mDataSink.setTrackFormat(mTrackType, mActualOutputFormat);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -215,7 +215,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             return DRAIN_STATE_NONE;
         }
 
-        if (!mDataSource.canRead(mTrackType)) {
+        if (!mDataSource.canReadTrack(mTrackType)) {
             return DRAIN_STATE_NONE;
         }
 
@@ -223,7 +223,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         if (result < 0) return DRAIN_STATE_NONE;
 
         mDataChunk.buffer = mDecoderBuffers.getInputBuffer(result);
-        mDataSource.read(mDataChunk);
+        mDataSource.readTrack(mDataChunk);
         mDecoder.queueInputBuffer(result,
                 0,
                 mDataChunk.bytes,
@@ -294,7 +294,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             mEncoder.releaseOutputBuffer(result, false);
             return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
-        mDataSink.write(this, mTrackType, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
+        mDataSink.writeTrack(mTrackType, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
         mEncoder.releaseOutputBuffer(result, false);
         return DRAIN_STATE_CONSUMED;
     }

@@ -50,27 +50,21 @@ public interface DataSink {
      * This is not the output format chosen by the library user but rather the
      * output format determined by {@link MediaCodec}, which contains more information,
      * and should be inspected to know what kind of data we're collecting.
-     *
-     * @param transcoder the transcoder
-     * @param type the track type
+     *  @param type the track type
      * @param format the track format
      */
-    void setTrackOutputFormat(@NonNull TrackTranscoder transcoder,
-                              @NonNull TrackType type,
-                              @NonNull MediaFormat format);
+    void setTrackFormat(@NonNull TrackType type,
+                        @NonNull MediaFormat format);
 
     /**
      * Called by {@link TrackTranscoder}s to write data into this sink.
-     *
-     * @param transcoder the transcoder
-     * @param type the track type
+     *  @param type the track type
      * @param byteBuffer the data
      * @param bufferInfo the metadata
      */
-    void write(@NonNull TrackTranscoder transcoder,
-               @NonNull TrackType type,
-               @NonNull ByteBuffer byteBuffer,
-               @NonNull MediaCodec.BufferInfo bufferInfo);
+    void writeTrack(@NonNull TrackType type,
+                    @NonNull ByteBuffer byteBuffer,
+                    @NonNull MediaCodec.BufferInfo bufferInfo);
 
     /**
      * Called when transcoders have stopped writing.
