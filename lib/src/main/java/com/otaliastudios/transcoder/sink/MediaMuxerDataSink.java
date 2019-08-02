@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.engine.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.transcode.PassThroughTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.TrackTranscoder;
@@ -17,9 +18,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -62,9 +61,9 @@ public class MediaMuxerDataSink implements DataSink {
     private final MediaMuxer mMuxer;
     private final List<QueuedSample> mQueue = new ArrayList<>();
     private ByteBuffer mQueueBuffer;
-    private Map<TrackType, TrackStatus> mStatus = new HashMap<>();
-    private Map<TrackType, MediaFormat> mLastFormat = new HashMap<>();
-    private Map<TrackType, Integer> mMuxerIndex = new HashMap<>();
+    private TrackTypeMap<TrackStatus> mStatus = new TrackTypeMap<>();
+    private TrackTypeMap<MediaFormat> mLastFormat = new TrackTypeMap<>();
+    private TrackTypeMap<Integer> mMuxerIndex = new TrackTypeMap<>();
     private final MediaMuxerChecks mMuxerChecks = new MediaMuxerChecks();
 
     public MediaMuxerDataSink(@NonNull String outputFilePath) {
@@ -89,30 +88,27 @@ public class MediaMuxerDataSink implements DataSink {
 
     @Override
     public void setTrackStatus(@NonNull TrackType type, @NonNull TrackStatus status) {
-        mStatus.put(type, status);
+        mStatus.set(type, status);
     }
 
     @Override
     public void setTrackOutputFormat(@NonNull TrackTranscoder transcoder,
                                      @NonNull TrackType type,
                                      @NonNull MediaFormat format) {
-        //noinspection ConstantConditions
-        boolean shouldValidate = mStatus.get(type).isTranscoding()
+        boolean shouldValidate = mStatus.require(type).isTranscoding()
                 && !(transcoder instanceof PassThroughTrackTranscoder);
         if (shouldValidate) {
             mMuxerChecks.checkOutputFormat(type, format);
         }
-        mLastFormat.put(type, format);
+        mLastFormat.set(type, format);
         startIfNeeded();
 
     }
 
     private void startIfNeeded() {
         if (mMuxerStarted) return;
-        //noinspection ConstantConditions
-        boolean isTranscodingVideo = mStatus.get(TrackType.VIDEO).isTranscoding();
-        //noinspection ConstantConditions
-        boolean isTranscodingAudio = mStatus.get(TrackType.AUDIO).isTranscoding();
+        boolean isTranscodingVideo = mStatus.require(TrackType.VIDEO).isTranscoding();
+        boolean isTranscodingAudio = mStatus.require(TrackType.AUDIO).isTranscoding();
         MediaFormat videoOutputFormat = mLastFormat.get(TrackType.VIDEO);
         MediaFormat audioOutputFormat = mLastFormat.get(TrackType.AUDIO);
         boolean isVideoReady = videoOutputFormat != null || !isTranscodingVideo;
@@ -123,12 +119,12 @@ public class MediaMuxerDataSink implements DataSink {
         // We will stop buffering data and we will start actually muxing it.
         if (isTranscodingVideo) {
             int videoIndex = mMuxer.addTrack(videoOutputFormat);
-            mMuxerIndex.put(TrackType.VIDEO, videoIndex);
+            mMuxerIndex.set(TrackType.VIDEO, videoIndex);
             LOG.v("Added track #" + videoIndex + " with " + videoOutputFormat.getString(MediaFormat.KEY_MIME) + " to muxer");
         }
         if (isTranscodingAudio) {
             int audioIndex = mMuxer.addTrack(audioOutputFormat);
-            mMuxerIndex.put(TrackType.AUDIO, audioIndex);
+            mMuxerIndex.set(TrackType.AUDIO, audioIndex);
             LOG.v("Added track #" + audioIndex + " with " + audioOutputFormat.getString(MediaFormat.KEY_MIME) + " to muxer");
         }
         mMuxer.start();

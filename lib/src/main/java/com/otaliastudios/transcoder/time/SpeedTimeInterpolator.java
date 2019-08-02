@@ -1,14 +1,11 @@
 package com.otaliastudios.transcoder.time;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.engine.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.Logger;
 
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A {@link TimeInterpolator} that modifies the playback speed by the given
@@ -21,7 +18,7 @@ public class SpeedTimeInterpolator implements TimeInterpolator {
     private final static Logger LOG = new Logger(TAG);
 
     private double mFactor;
-    private final Map<TrackType, TrackData> mTrackData = new HashMap<>();
+    private final TrackTypeMap<TrackData> mTrackData = new TrackTypeMap<>();
 
     /**
      * Creates a new speed interpolator for the given factor.
@@ -46,8 +43,8 @@ public class SpeedTimeInterpolator implements TimeInterpolator {
 
     @Override
     public long interpolate(@NonNull TrackType type, long time) {
-        if (!mTrackData.containsKey(type)) {
-            mTrackData.put(type, new TrackData());
+        if (!mTrackData.has(type)) {
+            mTrackData.set(type, new TrackData());
         }
         TrackData data = mTrackData.get(type);
         //noinspection ConstantConditions

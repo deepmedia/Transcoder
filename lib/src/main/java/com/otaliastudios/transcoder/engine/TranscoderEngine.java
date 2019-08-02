@@ -18,7 +18,6 @@ package com.otaliastudios.transcoder.engine;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
-import android.media.MediaMuxer;
 import android.os.Build;
 
 import com.otaliastudios.transcoder.TranscoderOptions;
@@ -66,7 +65,7 @@ public class TranscoderEngine {
 
     private DataSource mDataSource;
     private DataSink mDataSink;
-    private Map<TrackType, TrackTranscoder> mTranscoders = new HashMap<>();
+    private TrackTypeMap<TrackTranscoder> mTranscoders = new TrackTypeMap<>();
     private Tracks mTracks;
     private MediaExtractor mExtractor;
     private volatile double mProgress;
@@ -114,15 +113,13 @@ public class TranscoderEngine {
             mDataSource.apply(mExtractor);
             mDataSink = new MediaMuxerDataSink(options.getOutputPath());
             setUpMetadata(options);
-            setupTrackTranscoders(options);
+            setUpTrackTranscoders(options);
             runPipelines();
             mDataSink.stop();
         } finally {
             try {
-                TrackTranscoder videoTranscoder = mTranscoders.get(TrackType.VIDEO);
-                if (videoTranscoder != null) videoTranscoder.release();
-                TrackTranscoder audioTranscoder = mTranscoders.get(TrackType.AUDIO);
-                if (audioTranscoder != null) audioTranscoder.release();
+                mTranscoders.require(TrackType.VIDEO).release();
+                mTranscoders.require(TrackType.AUDIO).release();
                 mTranscoders.clear();
 
                 if (mExtractor != null) {
@@ -217,10 +214,10 @@ public class TranscoderEngine {
         // Just to respect nullability in setUp().
         if (outputFormat == null) outputFormat = inputFormat;
         transcoder.setUp(outputFormat);
-        mTranscoders.put(type, transcoder);
+        mTranscoders.set(type, transcoder);
     }
 
-    private void setupTrackTranscoders(@NonNull TranscoderOptions options) {
+    private void setUpTrackTranscoders(@NonNull TranscoderOptions options) {
         mTracks = Tracks.create(mExtractor);
         setUpTrackTranscoder(options, TrackType.VIDEO);
         setUpTrackTranscoder(options, TrackType.AUDIO);
@@ -243,7 +240,6 @@ public class TranscoderEngine {
         if (audioStatus.isTranscoding()) mExtractor.selectTrack(mTracks.index(TrackType.AUDIO));
     }
 
-    @SuppressWarnings("ConstantConditions")
     private void runPipelines() throws InterruptedException {
         long loopCount = 0;
         if (mDurationUs <= 0) {
@@ -251,8 +247,8 @@ public class TranscoderEngine {
             mProgress = progress;
             if (mProgressCallback != null) mProgressCallback.onProgress(progress); // unknown
         }
-        TrackTranscoder videoTranscoder = mTranscoders.get(TrackType.VIDEO);
-        TrackTranscoder audioTranscoder = mTranscoders.get(TrackType.AUDIO);
+        TrackTranscoder videoTranscoder = mTranscoders.require(TrackType.VIDEO);
+        TrackTranscoder audioTranscoder = mTranscoders.require(TrackType.AUDIO);
         while (!(videoTranscoder.isFinished() && audioTranscoder.isFinished())) {
             if (Thread.interrupted()) {
                 throw new InterruptedException();
