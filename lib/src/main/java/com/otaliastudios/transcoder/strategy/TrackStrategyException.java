@@ -19,12 +19,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * Base class for exceptions thrown by {@link OutputStrategy} by any
+ * Base class for exceptions thrown by {@link TrackStrategy} by any
  * strategy implementors.
  *
  * These are later caught internally.
  */
-public class OutputStrategyException extends RuntimeException {
+public class TrackStrategyException extends RuntimeException {
 
     @SuppressWarnings("WeakerAccess")
     public final static int TYPE_UNAVAILABLE = 0;
@@ -34,13 +34,13 @@ public class OutputStrategyException extends RuntimeException {
     private int type;
 
     @SuppressWarnings("WeakerAccess")
-    public OutputStrategyException(int type, @Nullable String detailMessage) {
+    public TrackStrategyException(int type, @Nullable String detailMessage) {
         super(detailMessage);
         this.type = type;
     }
 
     @SuppressWarnings("WeakerAccess")
-    public OutputStrategyException(int type, @Nullable Exception cause) {
+    public TrackStrategyException(int type, @Nullable Exception cause) {
         super(cause);
         this.type = type;
     }
@@ -51,13 +51,13 @@ public class OutputStrategyException extends RuntimeException {
 
     @NonNull
     @SuppressWarnings("WeakerAccess")
-    public static OutputStrategyException unavailable(@Nullable Exception cause) {
-        return new OutputStrategyException(TYPE_UNAVAILABLE, cause);
+    public static TrackStrategyException unavailable(@Nullable Exception cause) {
+        return new TrackStrategyException(TYPE_UNAVAILABLE, cause);
     }
 
     @NonNull
     @SuppressWarnings("WeakerAccess")
-    public static OutputStrategyException alreadyCompressed(@Nullable String detailMessage) {
-        return new OutputStrategyException(TYPE_ALREADY_COMPRESSED, detailMessage);
+    public static TrackStrategyException alreadyCompressed(@Nullable String detailMessage) {
+        return new TrackStrategyException(TYPE_ALREADY_COMPRESSED, detailMessage);
     }
 }

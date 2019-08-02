@@ -15,7 +15,6 @@
  */
 package com.otaliastudios.transcoder.engine;
 
-import com.otaliastudios.transcoder.strategy.OutputStrategy;
 import com.otaliastudios.transcoder.validator.Validator;
 
 import androidx.annotation.Nullable;

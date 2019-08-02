@@ -3,10 +3,11 @@ package com.otaliastudios.transcoder.validator;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
+import com.otaliastudios.transcoder.strategy.TrackStrategy;
 
 /**
  * A validator determines if the transcoding process should proceed or not,
- * after the {@link com.otaliastudios.transcoder.strategy.OutputStrategy} have
+ * after the {@link TrackStrategy} have
  * provided the output format.
  */
 public interface Validator {

@@ -23,8 +23,8 @@ import android.os.Build;
 
 import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.source.DataSource;
-import com.otaliastudios.transcoder.strategy.OutputStrategy;
-import com.otaliastudios.transcoder.strategy.OutputStrategyException;
+import com.otaliastudios.transcoder.strategy.TrackStrategy;
+import com.otaliastudios.transcoder.strategy.TrackStrategyException;
 import com.otaliastudios.transcoder.transcode.AudioTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.NoOpTrackTranscoder;
 import com.otaliastudios.transcoder.transcode.PassThroughTrackTranscoder;
@@ -185,10 +185,10 @@ public class TranscoderEngine {
             status = TrackStatus.ABSENT;
         } else {
             int index = mTracks.index(type);
-            OutputStrategy strategy;
+            TrackStrategy strategy;
             switch (type) {
-                case VIDEO: strategy = options.getVideoOutputStrategy(); break;
-                case AUDIO: strategy = options.getAudioOutputStrategy(); break;
+                case VIDEO: strategy = options.getVideoTrackStrategy(); break;
+                case AUDIO: strategy = options.getAudioTrackStrategy(); break;
                 default: throw new RuntimeException("Unknown type: " + type);
             }
             try {
@@ -207,8 +207,8 @@ public class TranscoderEngine {
                     }
                     status = TrackStatus.COMPRESSING;
                 }
-            } catch (OutputStrategyException strategyException) {
-                if (strategyException.getType() == OutputStrategyException.TYPE_ALREADY_COMPRESSED) {
+            } catch (TrackStrategyException strategyException) {
+                if (strategyException.getType() == TrackStrategyException.TYPE_ALREADY_COMPRESSED) {
                     // Should not abort, because the other track might need compression. Use a pass through.
                     transcoder = new PassThroughTrackTranscoder(mExtractor, index, muxer, type, options.getTimeInterpolator());
                     status = TrackStatus.PASS_THROUGH;

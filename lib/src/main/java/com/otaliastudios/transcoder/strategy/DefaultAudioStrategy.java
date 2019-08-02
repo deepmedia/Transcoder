@@ -9,10 +9,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * An {@link OutputStrategy} for audio that converts it to AAC with the given number
+ * An {@link TrackStrategy} for audio that converts it to AAC with the given number
  * of channels.
  */
-public class DefaultAudioStrategy implements OutputStrategy {
+public class DefaultAudioStrategy implements TrackStrategy {
 
     public static final int AUDIO_CHANNELS_AS_IS = -1;
 
@@ -24,7 +24,7 @@ public class DefaultAudioStrategy implements OutputStrategy {
 
     @Nullable
     @Override
-    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws OutputStrategyException {
+    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException {
         int inputChannels = inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
         int outputChannels = (channels == AUDIO_CHANNELS_AS_IS) ? inputChannels : channels;
         final MediaFormat format = MediaFormat.createAudioFormat(MediaFormatConstants.MIMETYPE_AUDIO_AAC,

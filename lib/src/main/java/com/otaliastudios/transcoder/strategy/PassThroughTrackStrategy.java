@@ -6,16 +6,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
- * An {@link OutputStrategy} that asks the encoder to keep this track as is.
+ * An {@link TrackStrategy} that asks the encoder to keep this track as is.
  * Note that this is risky, as the track type might not be supported by
  * the mp4 container.
  */
 @SuppressWarnings("unused")
-public class PassThroughTrackStrategy implements OutputStrategy {
+public class PassThroughTrackStrategy implements TrackStrategy {
 
     @Nullable
     @Override
-    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws OutputStrategyException {
+    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException {
         return inputFormat;
     }
 }
