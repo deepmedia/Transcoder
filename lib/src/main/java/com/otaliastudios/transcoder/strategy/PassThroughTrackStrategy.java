@@ -5,6 +5,8 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.otaliastudios.transcoder.engine.TrackStatus;
+
 /**
  * An {@link TrackStrategy} that asks the encoder to keep this track as is.
  * Note that this is risky, as the track type might not be supported by
@@ -13,9 +15,9 @@ import androidx.annotation.Nullable;
 @SuppressWarnings("unused")
 public class PassThroughTrackStrategy implements TrackStrategy {
 
-    @Nullable
+    @NonNull
     @Override
-    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException {
-        return inputFormat;
+    public TrackStatus createOutputFormat(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat) {
+        return TrackStatus.PASS_THROUGH;
     }
 }

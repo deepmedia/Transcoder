@@ -4,6 +4,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
 
+import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.AtMostResizer;
 import com.otaliastudios.transcoder.strategy.size.ExactResizer;
@@ -16,7 +17,6 @@ import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 /**
  * An {@link TrackStrategy} for video that converts it AVC with the given size.
@@ -203,9 +203,9 @@ public class DefaultVideoStrategy implements TrackStrategy {
         this.options = options;
     }
 
-    @Nullable
+    @NonNull
     @Override
-    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException {
+    public TrackStatus createOutputFormat(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat) {
         boolean typeDone = inputFormat.getString(MediaFormat.KEY_MIME).equals(MIME_TYPE);
 
         // Compute output size.
@@ -217,7 +217,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         try {
             outSize = options.resizer.getOutputSize(inSize);
         } catch (Exception e) {
-            throw TrackStrategyException.unavailable(e);
+            throw new RuntimeException("Resizer error:", e);
         }
         int outWidth, outHeight;
         if (outSize instanceof ExactSize) {
@@ -251,27 +251,29 @@ public class DefaultVideoStrategy implements TrackStrategy {
         }
         boolean frameIntervalDone = inputIFrameInterval >= options.targetIFrameInterval;
 
-        // See if we should go on.
+        // See if we should go on or if we're already compressed.
         if (typeDone && sizeDone && frameRateDone && frameIntervalDone) {
-            throw TrackStrategyException.alreadyCompressed(
-                    "Input minSize: " + inSize.getMinor() + ", desired minSize: " + outSize.getMinor() +
+            LOG.i("Input minSize: " + inSize.getMinor() + ", desired minSize: " + outSize.getMinor() +
                     "\nInput frameRate: " + inputFrameRate + ", desired frameRate: " + outFrameRate +
                     "\nInput iFrameInterval: " + inputIFrameInterval + ", desired iFrameInterval: " + options.targetIFrameInterval);
+            return TrackStatus.PASS_THROUGH;
         }
 
         // Create the actual format.
-        MediaFormat format = MediaFormat.createVideoFormat(MIME_TYPE, outWidth, outHeight);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, outFrameRate);
+        outputFormat.setString(MediaFormat.KEY_MIME, MIME_TYPE);
+        outputFormat.setInteger(MediaFormat.KEY_WIDTH, outWidth);
+        outputFormat.setInteger(MediaFormat.KEY_HEIGHT, outHeight);
+        outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, outFrameRate);
         if (Build.VERSION.SDK_INT >= 25) {
-            format.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, options.targetIFrameInterval);
+            outputFormat.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, options.targetIFrameInterval);
         } else {
-            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, (int) Math.ceil(options.targetIFrameInterval));
+            outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, (int) Math.ceil(options.targetIFrameInterval));
         }
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+        outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         int outBitRate = (int) (options.targetBitRate == BITRATE_UNKNOWN ?
                 estimateBitRate(outWidth, outHeight, outFrameRate) : options.targetBitRate);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, outBitRate);
-        return format;
+        outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, outBitRate);
+        return TrackStatus.COMPRESSING;
     }
 
     // Depends on the codec, but for AVC this is a reasonable default ?

@@ -2,6 +2,7 @@ package com.otaliastudios.transcoder.strategy;
 
 import android.media.MediaFormat;
 
+import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.strategy.size.Resizer;
 
 import androidx.annotation.NonNull;
@@ -16,14 +17,17 @@ public interface TrackStrategy {
 
     /**
      * Create the output format for this track (either audio or video).
-     * Implementors can:
-     * - throw a {@link TrackStrategyException} if the whole transcoding should be aborted
-     * - return {@code inputFormat} for remuxing this track as-is
-     * - returning {@code null} for removing this track from output
+     * Implementors should fill the outputFormat object and return a non-null {@link TrackStatus}:
+     * - {@link TrackStatus#COMPRESSING}: we want to compress this track. Output format will be used
+     * - {@link TrackStatus#PASS_THROUGH}: we want to use the input format. Output format will be ignored
+     * - {@link TrackStatus#REMOVING}: we want to remove this track. Output format will be ignored
+     *
+     * Subclasses can also throw to abort the whole transcoding operation.
      *
      * @param inputFormat the input format
-     * @return the output format
+     * @param outputFormat the output format to be filled
+     * @return the track status
      */
-    @Nullable
-    MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException;
+    @NonNull
+    TrackStatus createOutputFormat(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat);
 }

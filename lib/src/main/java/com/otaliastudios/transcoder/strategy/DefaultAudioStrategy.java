@@ -3,10 +3,10 @@ package com.otaliastudios.transcoder.strategy;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
+import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 /**
  * An {@link TrackStrategy} for audio that converts it to AAC with the given number
@@ -22,15 +22,17 @@ public class DefaultAudioStrategy implements TrackStrategy {
         this.channels = channels;
     }
 
-    @Nullable
+    @NonNull
     @Override
-    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException {
+    public TrackStatus createOutputFormat(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat) {
         int inputChannels = inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
         int outputChannels = (channels == AUDIO_CHANNELS_AS_IS) ? inputChannels : channels;
-        final MediaFormat format = MediaFormat.createAudioFormat(MediaFormatConstants.MIMETYPE_AUDIO_AAC,
-                inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE), outputChannels);
-        format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, inputFormat.getInteger(MediaFormat.KEY_BIT_RATE));
-        return format;
+        outputFormat.setString(MediaFormat.KEY_MIME, MediaFormatConstants.MIMETYPE_AUDIO_AAC);
+        outputFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE));
+        outputFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, outputChannels);
+        outputFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+        outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, inputFormat.getInteger(MediaFormat.KEY_BIT_RATE));
+        return TrackStatus.COMPRESSING;
     }
+
 }

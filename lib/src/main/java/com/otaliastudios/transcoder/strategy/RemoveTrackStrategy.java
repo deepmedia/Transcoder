@@ -5,15 +5,17 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.otaliastudios.transcoder.engine.TrackStatus;
+
 /**
  * An {@link TrackStrategy} that removes this track from output.
  */
 @SuppressWarnings("unused")
 public class RemoveTrackStrategy implements TrackStrategy {
 
-    @Nullable
+    @NonNull
     @Override
-    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException {
-        return null;
+    public TrackStatus createOutputFormat(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat) {
+        return TrackStatus.REMOVING;
     }
 }
