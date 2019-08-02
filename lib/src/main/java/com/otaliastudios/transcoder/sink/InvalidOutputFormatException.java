@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.sink;
 
 import androidx.annotation.NonNull;
 
@@ -26,7 +26,6 @@ import com.otaliastudios.transcoder.TranscoderOptions;
  * {@link Transcoder#transcode(TranscoderOptions)}, which means it can be
  * passed to {@link TranscoderListener#onTranscodeFailed(Throwable)}.
  */
-@SuppressWarnings("WeakerAccess")
 public class InvalidOutputFormatException extends RuntimeException {
     InvalidOutputFormatException(@NonNull String detailMessage) {
         super(detailMessage);

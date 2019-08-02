@@ -23,7 +23,7 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.engine.TranscoderMuxer;
+import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 
 import java.nio.ByteBuffer;
@@ -32,7 +32,7 @@ import java.nio.ByteOrder;
 public class PassThroughTrackTranscoder implements TrackTranscoder {
     private final MediaExtractor mExtractor;
     private final int mTrackIndex;
-    private final TranscoderMuxer mMuxer;
+    private final DataSink mDataSink;
     private final TrackType mTrackType;
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private int mBufferSize;
@@ -48,12 +48,12 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
 
     public PassThroughTrackTranscoder(@NonNull MediaExtractor extractor,
                                       int trackIndex,
-                                      @NonNull TranscoderMuxer muxer,
+                                      @NonNull DataSink dataSink,
                                       @NonNull TrackType trackType,
                                       @NonNull TimeInterpolator timeInterpolator) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
-        mMuxer = muxer;
+        mDataSink = dataSink;
         mTrackType = trackType;
 
         mOutputFormat = mExtractor.getTrackFormat(mTrackIndex);
@@ -71,14 +71,14 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     public boolean transcode() {
         if (mIsEOS) return false;
         if (!mOutputFormatSet) {
-            mMuxer.setOutputFormat(mTrackType, mOutputFormat, false);
+            mDataSink.setTrackOutputFormat(this, mTrackType, mOutputFormat);
             mOutputFormatSet = true;
         }
         int trackIndex = mExtractor.getSampleTrackIndex();
         if (trackIndex < 0) {
             mBuffer.clear();
             mBufferInfo.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-            mMuxer.write(mTrackType, mBuffer, mBufferInfo);
+            mDataSink.write(this, mTrackType, mBuffer, mBufferInfo);
             mIsEOS = true;
             return true;
         }
@@ -92,7 +92,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         long realTimestampUs = mExtractor.getSampleTime();
         long timestampUs = mTimeInterpolator.interpolate(mTrackType, realTimestampUs);
         mBufferInfo.set(0, sampleSize, timestampUs, flags);
-        mMuxer.write(mTrackType, mBuffer, mBufferInfo);
+        mDataSink.write(this, mTrackType, mBuffer, mBufferInfo);
         mLastPresentationTime = realTimestampUs;
 
         mExtractor.advance();

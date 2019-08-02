@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.sink;
 
 import android.media.MediaFormat;
 
+import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 import com.otaliastudios.transcoder.engine.internal.AvcCsdUtils;
@@ -25,10 +26,9 @@ import com.otaliastudios.transcoder.engine.internal.AvcSpsUtils;
 import java.nio.ByteBuffer;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
-class OutputFormatChecks {
-    private static final String TAG = OutputFormatChecks.class.getSimpleName();
+class MediaMuxerChecks {
+    private static final String TAG = MediaMuxerChecks.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     void checkOutputFormat(@NonNull TrackType type, @NonNull MediaFormat format) {

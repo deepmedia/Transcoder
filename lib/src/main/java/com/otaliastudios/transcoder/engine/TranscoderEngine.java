@@ -22,6 +22,9 @@ import android.media.MediaMuxer;
 import android.os.Build;
 
 import com.otaliastudios.transcoder.TranscoderOptions;
+import com.otaliastudios.transcoder.sink.DataSink;
+import com.otaliastudios.transcoder.sink.InvalidOutputFormatException;
+import com.otaliastudios.transcoder.sink.MediaMuxerDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
 import com.otaliastudios.transcoder.strategy.TrackStrategyException;
@@ -62,10 +65,10 @@ public class TranscoderEngine {
     }
 
     private DataSource mDataSource;
+    private DataSink mDataSink;
     private Map<TrackType, TrackTranscoder> mTranscoders = new HashMap<>();
     private Tracks mTracks;
     private MediaExtractor mExtractor;
-    private MediaMuxer mMuxer;
     private volatile double mProgress;
     private ProgressCallback mProgressCallback;
     private long mDurationUs;
@@ -109,11 +112,11 @@ public class TranscoderEngine {
             // NOTE: use single extractor to keep from running out audio track fast.
             mExtractor = new MediaExtractor();
             mDataSource.apply(mExtractor);
-            mMuxer = new MediaMuxer(options.getOutputPath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            mDataSink = new MediaMuxerDataSink(options.getOutputPath());
             setUpMetadata(options);
             setupTrackTranscoders(options);
             runPipelines();
-            mMuxer.stop();
+            mDataSink.stop();
         } finally {
             try {
                 TrackTranscoder videoTranscoder = mTranscoders.get(TrackType.VIDEO);
@@ -131,14 +134,7 @@ public class TranscoderEngine {
                 //noinspection ThrowFromFinallyBlock
                 throw new Error("Could not shutdown extractor, codecs and muxer pipeline.", e);
             }
-            try {
-                if (mMuxer != null) {
-                    mMuxer.release();
-                    mMuxer = null;
-                }
-            } catch (RuntimeException e) {
-                LOG.e("Failed to release muxer.", e);
-            }
+            mDataSink.release();
         }
     }
 
@@ -151,14 +147,14 @@ public class TranscoderEngine {
         try {
             rotation = Integer.parseInt(rotationString);
         } catch (NumberFormatException ignore) {}
-        mMuxer.setOrientationHint((rotation + options.getRotation()) % 360);
+        mDataSink.setOrientation((rotation + options.getRotation()) % 360);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             String locationString = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LOCATION);
             if (locationString != null) {
                 float[] location = new ISO6709LocationParser().parse(locationString);
                 if (location != null) {
-                    mMuxer.setLocation(location[0], location[1]);
+                    mDataSink.setLocation(location[0], location[1]);
                 } else {
                     LOG.v("Failed to parse the location metadata: " + locationString);
                 }
@@ -174,7 +170,6 @@ public class TranscoderEngine {
     }
 
     private void setUpTrackTranscoder(@NonNull TranscoderOptions options,
-                                      @NonNull TranscoderMuxer muxer,
                                       @NonNull TrackType type) {
         TrackStatus status;
         TrackTranscoder transcoder;
@@ -197,12 +192,12 @@ public class TranscoderEngine {
                     transcoder = new NoOpTrackTranscoder();
                     status = TrackStatus.REMOVING;
                 } else if (outputFormat == inputFormat) {
-                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, muxer, type, options.getTimeInterpolator());
+                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, mDataSink, type, options.getTimeInterpolator());
                     status = TrackStatus.PASS_THROUGH;
                 } else {
                     switch (type) {
-                        case VIDEO: transcoder = new VideoTrackTranscoder(mExtractor, muxer, index, options.getTimeInterpolator()); break;
-                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, muxer, index, options.getTimeInterpolator(), options.getAudioStretcher()); break;
+                        case VIDEO: transcoder = new VideoTrackTranscoder(mExtractor, mDataSink, index, options.getTimeInterpolator()); break;
+                        case AUDIO: transcoder = new AudioTrackTranscoder(mExtractor, mDataSink, index, options.getTimeInterpolator(), options.getAudioStretcher()); break;
                         default: throw new RuntimeException("Unknown type: " + type);
                     }
                     status = TrackStatus.COMPRESSING;
@@ -210,7 +205,7 @@ public class TranscoderEngine {
             } catch (TrackStrategyException strategyException) {
                 if (strategyException.getType() == TrackStrategyException.TYPE_ALREADY_COMPRESSED) {
                     // Should not abort, because the other track might need compression. Use a pass through.
-                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, muxer, type, options.getTimeInterpolator());
+                    transcoder = new PassThroughTrackTranscoder(mExtractor, index, mDataSink, type, options.getTimeInterpolator());
                     status = TrackStatus.PASS_THROUGH;
                 } else { // Abort.
                     throw strategyException;
@@ -218,6 +213,7 @@ public class TranscoderEngine {
             }
         }
         mTracks.status(type, status);
+        mDataSink.setTrackStatus(type, status);
         // Just to respect nullability in setUp().
         if (outputFormat == null) outputFormat = inputFormat;
         transcoder.setUp(outputFormat);
@@ -226,9 +222,8 @@ public class TranscoderEngine {
 
     private void setupTrackTranscoders(@NonNull TranscoderOptions options) {
         mTracks = Tracks.create(mExtractor);
-        TranscoderMuxer muxer = new TranscoderMuxer(mMuxer, mTracks);
-        setUpTrackTranscoder(options, muxer, TrackType.VIDEO);
-        setUpTrackTranscoder(options, muxer, TrackType.AUDIO);
+        setUpTrackTranscoder(options, TrackType.VIDEO);
+        setUpTrackTranscoder(options, TrackType.AUDIO);
 
         TrackStatus videoStatus = mTracks.status(TrackType.VIDEO);
         TrackStatus audioStatus = mTracks.status(TrackType.AUDIO);

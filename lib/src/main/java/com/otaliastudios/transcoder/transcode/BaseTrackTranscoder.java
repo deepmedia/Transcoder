@@ -8,8 +8,8 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.sink.DataSink;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,7 +26,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
 
     private final MediaExtractor mExtractor;
     private final int mTrackIndex;
-    private final TranscoderMuxer mMuxer;
+    private final DataSink mDataSink;
     private final TrackType mTrackType;
 
     private long mLastPresentationTimeUs;
@@ -46,12 +46,12 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
 
     @SuppressWarnings("WeakerAccess")
     protected BaseTrackTranscoder(@NonNull MediaExtractor extractor,
-                                  @NonNull TranscoderMuxer muxer,
+                                  @NonNull DataSink dataSink,
                                   @NonNull TrackType trackType,
                                   int trackIndex) {
         mExtractor = extractor;
         mTrackIndex = trackIndex;
-        mMuxer = muxer;
+        mDataSink = dataSink;
         mTrackType = trackType;
     }
 
@@ -196,7 +196,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             throw new RuntimeException("Audio output format changed twice.");
         }
         mActualOutputFormat = format;
-        mMuxer.setOutputFormat(mTrackType, mActualOutputFormat, true);
+        mDataSink.setTrackOutputFormat(this, mTrackType, mActualOutputFormat);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -284,7 +284,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             mEncoder.releaseOutputBuffer(result, false);
             return DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY;
         }
-        mMuxer.write(mTrackType, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
+        mDataSink.write(this, mTrackType, mEncoderBuffers.getOutputBuffer(result), mBufferInfo);
         mEncoder.releaseOutputBuffer(result, false);
         return DRAIN_STATE_CONSUMED;
     }

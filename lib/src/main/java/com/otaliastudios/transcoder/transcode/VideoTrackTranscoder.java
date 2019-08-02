@@ -22,8 +22,8 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
@@ -48,10 +48,10 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
 
     public VideoTrackTranscoder(
             @NonNull MediaExtractor extractor,
-            @NonNull TranscoderMuxer muxer,
+            @NonNull DataSink dataSink,
             int trackIndex,
             @NonNull TimeInterpolator timeInterpolator) {
-        super(extractor, muxer, TrackType.VIDEO, trackIndex);
+        super(extractor, dataSink, TrackType.VIDEO, trackIndex);
         mTimeInterpolator = timeInterpolator;
     }
 

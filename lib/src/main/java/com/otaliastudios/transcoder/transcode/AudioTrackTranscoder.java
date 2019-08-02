@@ -7,8 +7,8 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.engine.TranscoderMuxer;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.stretch.AudioStretcher;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.AudioEngine;
@@ -24,11 +24,11 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
     private MediaFormat mEncoderOutputFormat; // to create the channel
 
     public AudioTrackTranscoder(@NonNull MediaExtractor extractor,
-                                @NonNull TranscoderMuxer muxer,
+                                @NonNull DataSink dataSink,
                                 int trackIndex,
                                 @NonNull TimeInterpolator timeInterpolator,
                                 @NonNull AudioStretcher audioStretcher) {
-        super(extractor, muxer, TrackType.AUDIO, trackIndex);
+        super(extractor, dataSink, TrackType.AUDIO, trackIndex);
         mTimeInterpolator = timeInterpolator;
         mAudioStretcher = audioStretcher;
     }
