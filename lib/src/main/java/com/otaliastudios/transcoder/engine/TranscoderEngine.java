@@ -259,6 +259,9 @@ public class TranscoderEngine {
         TrackTranscoder videoTranscoder = mTranscoders.get(TrackType.VIDEO);
         TrackTranscoder audioTranscoder = mTranscoders.get(TrackType.AUDIO);
         while (!(videoTranscoder.isFinished() && audioTranscoder.isFinished())) {
+            if (Thread.interrupted()) {
+                throw new InterruptedException();
+            }
             boolean stepped = videoTranscoder.transcode() || audioTranscoder.transcode();
             loopCount++;
             if (mDurationUs > 0 && loopCount % PROGRESS_INTERVAL_STEPS == 0) {

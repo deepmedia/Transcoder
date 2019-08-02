@@ -196,7 +196,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
             throw new RuntimeException("Audio output format changed twice.");
         }
         mActualOutputFormat = format;
-        mMuxer.setOutputFormat(mTrackType, mActualOutputFormat);
+        mMuxer.setOutputFormat(mTrackType, mActualOutputFormat, true);
     }
 
     @SuppressWarnings("SameParameterValue")
