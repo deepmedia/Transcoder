@@ -94,7 +94,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
             scaleY = outputRatio / inputRatio;
         }
         // I don't think we should consider rotation and flip these - we operate on non-rotated
-        // surfaces and pass the input rotation metadata to the output muxer, see TranscoderEngine.setupMetadata.
+        // surfaces and pass the input rotation metadata to the output muxer, see Engine.setupMetadata.
         mDecoderOutputSurface.setScale(scaleX, scaleY);
     }
 

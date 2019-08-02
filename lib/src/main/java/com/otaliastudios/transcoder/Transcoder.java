@@ -17,7 +17,7 @@ package com.otaliastudios.transcoder;
 
 import android.os.Handler;
 
-import com.otaliastudios.transcoder.engine.TranscoderEngine;
+import com.otaliastudios.transcoder.engine.Engine;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
@@ -112,7 +112,7 @@ public class Transcoder {
             @Override
             public Void call() throws Exception {
                 try {
-                    TranscoderEngine engine = new TranscoderEngine(options.getDataSource(), new TranscoderEngine.ProgressCallback() {
+                    Engine engine = new Engine(options.getDataSource(), new Engine.ProgressCallback() {
                         @Override
                         public void onProgress(final double progress) {
                             listenerWrapper.onTranscodeProgress(progress);

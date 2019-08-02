@@ -37,9 +37,9 @@ import androidx.annotation.Nullable;
 /**
  * Internal engine, do not use this directly.
  */
-public class TranscoderEngine {
+public class Engine {
 
-    private static final String TAG = TranscoderEngine.class.getSimpleName();
+    private static final String TAG = Engine.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     private static final double PROGRESS_UNKNOWN = -1.0;
@@ -64,7 +64,7 @@ public class TranscoderEngine {
     private ProgressCallback mProgressCallback;
     private long mDurationUs;
 
-    public TranscoderEngine(@NonNull DataSource dataSource, @Nullable ProgressCallback progressCallback) {
+    public Engine(@NonNull DataSource dataSource, @Nullable ProgressCallback progressCallback) {
         mDataSource = dataSource;
         mProgressCallback = progressCallback;
     }
