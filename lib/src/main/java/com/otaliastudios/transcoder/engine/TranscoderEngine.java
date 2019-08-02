@@ -15,10 +15,7 @@
  */
 package com.otaliastudios.transcoder.engine;
 
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.MediaMetadataRetriever;
-import android.os.Build;
 
 import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.sink.DataSink;
@@ -41,6 +38,7 @@ import androidx.annotation.Nullable;
  * Internal engine, do not use this directly.
  */
 public class TranscoderEngine {
+
     private static final String TAG = TranscoderEngine.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
@@ -61,21 +59,13 @@ public class TranscoderEngine {
     private DataSource mDataSource;
     private DataSink mDataSink;
     private TrackTypeMap<TrackTranscoder> mTranscoders = new TrackTypeMap<>();
-    private Tracks mTracks;
+    private TrackTypeMap<TrackStatus> mStatuses = new TrackTypeMap<>();
     private volatile double mProgress;
     private ProgressCallback mProgressCallback;
     private long mDurationUs;
 
-    /**
-     * Do not use this constructor unless you know what you are doing.
-     */
-    public TranscoderEngine() { }
-
-    public void setDataSource(@NonNull DataSource dataSource) {
+    public TranscoderEngine(@NonNull DataSource dataSource, @Nullable ProgressCallback progressCallback) {
         mDataSource = dataSource;
-    }
-
-    public void setProgressCallback(@Nullable ProgressCallback progressCallback) {
         mProgressCallback = progressCallback;
     }
 
@@ -126,9 +116,9 @@ public class TranscoderEngine {
                                       @NonNull TrackType type) {
         TrackStatus status;
         TrackTranscoder transcoder;
-        MediaFormat inputFormat = mTracks.format(type);
+        MediaFormat inputFormat = mDataSource.getFormat(type);
         MediaFormat outputFormat = null;
-        if (!mTracks.has(type)) {
+        if (inputFormat == null) {
             transcoder = new NoOpTrackTranscoder();
             status = TrackStatus.ABSENT;
         } else {
@@ -139,8 +129,6 @@ public class TranscoderEngine {
                 default: throw new RuntimeException("Unknown type: " + type);
             }
             try {
-                // We checked has(), so the input format is not null.
-                //noinspection ConstantConditions
                 outputFormat = strategy.createOutputFormat(inputFormat);
                 if (outputFormat == null) {
                     transcoder = new NoOpTrackTranscoder();
@@ -166,9 +154,9 @@ public class TranscoderEngine {
                 }
             }
         }
-        mTracks.status(type, status);
         mDataSource.setTrackStatus(type, status);
         mDataSink.setTrackStatus(type, status);
+        mStatuses.set(type, status);
         // Just to respect nullability in setUp().
         if (outputFormat == null) outputFormat = new MediaFormat();
         transcoder.setUp(outputFormat);
@@ -176,12 +164,12 @@ public class TranscoderEngine {
     }
 
     private void setUpTrackTranscoders(@NonNull TranscoderOptions options) {
-        mTracks = Tracks.create(mDataSource);
         setUpTrackTranscoder(options, TrackType.VIDEO);
         setUpTrackTranscoder(options, TrackType.AUDIO);
 
-        TrackStatus videoStatus = mTracks.status(TrackType.VIDEO);
-        TrackStatus audioStatus = mTracks.status(TrackType.AUDIO);
+        TrackStatus videoStatus = mStatuses.require(TrackType.VIDEO);
+        TrackStatus audioStatus = mStatuses.require(TrackType.AUDIO);
+        //noinspection UnusedAssignment
         boolean ignoreValidatorResult = false;
 
         // If we have to apply some rotation, and the video should be transcoded,
@@ -212,8 +200,8 @@ public class TranscoderEngine {
             boolean stepped = videoTranscoder.transcode() || audioTranscoder.transcode();
             loopCount++;
             if (mDurationUs > 0 && loopCount % PROGRESS_INTERVAL_STEPS == 0) {
-                double videoProgress = getTranscoderProgress(videoTranscoder, mTracks.status(TrackType.VIDEO));
-                double audioProgress = getTranscoderProgress(audioTranscoder, mTracks.status(TrackType.AUDIO));
+                double videoProgress = getTranscoderProgress(videoTranscoder, mStatuses.require(TrackType.VIDEO));
+                double audioProgress = getTranscoderProgress(audioTranscoder, mStatuses.require(TrackType.AUDIO));
                 LOG.i("progress - video:" + videoProgress + " audio:" + audioProgress);
                 double progress = (videoProgress + audioProgress) / getTranscodersCount();
                 mProgress = progress;
@@ -233,8 +221,8 @@ public class TranscoderEngine {
 
     private int getTranscodersCount() {
         int count = 0;
-        if (mTracks.status(TrackType.AUDIO).isTranscoding()) count++;
-        if (mTracks.status(TrackType.VIDEO).isTranscoding()) count++;
+        if (mStatuses.require(TrackType.AUDIO).isTranscoding()) count++;
+        if (mStatuses.require(TrackType.VIDEO).isTranscoding()) count++;
         return (count > 0) ? count : 1;
     }
 }
