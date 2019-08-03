@@ -45,14 +45,29 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     private VideoEncoderInput mEncoderInputSurface;
     private MediaCodec mEncoder; // Keep this since we want to signal EOS on it.
     private VideoFrameDropper mFrameDropper;
-    private TimeInterpolator mTimeInterpolator;
+    private final TimeInterpolator mTimeInterpolator;
+    private final int mRotation;
+    private final boolean mFlip;
 
     public VideoTrackTranscoder(
             @NonNull DataSource dataSource,
             @NonNull DataSink dataSink,
-            @NonNull TimeInterpolator timeInterpolator) {
+            @NonNull TimeInterpolator timeInterpolator,
+            int rotation) {
         super(dataSource, dataSink, TrackType.VIDEO);
         mTimeInterpolator = timeInterpolator;
+        mRotation = (rotation + dataSource.getOrientation()) % 360;
+        mFlip = mRotation % 180 != 0;
+    }
+
+    @Override
+    protected void onConfigureEncoder(@NonNull MediaFormat format, @NonNull MediaCodec encoder) {
+        // Flip the width and height as needed.
+        int width = format.getInteger(MediaFormat.KEY_WIDTH);
+        int height = format.getInteger(MediaFormat.KEY_HEIGHT);
+        format.setInteger(MediaFormat.KEY_WIDTH, mFlip ? height : width);
+        format.setInteger(MediaFormat.KEY_HEIGHT, mFlip ? width : height);
+        super.onConfigureEncoder(format, encoder);
     }
 
     @Override
@@ -69,6 +84,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
             format.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         }
         mDecoderOutputSurface = new VideoDecoderOutput();
+        mDecoderOutputSurface.setRotation(mRotation);
         decoder.configure(format, mDecoderOutputSurface.getSurface(), null, 0);
     }
 
@@ -84,8 +100,8 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         float inputWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
         float inputHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
         float inputRatio = inputWidth / inputHeight;
-        float outputWidth = outputFormat.getInteger(MediaFormat.KEY_WIDTH);
-        float outputHeight = outputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        float outputWidth = mFlip ? outputFormat.getInteger(MediaFormat.KEY_HEIGHT) : outputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        float outputHeight = mFlip ? outputFormat.getInteger(MediaFormat.KEY_WIDTH) : outputFormat.getInteger(MediaFormat.KEY_HEIGHT);
         float outputRatio = outputWidth / outputHeight;
         float scaleX = 1, scaleY = 1;
         if (inputRatio > outputRatio) { // Input wider. We have a scaleX.
@@ -93,8 +109,6 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         } else if (inputRatio < outputRatio) { // Input taller. We have a scaleY.
             scaleY = outputRatio / inputRatio;
         }
-        // I don't think we should consider rotation and flip these - we operate on non-rotated
-        // surfaces and pass the input rotation metadata to the output muxer, see Engine.setupMetadata.
         mDecoderOutputSurface.setScale(scaleX, scaleY);
     }
 

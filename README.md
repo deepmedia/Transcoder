@@ -325,7 +325,7 @@ rotation to the input video frames. Accepted values are `0`, `90`, `180`, `270`:
 
 ```java
 Transcoder.into(filePath)
-        .setRotation(rotation) // 0, 90, 180, 270
+        .setVideoRotation(rotation) // 0, 90, 180, 270
         // ...
 ```
 

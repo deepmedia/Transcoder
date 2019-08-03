@@ -81,7 +81,7 @@ public class TranscoderOptions {
         return validator;
     }
 
-    public int getRotation() {
+    public int getVideoRotation() {
         return rotation;
     }
 
@@ -240,7 +240,7 @@ public class TranscoderOptions {
          */
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setRotation(int rotation) {
+        public Builder setVideoRotation(int rotation) {
             this.rotation = rotation;
             return this;
         }
@@ -294,10 +294,6 @@ public class TranscoderOptions {
             }
             if (rotation != 0 && rotation != 90 && rotation != 180 && rotation != 270) {
                 throw new IllegalArgumentException("Accepted values for rotation are 0, 90, 180, 270");
-            }
-            if (rotation != 0 && videoDataSources.size() > 1) {
-                // TODO support this, by not using metadata and instead rotating the GL texture
-                throw new IllegalStateException("Rotation should be 0 if you have more than one video source.");
             }
             if (listenerHandler == null) {
                 Looper looper = Looper.myLooper();

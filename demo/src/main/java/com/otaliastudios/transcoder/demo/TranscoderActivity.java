@@ -202,7 +202,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         mTranscodeFuture = builder.setListener(this)
                 .setAudioTrackStrategy(mTranscodeAudioStrategy)
                 .setVideoTrackStrategy(mTranscodeVideoStrategy)
-                .setRotation(rotation)
+                .setVideoRotation(rotation)
                 .setSpeed(speed)
                 .transcode();
     }

@@ -166,7 +166,8 @@ public class Engine {
             case COMPRESSING: {
                 switch (type) {
                     case VIDEO:
-                        transcoder = new VideoTrackTranscoder(dataSource, mDataSink, interpolator);
+                        transcoder = new VideoTrackTranscoder(dataSource, mDataSink,
+                                interpolator, options.getVideoRotation());
                         break;
                     case AUDIO:
                         transcoder = new AudioTrackTranscoder(dataSource, mDataSink,
@@ -282,10 +283,7 @@ public class Engine {
         mDataSources.setAudio(options.getAudioDataSources());
 
         // Pass metadata from DataSource to DataSink
-        if (hasVideoSources()) {
-            DataSource firstVideoSource = mDataSources.requireVideo().get(0);
-            mDataSink.setOrientation((firstVideoSource.getOrientation() + options.getRotation()) % 360);
-        }
+        mDataSink.setOrientation(0); // Explicitly set 0 to output - we rotate the textures.
         for (DataSource locationSource : getUniqueSources()) {
             double[] location = locationSource.getLocation();
             if (location != null) {
@@ -318,7 +316,7 @@ public class Engine {
         // If we have to apply some rotation, and the video should be transcoded,
         // ignore any Validator trying to abort the operation. The operation must happen
         // because we must apply the rotation.
-        ignoreValidatorResult = videoStatus.isTranscoding() && options.getRotation() != 0;
+        ignoreValidatorResult = videoStatus.isTranscoding() && options.getVideoRotation() != 0;
         if (!options.getValidator().validate(videoStatus, audioStatus) && !ignoreValidatorResult) {
             throw new ValidatorException("Validator returned false.");
         }
