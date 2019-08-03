@@ -34,11 +34,6 @@ public class TrackTypeMap<T> {
         return map.get(type);
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public void clear() {
-        map.clear();
-    }
-
     public boolean has(@NonNull TrackType type) {
         return map.containsKey(type);
     }

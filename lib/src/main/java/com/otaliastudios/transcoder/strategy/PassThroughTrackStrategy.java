@@ -7,6 +7,8 @@ import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
 
+import java.util.List;
+
 /**
  * An {@link TrackStrategy} that asks the encoder to keep this track as is.
  * Note that this is risky, as the track type might not be supported by
@@ -17,7 +19,7 @@ public class PassThroughTrackStrategy implements TrackStrategy {
 
     @NonNull
     @Override
-    public TrackStatus createOutputFormat(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat) {
+    public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats, @NonNull MediaFormat outputFormat) {
         return TrackStatus.PASS_THROUGH;
     }
 }

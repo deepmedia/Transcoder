@@ -18,6 +18,8 @@ import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
 
+import java.util.List;
+
 /**
  * An {@link TrackStrategy} for video that converts it AVC with the given size.
  * The input and output aspect ratio must match.
@@ -205,12 +207,12 @@ public class DefaultVideoStrategy implements TrackStrategy {
 
     @NonNull
     @Override
-    public TrackStatus createOutputFormat(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat) {
-        boolean typeDone = inputFormat.getString(MediaFormat.KEY_MIME).equals(MIME_TYPE);
+    public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats, @NonNull MediaFormat outputFormat) {
+        boolean typeDone = checkMimeType(inputFormats);
 
         // Compute output size.
-        int inWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
-        int inHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        int inWidth = getMaxWidth(inputFormats);
+        int inHeight = getMaxHeight(inputFormats);
         LOG.i("Input width&height: " + inWidth + "x" + inHeight);
         Size inSize = new ExactSize(inWidth, inHeight);
         Size outSize;
@@ -234,21 +236,17 @@ public class DefaultVideoStrategy implements TrackStrategy {
         boolean sizeDone = inSize.getMinor() <= outSize.getMinor();
 
         // Compute output frame rate. It can't be bigger than input frame rate.
-        int inputFrameRate, outFrameRate;
-        if (inputFormat.containsKey(MediaFormat.KEY_FRAME_RATE)) {
-            inputFrameRate = inputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
+        int outFrameRate;
+        int inputFrameRate = getMinFrameRate(inputFormats);
+        if (inputFrameRate > 0) {
             outFrameRate = Math.min(inputFrameRate, options.targetFrameRate);
         } else {
-            inputFrameRate = -1;
             outFrameRate = options.targetFrameRate;
         }
         boolean frameRateDone = inputFrameRate <= outFrameRate;
 
         // Compute i frame.
-        int inputIFrameInterval = -1;
-        if (inputFormat.containsKey(MediaFormat.KEY_I_FRAME_INTERVAL)) {
-            inputIFrameInterval = inputFormat.getInteger(MediaFormat.KEY_I_FRAME_INTERVAL);
-        }
+        int inputIFrameInterval = getAverageIFrameInterval(inputFormats);
         boolean frameIntervalDone = inputIFrameInterval >= options.targetIFrameInterval;
 
         // See if we should go on or if we're already compressed.
@@ -274,6 +272,53 @@ public class DefaultVideoStrategy implements TrackStrategy {
                 estimateBitRate(outWidth, outHeight, outFrameRate) : options.targetBitRate);
         outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, outBitRate);
         return TrackStatus.COMPRESSING;
+    }
+
+    private boolean checkMimeType(@NonNull List<MediaFormat> formats) {
+        for (MediaFormat format : formats) {
+            if (!format.getString(MediaFormat.KEY_MIME).equals(MIME_TYPE)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private int getMaxWidth(@NonNull List<MediaFormat> formats) {
+        int width = 0;
+        for (MediaFormat format : formats) {
+            width = Math.max(width, format.getInteger(MediaFormat.KEY_WIDTH));
+        }
+        return width;
+    }
+
+    private int getMaxHeight(@NonNull List<MediaFormat> formats) {
+        int height = 0;
+        for (MediaFormat format : formats) {
+            height = Math.max(height, format.getInteger(MediaFormat.KEY_HEIGHT));
+        }
+        return height;
+    }
+
+    private int getMinFrameRate(@NonNull List<MediaFormat> formats) {
+        int frameRate = Integer.MAX_VALUE;
+        for (MediaFormat format : formats) {
+            if (format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
+                frameRate = Math.min(frameRate, format.getInteger(MediaFormat.KEY_FRAME_RATE));
+            }
+        }
+        return (frameRate == Integer.MAX_VALUE) ? -1 : frameRate;
+    }
+
+    private int getAverageIFrameInterval(@NonNull List<MediaFormat> formats) {
+        int count = 0;
+        int sum = 0;
+        for (MediaFormat format : formats) {
+            if (format.containsKey(MediaFormat.KEY_I_FRAME_INTERVAL)) {
+                count++;
+                sum += format.getInteger(MediaFormat.KEY_I_FRAME_INTERVAL);
+            }
+        }
+        return (count > 0) ? Math.round((float) sum / count) : -1;
     }
 
     // Depends on the codec, but for AVC this is a reasonable default ?

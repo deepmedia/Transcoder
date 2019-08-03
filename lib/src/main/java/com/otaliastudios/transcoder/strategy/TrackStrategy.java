@@ -8,6 +8,8 @@ import com.otaliastudios.transcoder.strategy.size.Resizer;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.List;
+
 /**
  * Base class for video/audio format strategy.
  * Video strategies should use a {@link Resizer} instance to compute the output
@@ -24,10 +26,10 @@ public interface TrackStrategy {
      *
      * Subclasses can also throw to abort the whole transcoding operation.
      *
-     * @param inputFormat the input format
+     * @param inputFormats the input formats
      * @param outputFormat the output format to be filled
      * @return the track status
      */
     @NonNull
-    TrackStatus createOutputFormat(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat);
+    TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats, @NonNull MediaFormat outputFormat);
 }

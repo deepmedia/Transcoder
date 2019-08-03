@@ -35,6 +35,8 @@ import com.otaliastudios.transcoder.internal.Logger;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Arrays;
+
 /**
  * Internal engine, do not use this directly.
  */
@@ -169,7 +171,8 @@ public class Engine {
         final MediaFormat inputFormat = mDataSource.getTrackFormat(type);
         MediaFormat outputFormat = new MediaFormat();
         if (inputFormat != null) {
-            status = strategy.createOutputFormat(inputFormat, outputFormat);
+            //noinspection ArraysAsListWithZeroOrOneArgument
+            status = strategy.createOutputFormat(Arrays.asList(inputFormat), outputFormat);
             switch (status) {
                 case ABSENT: throw new IllegalArgumentException("Strategies should not return ABSENT.");
                 case REMOVING: break; // We'll use NoOpTrackTranscoder.
