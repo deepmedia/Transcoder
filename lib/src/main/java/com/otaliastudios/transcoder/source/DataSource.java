@@ -79,6 +79,14 @@ public interface DataSource {
     void readTrack(@NonNull DataSource.Chunk chunk);
 
     /**
+     * Returns the latest timestamp that was read using
+     * {@link #readTrack(Chunk)}.
+     *
+     * @return latest timestamp
+     */
+    long getLastTimestampUs();
+
+    /**
      * When this source has been totally read, it can return true here to
      * notify an end of input stream.
      *

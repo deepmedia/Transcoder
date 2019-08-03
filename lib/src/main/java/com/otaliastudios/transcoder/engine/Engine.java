@@ -35,6 +35,7 @@ import com.otaliastudios.transcoder.internal.Logger;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +67,7 @@ public class Engine {
     private TrackTypeMap<List<DataSource>> mDataSources = new TrackTypeMap<>();
     private TrackTypeMap<TrackTranscoder> mTranscoders = new TrackTypeMap<>();
     private TrackTypeMap<TrackStatus> mStatuses = new TrackTypeMap<>();
+    private TrackTypeMap<MediaFormat> mOutputFormats = new TrackTypeMap<>();
     private volatile double mProgress;
     private ProgressCallback mProgressCallback;
     private long mTotalDurationUs;
@@ -138,17 +140,11 @@ public class Engine {
         mTotalDurationUs = Math.min(audioDurationUs, videoDurationUs);
         LOG.v("Duration (us): " + mTotalDurationUs);
 
-        // Set up transcoders.
-        int tracks = 0;
-        setUpTrackTranscoders(TrackType.VIDEO, options.getVideoTrackStrategy(), options);
-        setUpTrackTranscoders(TrackType.AUDIO, options.getAudioTrackStrategy(), options);
-        TrackStatus videoStatus = mStatuses.require(TrackType.VIDEO);
-        TrackStatus audioStatus = mStatuses.require(TrackType.AUDIO);
-        TrackTranscoder videoTranscoder = mTranscoders.require(TrackType.VIDEO);
-        TrackTranscoder audioTranscoder = mTranscoders.require(TrackType.AUDIO);
-        if (videoStatus.isTranscoding()) tracks++;
-        if (audioStatus.isTranscoding()) tracks++;
-        tracks = Math.max(1, tracks);
+        // Compute the TrackStatus.
+        computeTrackStatus(TrackType.AUDIO, options.getAudioTrackStrategy(), options.getAudioDataSources());
+        computeTrackStatus(TrackType.VIDEO, options.getVideoTrackStrategy(), options.getVideoDataSources());
+        TrackStatus videoStatus = mStatuses.requireVideo();
+        TrackStatus audioStatus = mStatuses.requireAudio();
 
         // Pass to Validator.
         //noinspection UnusedAssignment
@@ -160,6 +156,21 @@ public class Engine {
         if (!options.getValidator().validate(videoStatus, audioStatus) && !ignoreValidatorResult) {
             throw new ValidatorException("Validator returned false.");
         }
+
+        // Set up transcoders.
+        // int tracks = 0;
+        // setUpTrackTranscoders(TrackType.VIDEO, options.getVideoTrackStrategy(), options);
+        // setUpTrackTranscoders(TrackType.AUDIO, options.getAudioTrackStrategy(), options);
+        // TrackTranscoder videoTranscoder = mTranscoders.require(TrackType.VIDEO);
+        // TrackTranscoder audioTranscoder = mTranscoders.require(TrackType.AUDIO);
+        // if (videoStatus.isTranscoding()) tracks++;
+        // if (audioStatus.isTranscoding()) tracks++;
+        // tracks = Math.max(1, tracks);
+
+        // TODO dataSource.selectTrack
+        // TODO dataSource.release
+        // TODO trackTranscoder.setUp
+        // TODO trackTranscoder timeOffsetUs
 
         // Do the actual transcoding work.
         long loopCount = 0;
@@ -196,6 +207,29 @@ public class Engine {
         }
     }
 
+    private void computeTrackStatus(@NonNull TrackType type,
+                                    @NonNull TrackStrategy strategy,
+                                    @NonNull List<DataSource> sources) {
+        TrackStatus status = TrackStatus.ABSENT;
+        MediaFormat outputFormat = new MediaFormat();
+        if (!sources.isEmpty()) {
+            List<MediaFormat> inputFormats = new ArrayList<>();
+            for (DataSource source : sources) {
+                MediaFormat inputFormat = source.getTrackFormat(type);
+                if (inputFormat != null) {
+                    inputFormats.add(inputFormat);
+                } else if (sources.size() > 1) {
+                    throw new IllegalArgumentException("More than one source selected for type " + type
+                            + ", but getTrackFormat returned null.");
+                }
+            }
+            status = strategy.createOutputFormat(inputFormats, outputFormat);
+        }
+        mOutputFormats.set(type, outputFormat);
+        mDataSink.setTrackStatus(type, status);
+        mStatuses.set(type, status);
+    }
+
     private void setUpTrackTranscoder(@NonNull TrackType type,
                                       @NonNull TrackStrategy strategy,
                                       @NonNull TranscoderOptions options) {
@@ -228,12 +262,13 @@ public class Engine {
     }
 
     @NonNull
-    private TrackTranscoder createTrackTranscoder(@NonNull TrackType type,
+    private TrackTranscoder createTrackTranscoder(@NonNull DataSource dataSource,
+                                                  @NonNull TrackType type,
                                                   @NonNull TranscoderOptions options) {
         switch (type) {
-            case VIDEO: return new VideoTrackTranscoder(mDataSource, mDataSink,
+            case VIDEO: return new VideoTrackTranscoder(dataSource, mDataSink,
                     options.getTimeInterpolator());
-            case AUDIO: return new AudioTrackTranscoder(mDataSource, mDataSink,
+            case AUDIO: return new AudioTrackTranscoder(dataSource, mDataSink,
                     options.getTimeInterpolator(), options.getAudioStretcher());
             default: throw new RuntimeException("Unknown type: " + type);
         }

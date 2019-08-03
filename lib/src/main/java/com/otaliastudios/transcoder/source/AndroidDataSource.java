@@ -28,6 +28,7 @@ public abstract class AndroidDataSource implements DataSource {
     private boolean mExtractorApplied;
     private final TrackTypeMap<MediaFormat> mFormats = new TrackTypeMap<>();
     private final TrackTypeMap<Integer> mIndex = new TrackTypeMap<>();
+    private long mLastTimestampUs;
 
     private void ensureMetadata() {
         if (!mMetadataApplied) {
@@ -75,7 +76,13 @@ public abstract class AndroidDataSource implements DataSource {
         chunk.bytes = mExtractor.readSampleData(chunk.buffer, 0);
         chunk.isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
         chunk.timestampUs = mExtractor.getSampleTime();
+        mLastTimestampUs = chunk.timestampUs;
         mExtractor.advance();
+    }
+
+    @Override
+    public long getLastTimestampUs() {
+        return mLastTimestampUs;
     }
 
     @Nullable
