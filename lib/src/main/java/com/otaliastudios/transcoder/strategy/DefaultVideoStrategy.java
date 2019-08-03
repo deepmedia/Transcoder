@@ -211,8 +211,8 @@ public class DefaultVideoStrategy implements TrackStrategy {
         boolean typeDone = checkMimeType(inputFormats);
 
         // Compute output size.
-        int inWidth = getMaxWidth(inputFormats);
-        int inHeight = getMaxHeight(inputFormats);
+        int inWidth = getBestInputSize(inputFormats)[0];
+        int inHeight = getBestInputSize(inputFormats)[1];
         LOG.i("Input width&height: " + inWidth + "x" + inHeight);
         Size inSize = new ExactSize(inWidth, inHeight);
         Size outSize;
@@ -283,20 +283,41 @@ public class DefaultVideoStrategy implements TrackStrategy {
         return true;
     }
 
-    private int getMaxWidth(@NonNull List<MediaFormat> formats) {
-        int width = 0;
-        for (MediaFormat format : formats) {
-            width = Math.max(width, format.getInteger(MediaFormat.KEY_WIDTH));
+    private int[] getBestInputSize(@NonNull List<MediaFormat> formats) {
+        int[] result = new int[2];
+        int count = formats.size();
+        // After thinking about it, I think the best size is the one that is closer to the
+        // average aspect ratio. Respect the rotation of the first video for now
+        float averageAspectRatio = 0;
+        float[] aspectRatio = new float[count];
+        int firstRotation = -1;
+        for (int i = 0; i < count; i++) {
+            MediaFormat format = formats.get(i);
+            float width = format.getInteger(MediaFormat.KEY_WIDTH);
+            float height = format.getInteger(MediaFormat.KEY_HEIGHT);
+            int rotation = 0;
+            if (format.containsKey(MediaFormatConstants.KEY_ROTATION_DEGREES)) {
+                rotation = format.getInteger(MediaFormatConstants.KEY_ROTATION_DEGREES);
+            }
+            if (firstRotation == -1) firstRotation = 0;
+            boolean flip = (rotation - firstRotation + 360) % 180 != 0;
+            aspectRatio[i] = flip ? height / width : width / height;
+            averageAspectRatio += aspectRatio[i];
         }
-        return width;
-    }
-
-    private int getMaxHeight(@NonNull List<MediaFormat> formats) {
-        int height = 0;
-        for (MediaFormat format : formats) {
-            height = Math.max(height, format.getInteger(MediaFormat.KEY_HEIGHT));
+        averageAspectRatio = averageAspectRatio / count;
+        float bestDelta = Float.MAX_VALUE;
+        int bestMatch = 0;
+        for (int i = 0; i < count; i++) {
+            float delta = Math.abs(aspectRatio[i] - averageAspectRatio);
+            if (delta < bestDelta) {
+                bestMatch = i;
+                bestDelta = delta;
+            }
         }
-        return height;
+        MediaFormat bestFormat = formats.get(bestMatch);
+        result[0] = bestFormat.getInteger(MediaFormat.KEY_WIDTH);
+        result[1] = bestFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        return result;
     }
 
     private int getMinFrameRate(@NonNull List<MediaFormat> formats) {
