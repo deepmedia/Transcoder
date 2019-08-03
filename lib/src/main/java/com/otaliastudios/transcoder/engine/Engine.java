@@ -65,9 +65,9 @@ public class Engine {
 
     private DataSink mDataSink;
     private final TrackTypeMap<List<DataSource>> mDataSources = new TrackTypeMap<>();
-    private final TrackTypeMap<ArrayList<TrackTranscoder>> mTranscoders = new TrackTypeMap<>();
-    private final TrackTypeMap<ArrayList<TimeInterpolator>> mInterpolators = new TrackTypeMap<>();
-    private final TrackTypeMap<Integer> mCurrentStep = new TrackTypeMap<>();
+    private final TrackTypeMap<ArrayList<TrackTranscoder>> mTranscoders = new TrackTypeMap<>(new ArrayList<TrackTranscoder>(), new ArrayList<TrackTranscoder>());
+    private final TrackTypeMap<ArrayList<TimeInterpolator>> mInterpolators = new TrackTypeMap<>(new ArrayList<TimeInterpolator>(), new ArrayList<TimeInterpolator>());
+    private final TrackTypeMap<Integer> mCurrentStep = new TrackTypeMap<>(0, 0);
     private final TrackTypeMap<TrackStatus> mStatuses = new TrackTypeMap<>();
     private final TrackTypeMap<MediaFormat> mOutputFormats = new TrackTypeMap<>();
     private volatile double mProgress;
@@ -75,10 +75,6 @@ public class Engine {
 
     public Engine(@Nullable ProgressCallback progressCallback) {
         mProgressCallback = progressCallback;
-        mCurrentStep.setVideo(0);
-        mCurrentStep.setAudio(0);
-        mTranscoders.setVideo(new ArrayList<TrackTranscoder>());
-        mTranscoders.setAudio(new ArrayList<TrackTranscoder>());
     }
 
     /**
@@ -205,6 +201,7 @@ public class Engine {
     private TrackTranscoder getCurrentTrackTranscoder(@NonNull TrackType type, @NonNull TranscoderOptions options) {
         int current = mCurrentStep.require(type);
         int last = mTranscoders.require(type).size() - 1;
+        int max = mDataSources.require(type).size();
         if (last == current) {
             // We have already created a transcoder for this step.
             // But this step might be completed and we might need to create a new one.
@@ -268,6 +265,7 @@ public class Engine {
                 completedDurationUs += 0;
             }
         }
+        if (totalDurationUs == 0) totalDurationUs = 1;
         return (double) completedDurationUs / (double) totalDurationUs;
     }
 
@@ -328,12 +326,21 @@ public class Engine {
         // Do the actual transcoding work.
         try {
             long loopCount = 0;
-            while (!(isCompleted(TrackType.AUDIO) && isCompleted(TrackType.VIDEO))) {
+            boolean stepped = false;
+            boolean audioCompleted = false, videoCompleted = false;
+            while (!(audioCompleted && videoCompleted)) {
                 if (Thread.interrupted()) {
                     throw new InterruptedException();
                 }
-                boolean stepped = getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode()
-                        || getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode();
+                stepped = false;
+                audioCompleted = isCompleted(TrackType.AUDIO);
+                videoCompleted = isCompleted(TrackType.VIDEO);
+                if (!audioCompleted) {
+                    stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode();
+                }
+                if (!videoCompleted) {
+                    stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode();
+                }
                 if (++loopCount % PROGRESS_INTERVAL_STEPS == 0) {
                     setProgress((getTrackProgress(TrackType.VIDEO)
                             + getTrackProgress(TrackType.AUDIO)) / activeTracks);
@@ -344,8 +351,10 @@ public class Engine {
             }
             mDataSink.stop();
         } finally {
-            closeCurrentStep(TrackType.VIDEO);
-            closeCurrentStep(TrackType.AUDIO);
+            try {
+                closeCurrentStep(TrackType.VIDEO);
+                closeCurrentStep(TrackType.AUDIO);
+            } catch (Exception ignore) {}
             mDataSink.release();
         }
     }

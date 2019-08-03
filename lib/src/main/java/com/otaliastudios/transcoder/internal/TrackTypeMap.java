@@ -16,6 +16,14 @@ import java.util.Map;
  */
 public class TrackTypeMap<T> {
 
+    public TrackTypeMap() {
+    }
+
+    public TrackTypeMap(@NonNull T videoValue, @NonNull T audioValue) {
+        set(TrackType.AUDIO, audioValue);
+        set(TrackType.VIDEO, videoValue);
+    }
+
     private Map<TrackType, T> map = new HashMap<>();
 
     public void set(@NonNull TrackType type, @Nullable T value) {
