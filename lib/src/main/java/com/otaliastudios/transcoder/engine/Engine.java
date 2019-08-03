@@ -36,6 +36,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Internal engine, do not use this directly.
@@ -59,16 +62,15 @@ public class Engine {
         void onProgress(double progress);
     }
 
-    private DataSource mDataSource;
     private DataSink mDataSink;
+    private TrackTypeMap<List<DataSource>> mDataSources = new TrackTypeMap<>();
     private TrackTypeMap<TrackTranscoder> mTranscoders = new TrackTypeMap<>();
     private TrackTypeMap<TrackStatus> mStatuses = new TrackTypeMap<>();
     private volatile double mProgress;
     private ProgressCallback mProgressCallback;
-    private long mDurationUs;
+    private long mTotalDurationUs;
 
-    public Engine(@NonNull DataSource dataSource, @Nullable ProgressCallback progressCallback) {
-        mDataSource = dataSource;
+    public Engine(@Nullable ProgressCallback progressCallback) {
         mProgressCallback = progressCallback;
     }
 
@@ -88,6 +90,21 @@ public class Engine {
         }
     }
 
+    private boolean hasVideoSources() {
+        return !mDataSources.requireVideo().isEmpty();
+    }
+
+    private boolean hasAudioSources() {
+        return !mDataSources.requireAudio().isEmpty();
+    }
+
+    private Set<DataSource> getUniqueSources() {
+        Set<DataSource> sources = new HashSet<>();
+        sources.addAll(mDataSources.requireVideo());
+        sources.addAll(mDataSources.requireAudio());
+        return sources;
+    }
+
     /**
      * Performs transcoding. Blocks current thread.
      *
@@ -97,18 +114,34 @@ public class Engine {
      */
     public void transcode(@NonNull TranscoderOptions options) throws InterruptedException {
         mDataSink = new MediaMuxerDataSink(options.getOutputPath());
+        mDataSources.setVideo(options.getVideoDataSources());
+        mDataSources.setAudio(options.getAudioDataSources());
 
         // Pass metadata from DataSource to DataSink
-        mDataSink.setOrientation((mDataSource.getOrientation() + options.getRotation()) % 360);
-        double[] location = mDataSource.getLocation();
-        if (location != null) mDataSink.setLocation(location[0], location[1]);
-        mDurationUs = mDataSource.getDurationUs();
-        LOG.v("Duration (us): " + mDurationUs);
+        if (hasVideoSources()) {
+            DataSource firstVideoSource = mDataSources.requireVideo().get(0);
+            mDataSink.setOrientation((firstVideoSource.getOrientation() + options.getRotation()) % 360);
+        }
+        for (DataSource locationSource : getUniqueSources()) {
+            double[] location = locationSource.getLocation();
+            if (location != null) {
+                mDataSink.setLocation(location[0], location[1]);
+                break;
+            }
+        }
+
+        // Compute total duration: it is the minimum between the two.
+        long audioDurationUs = hasAudioSources() ? 0 : Long.MAX_VALUE;
+        long videoDurationUs = hasVideoSources() ? 0 : Long.MAX_VALUE;
+        for (DataSource source : options.getVideoDataSources()) videoDurationUs += source.getDurationUs();
+        for (DataSource source : options.getAudioDataSources()) audioDurationUs += source.getDurationUs();
+        mTotalDurationUs = Math.min(audioDurationUs, videoDurationUs);
+        LOG.v("Duration (us): " + mTotalDurationUs);
 
         // Set up transcoders.
         int tracks = 0;
-        setUpTrackTranscoder(TrackType.VIDEO, options.getVideoTrackStrategy(), options);
-        setUpTrackTranscoder(TrackType.AUDIO, options.getAudioTrackStrategy(), options);
+        setUpTrackTranscoders(TrackType.VIDEO, options.getVideoTrackStrategy(), options);
+        setUpTrackTranscoders(TrackType.AUDIO, options.getAudioTrackStrategy(), options);
         TrackStatus videoStatus = mStatuses.require(TrackType.VIDEO);
         TrackStatus audioStatus = mStatuses.require(TrackType.AUDIO);
         TrackTranscoder videoTranscoder = mTranscoders.require(TrackType.VIDEO);
@@ -130,7 +163,7 @@ public class Engine {
 
         // Do the actual transcoding work.
         long loopCount = 0;
-        if (mDurationUs <= 0) {
+        if (mTotalDurationUs <= 0) {
             setProgress(PROGRESS_UNKNOWN);
         }
         try {
@@ -139,7 +172,7 @@ public class Engine {
                     throw new InterruptedException();
                 }
                 boolean stepped = videoTranscoder.transcode() || audioTranscoder.transcode();
-                if (mDurationUs > 0 && ++loopCount % PROGRESS_INTERVAL_STEPS == 0) {
+                if (mTotalDurationUs > 0 && ++loopCount % PROGRESS_INTERVAL_STEPS == 0) {
                     double videoProgress = getTranscoderProgress(videoTranscoder, videoStatus);
                     double audioProgress = getTranscoderProgress(audioTranscoder, audioStatus);
                     LOG.i("progress - video:" + videoProgress + " audio:" + audioProgress);
@@ -209,6 +242,6 @@ public class Engine {
     private double getTranscoderProgress(@NonNull TrackTranscoder transcoder, @NonNull TrackStatus status) {
         if (!status.isTranscoding()) return 0.0;
         if (transcoder.isFinished()) return 1.0;
-        return Math.min(1.0, (double) transcoder.getLastPresentationTime() / mDurationUs);
+        return Math.min(1.0, (double) transcoder.getLastPresentationTime() / mTotalDurationUs);
     }
 }

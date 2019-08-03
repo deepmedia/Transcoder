@@ -23,9 +23,27 @@ public class TrackTypeMap<T> {
         map.put(type, value);
     }
 
+    public void setAudio(@Nullable T value) {
+        set(TrackType.AUDIO, value);
+    }
+
+    public void setVideo(@Nullable T value) {
+        set(TrackType.VIDEO, value);
+    }
+
     @Nullable
     public T get(@NonNull TrackType type) {
         return map.get(type);
+    }
+
+    @Nullable
+    public T getAudio() {
+        return get(TrackType.AUDIO);
+    }
+
+    @Nullable
+    public T getVideo() {
+        return get(TrackType.VIDEO);
     }
 
     @NonNull
@@ -34,7 +52,25 @@ public class TrackTypeMap<T> {
         return map.get(type);
     }
 
+    @NonNull
+    public T requireAudio() {
+        return require(TrackType.AUDIO);
+    }
+
+    @NonNull
+    public T requireVideo() {
+        return require(TrackType.VIDEO);
+    }
+
     public boolean has(@NonNull TrackType type) {
         return map.containsKey(type);
+    }
+
+    public boolean hasAudio() {
+        return has(TrackType.AUDIO);
+    }
+
+    public boolean hasVideo() {
+        return has(TrackType.VIDEO);
     }
 }

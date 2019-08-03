@@ -21,7 +21,7 @@ public class DefaultVideoStrategies {
         return DefaultVideoStrategy.exact(720, 1280)
                 .bitRate(2L * 1000 * 1000)
                 .frameRate(30)
-                .iFrameInterval(3F)
+                .keyFrameInterval(3F)
                 .build();
     }
 
@@ -38,7 +38,7 @@ public class DefaultVideoStrategies {
         return DefaultVideoStrategy.exact(360, 480)
                 .bitRate(500L * 1000)
                 .frameRate(30)
-                .iFrameInterval(3F)
+                .keyFrameInterval(3F)
                 .build();
     }
 }

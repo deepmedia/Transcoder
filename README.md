@@ -312,7 +312,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .bitRate(bitRate)
         .bitRate(DefaultVideoStrategy.BITRATE_UNKNOWN) // tries to estimate
         .frameRate(frameRate) // will be capped to the input frameRate
-        .iFrameInterval(interval) // interval between I-frames in seconds
+        .keyFrameInterval(interval) // interval between key-frames in seconds
         .build();
 ```
 

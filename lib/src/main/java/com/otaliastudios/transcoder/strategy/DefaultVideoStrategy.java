@@ -34,7 +34,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
     public final static long BITRATE_UNKNOWN = Long.MIN_VALUE;
 
     @SuppressWarnings("WeakerAccess")
-    public final static float DEFAULT_I_FRAME_INTERVAL = 3;
+    public final static float DEFAULT_KEY_FRAME_INTERVAL = 3;
 
     public final static int DEFAULT_FRAME_RATE = 30;
 
@@ -47,7 +47,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         private Resizer resizer;
         private long targetBitRate;
         private int targetFrameRate;
-        private float targetIFrameInterval;
+        private float targetKeyFrameInterval;
     }
 
     /**
@@ -121,7 +121,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         private MultiResizer resizer = new MultiResizer();
         private int targetFrameRate = DEFAULT_FRAME_RATE;
         private long targetBitRate = BITRATE_UNKNOWN;
-        private float targetIFrameInterval = DEFAULT_I_FRAME_INTERVAL;
+        private float targetKeyFrameInterval = DEFAULT_KEY_FRAME_INTERVAL;
 
         @SuppressWarnings("unused")
         public Builder() { }
@@ -170,14 +170,14 @@ public class DefaultVideoStrategy implements TrackStrategy {
         }
 
         /**
-         * The interval between I-frames in seconds.
-         * @param iFrameInterval desired i-frame interval
+         * The interval between key-frames in seconds.
+         * @param keyFrameInterval desired key-frame interval
          * @return this for chaining
          */
         @NonNull
         @SuppressWarnings("WeakerAccess")
-        public Builder iFrameInterval(float iFrameInterval) {
-            targetIFrameInterval = iFrameInterval;
+        public Builder keyFrameInterval(float keyFrameInterval) {
+            targetKeyFrameInterval = keyFrameInterval;
             return this;
         }
 
@@ -188,7 +188,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
             options.resizer = resizer;
             options.targetFrameRate = targetFrameRate;
             options.targetBitRate = targetBitRate;
-            options.targetIFrameInterval = targetIFrameInterval;
+            options.targetKeyFrameInterval = targetKeyFrameInterval;
             return options;
         }
 
@@ -248,13 +248,17 @@ public class DefaultVideoStrategy implements TrackStrategy {
 
         // Compute i frame.
         int inputIFrameInterval = getAverageIFrameInterval(inputFormats);
-        boolean frameIntervalDone = inputIFrameInterval >= options.targetIFrameInterval;
+        boolean frameIntervalDone = inputIFrameInterval >= options.targetKeyFrameInterval;
 
         // See if we should go on or if we're already compressed.
-        if (typeDone && sizeDone && frameRateDone && frameIntervalDone) {
+        // If we have more than 1 input format, we can't go through this branch,
+        // or, for example, each part would be copied into output with its own size,
+        // breaking the muxer.
+        boolean canPassThrough = inputFormats.size() == 1;
+        if (canPassThrough && typeDone && sizeDone && frameRateDone && frameIntervalDone) {
             LOG.i("Input minSize: " + inSize.getMinor() + ", desired minSize: " + outSize.getMinor() +
                     "\nInput frameRate: " + inputFrameRate + ", desired frameRate: " + outFrameRate +
-                    "\nInput iFrameInterval: " + inputIFrameInterval + ", desired iFrameInterval: " + options.targetIFrameInterval);
+                    "\nInput iFrameInterval: " + inputIFrameInterval + ", desired iFrameInterval: " + options.targetKeyFrameInterval);
             return TrackStatus.PASS_THROUGH;
         }
 
@@ -264,9 +268,9 @@ public class DefaultVideoStrategy implements TrackStrategy {
         outputFormat.setInteger(MediaFormat.KEY_HEIGHT, outHeight);
         outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, outFrameRate);
         if (Build.VERSION.SDK_INT >= 25) {
-            outputFormat.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, options.targetIFrameInterval);
+            outputFormat.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, options.targetKeyFrameInterval);
         } else {
-            outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, (int) Math.ceil(options.targetIFrameInterval));
+            outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, (int) Math.ceil(options.targetKeyFrameInterval));
         }
         outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         int outBitRate = (int) (options.targetBitRate == BITRATE_UNKNOWN ?
