@@ -30,8 +30,6 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     private final DataSink mDataSink;
     private final TrackType mTrackType;
 
-    private long mLastPresentationTimeUs;
-
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private MediaCodec mDecoder;
     private MediaCodec mEncoder;
@@ -132,11 +130,6 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
      */
     protected void onCodecsStarted(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat,
                                    @NonNull MediaCodec decoder, @NonNull MediaCodec encoder) {
-    }
-
-    @Override
-    public final long getLastPresentationTime() {
-        return mLastPresentationTimeUs;
     }
 
     @Override
@@ -255,7 +248,6 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         boolean hasSize = mBufferInfo.size > 0;
         if (isEos) mIsDecoderEOS = true;
         if (isEos || hasSize) {
-            mLastPresentationTimeUs = mBufferInfo.presentationTimeUs;
             onDrainDecoder(mDecoder,
                     result,
                     mDecoderBuffers.getOutputBuffer(result),

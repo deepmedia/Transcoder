@@ -36,7 +36,6 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     private final TrackType mTrackType;
     private final MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
     private boolean mIsEOS;
-    private long mLastPresentationTime;
     private final MediaFormat mOutputFormat;
     private boolean mOutputFormatSet = false;
     private TimeInterpolator mTimeInterpolator;
@@ -85,13 +84,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         int flags = mDataChunk.isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0;
         mBufferInfo.set(0, mDataChunk.bytes, timestampUs, flags);
         mDataSink.writeTrack(mTrackType, mDataChunk.buffer, mBufferInfo);
-        mLastPresentationTime = mDataChunk.timestampUs;
         return true;
-    }
-
-    @Override
-    public long getLastPresentationTime() {
-        return mLastPresentationTime;
     }
 
     @Override

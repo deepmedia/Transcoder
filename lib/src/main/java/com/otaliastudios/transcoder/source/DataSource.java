@@ -87,6 +87,14 @@ public interface DataSource {
     long getLastTimestampUs();
 
     /**
+     * Returns the first timestamp that was read using
+     * {@link #readTrack(Chunk)}.
+     *
+     * @return first timestamp
+     */
+    long getFirstTimestampUs();
+
+    /**
      * When this source has been totally read, it can return true here to
      * notify an end of input stream.
      *
