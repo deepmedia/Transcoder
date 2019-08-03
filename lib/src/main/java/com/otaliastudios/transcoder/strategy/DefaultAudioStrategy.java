@@ -4,6 +4,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
+import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
@@ -16,7 +17,10 @@ import java.util.List;
  */
 public class DefaultAudioStrategy implements TrackStrategy {
 
-    public static final int AUDIO_CHANNELS_AS_IS = -1;
+    private final static String TAG = DefaultAudioStrategy.class.getSimpleName();
+    private final static Logger LOG = new Logger(TAG);
+
+    public final static int AUDIO_CHANNELS_AS_IS = -1;
 
     private int channels;
 
@@ -27,13 +31,12 @@ public class DefaultAudioStrategy implements TrackStrategy {
     @NonNull
     @Override
     public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats, @NonNull MediaFormat outputFormat) {
-
         int outputChannels = (channels == AUDIO_CHANNELS_AS_IS) ? getInputChannelCount(inputFormats) : channels;
         outputFormat.setString(MediaFormat.KEY_MIME, MediaFormatConstants.MIMETYPE_AUDIO_AAC);
         outputFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, getInputSampleRate(inputFormats));
         outputFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, outputChannels);
         outputFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, getInputBitRate(inputFormats));
+        outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, getAverageInputBitRate(inputFormats));
         return TrackStatus.COMPRESSING;
     }
 
@@ -49,19 +52,19 @@ public class DefaultAudioStrategy implements TrackStrategy {
         int rate = formats.get(0).getInteger(MediaFormat.KEY_SAMPLE_RATE);
         for (MediaFormat format : formats) {
             if (rate != format.getInteger(MediaFormat.KEY_SAMPLE_RATE)) {
-                throw new IllegalArgumentException("All input formats should have the same sample rate.");
+                LOG.e("Audio sampleRate should be equal for all DataSources audio tracks");
+                // throw new IllegalArgumentException("All input formats should have the same sample rate.");
             }
         }
         return rate;
     }
 
-    private int getInputBitRate(@NonNull List<MediaFormat> formats) {
-        int rate = formats.get(0).getInteger(MediaFormat.KEY_BIT_RATE);
+    private int getAverageInputBitRate(@NonNull List<MediaFormat> formats) {
+        int count = formats.size();
+        double bitRate = 0;
         for (MediaFormat format : formats) {
-            if (rate != format.getInteger(MediaFormat.KEY_BIT_RATE)) {
-                throw new IllegalArgumentException("All input formats should have the same bit rate.");
-            }
+            bitRate += format.getInteger(MediaFormat.KEY_BIT_RATE);
         }
-        return rate;
+        return (int) (bitRate / count);
     }
 }

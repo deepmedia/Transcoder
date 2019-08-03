@@ -114,9 +114,7 @@ public class TranscoderOptions {
 
         @NonNull
         @SuppressWarnings("WeakerAccess")
-        public Builder setDataSource(@NonNull DataSource dataSource) {
-            audioDataSources.clear();
-            videoDataSources.clear();
+        public Builder addDataSource(@NonNull DataSource dataSource) {
             audioDataSources.add(dataSource);
             videoDataSources.add(dataSource);
             return this;
@@ -135,8 +133,8 @@ public class TranscoderOptions {
 
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setDataSource(@NonNull FileDescriptor fileDescriptor) {
-            return setDataSource(new FileDescriptorDataSource(fileDescriptor));
+        public Builder addDataSource(@NonNull FileDescriptor fileDescriptor) {
+            return addDataSource(new FileDescriptorDataSource(fileDescriptor));
         }
 
         @NonNull
@@ -147,8 +145,8 @@ public class TranscoderOptions {
 
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setDataSource(@NonNull String inPath) {
-            return setDataSource(new FilePathDataSource(inPath));
+        public Builder addDataSource(@NonNull String inPath) {
+            return addDataSource(new FilePathDataSource(inPath));
         }
 
         @NonNull
@@ -158,9 +156,9 @@ public class TranscoderOptions {
         }
 
         @NonNull
-        @SuppressWarnings("unused")
-        public Builder setDataSource(@NonNull Context context, @NonNull Uri uri) {
-            return setDataSource(new UriDataSource(context, uri));
+        @SuppressWarnings({"unused", "UnusedReturnValue"})
+        public Builder addDataSource(@NonNull Context context, @NonNull Uri uri) {
+            return addDataSource(new UriDataSource(context, uri));
         }
 
         @NonNull

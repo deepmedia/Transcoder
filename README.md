@@ -22,10 +22,10 @@ Using Transcoder in the most basic form is pretty simple:
 
 ```java
 Transcoder.into(filePath)
-        .setDataSource(context, uri) // or...
-        .setDataSource(filePath) // or...
-        .setDataSource(fileDescriptor) // or...
-        .setDataSource(dataSource)
+        .addDataSource(context, uri) // or...
+        .addDataSource(filePath) // or...
+        .addDataSource(fileDescriptor) // or...
+        .addDataSource(dataSource)
         .setListener(new TranscoderListener() {
              public void onTranscodeProgress(double progress) {}
              public void onTranscodeCompleted(int successCode) {}
@@ -80,17 +80,17 @@ which is convenient but it means that they can not be used twice.
 #### `UriDataSource`
 
 The Android friendly source can be created with `new UriDataSource(context, uri)` or simply
-using `setDataSource(context, uri)` in the transcoding builder.
+using `addDataSource(context, uri)` in the transcoding builder.
 
 #### `FileDescriptorDataSource`
 
 A data source backed by a file descriptor. Use `new FileDescriptorDataSource(descriptor)` or
-simply `setDataSource(descriptor)` in the transcoding builder.
+simply `addDataSource(descriptor)` in the transcoding builder.
 
 #### `FilePathDataSource`
 
 A data source backed by a file absolute path. Use `new FilePathDataSource(path)` or
-simply `setDataSource(path)` in the transcoding builder.
+simply `addDataSource(path)` in the transcoding builder.
 
 ## Listening for events
 
