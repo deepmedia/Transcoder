@@ -207,14 +207,15 @@ public class DefaultVideoStrategy implements TrackStrategy {
 
     @NonNull
     @Override
-    public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats, @NonNull MediaFormat outputFormat) {
+    public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats,
+                                          @NonNull MediaFormat outputFormat) {
         boolean typeDone = checkMimeType(inputFormats);
 
         // Compute output size.
-        int inWidth = getBestInputSize(inputFormats)[0];
-        int inHeight = getBestInputSize(inputFormats)[1];
+        ExactSize inSize = getBestInputSize(inputFormats);
+        int inWidth = inSize.getWidth();
+        int inHeight = inSize.getHeight();
         LOG.i("Input width&height: " + inWidth + "x" + inHeight);
-        Size inSize = new ExactSize(inWidth, inHeight);
         Size outSize;
         try {
             outSize = options.resizer.getOutputSize(inSize);
@@ -283,8 +284,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         return true;
     }
 
-    private int[] getBestInputSize(@NonNull List<MediaFormat> formats) {
-        int[] result = new int[2];
+    private ExactSize getBestInputSize(@NonNull List<MediaFormat> formats) {
         int count = formats.size();
         // After thinking about it, I think the best size is the one that is closer to the
         // average aspect ratio. Respect the rotation of the first video for now
@@ -315,9 +315,8 @@ public class DefaultVideoStrategy implements TrackStrategy {
             }
         }
         MediaFormat bestFormat = formats.get(bestMatch);
-        result[0] = bestFormat.getInteger(MediaFormat.KEY_WIDTH);
-        result[1] = bestFormat.getInteger(MediaFormat.KEY_HEIGHT);
-        return result;
+        return new ExactSize(bestFormat.getInteger(MediaFormat.KEY_WIDTH),
+                bestFormat.getInteger(MediaFormat.KEY_HEIGHT));
     }
 
     private int getMinFrameRate(@NonNull List<MediaFormat> formats) {
