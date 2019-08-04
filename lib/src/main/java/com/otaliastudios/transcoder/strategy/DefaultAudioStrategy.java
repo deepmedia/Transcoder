@@ -48,15 +48,13 @@ public class DefaultAudioStrategy implements TrackStrategy {
         return count;
     }
 
+    // Since this is a quality parameter, it makes sense to take the lowest.
     private int getInputSampleRate(@NonNull List<MediaFormat> formats) {
-        int rate = formats.get(0).getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        int minRate = Integer.MAX_VALUE;
         for (MediaFormat format : formats) {
-            if (rate != format.getInteger(MediaFormat.KEY_SAMPLE_RATE)) {
-                LOG.e("Audio sampleRate should be equal for all DataSources audio tracks");
-                // throw new IllegalArgumentException("All input formats should have the same sample rate.");
-            }
+            minRate = Math.min(minRate, format.getInteger(MediaFormat.KEY_SAMPLE_RATE));
         }
-        return rate;
+        return minRate;
     }
 
     private int getAverageInputBitRate(@NonNull List<MediaFormat> formats) {
