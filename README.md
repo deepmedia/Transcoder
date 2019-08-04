@@ -22,10 +22,10 @@ Using Transcoder in the most basic form is pretty simple:
 
 ```java
 Transcoder.into(filePath)
-        .setDataSource(context, uri) // or...
-        .setDataSource(filePath) // or...
-        .setDataSource(fileDescriptor) // or...
-        .setDataSource(dataSource)
+        .addDataSource(context, uri) // or...
+        .addDataSource(filePath) // or...
+        .addDataSource(fileDescriptor) // or...
+        .addDataSource(dataSource)
         .setListener(new TranscoderListener() {
              public void onTranscodeProgress(double progress) {}
              public void onTranscodeCompleted(int successCode) {}
@@ -42,6 +42,7 @@ Take a look at the demo app for a real example or keep reading below for documen
 - Hardware accelerated
 - Multithreaded
 - Convenient, fluent API
+- Concatenate multiple video and audio tracks [[docs]](#video-concatenation)
 - Choose output size, with automatic cropping [[docs]](#video-size)
 - Choose output rotation [[docs]](#video-rotation) 
 - Choose output speed [[docs]](#video-speed)
@@ -80,17 +81,55 @@ which is convenient but it means that they can not be used twice.
 #### `UriDataSource`
 
 The Android friendly source can be created with `new UriDataSource(context, uri)` or simply
-using `setDataSource(context, uri)` in the transcoding builder.
+using `addDataSource(context, uri)` in the transcoding builder.
 
 #### `FileDescriptorDataSource`
 
 A data source backed by a file descriptor. Use `new FileDescriptorDataSource(descriptor)` or
-simply `setDataSource(descriptor)` in the transcoding builder.
+simply `addDataSource(descriptor)` in the transcoding builder.
 
 #### `FilePathDataSource`
 
 A data source backed by a file absolute path. Use `new FilePathDataSource(path)` or
-simply `setDataSource(path)` in the transcoding builder.
+simply `addDataSource(path)` in the transcoding builder.
+
+## Video Concatenation
+
+As you might have guessed, you can use `addDataSource(source)` multiple times. All the source
+files will be stitched together:
+
+```java
+Transcoder.into(filePath)
+        .addDataSource(source1)
+        .addDataSource(source2)
+        .addDataSource(source3)
+        // ...
+```
+
+In the above example, the three videos will be stitched together in the order they are added
+to the builder. Once `source1` ends, we'll append `source2` and so on. The library will take care
+of applying consistent parameters (frame rate, bit rate, sample rate) during the conversion.
+
+This is a powerful tool since it can be used per-track:
+
+```java
+Transcoder.into(filePath)
+        .addDataSource(source1) // Audio & Video, 20 seconds
+        .addDataSource(TrackType.VIDEO, source2) // Video, 5 seconds
+        .addDataSource(TrackType.VIDEO, source3) // Video, 5 seconds
+        .addDataSource(TrackType.AUDIO, source4) // Audio, 10 sceonds
+        // ...
+```
+
+In the above example, the output file will be 30 seconds long:
+
+```
+       _____________________________________________________________________________________
+Video |___________________source1_____________________:_____source2_____:______source3______|
+Audio |___________________source1_____________________:______________source4________________|       
+```
+
+And that's all you need.
 
 ## Listening for events
 
@@ -312,7 +351,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .bitRate(bitRate)
         .bitRate(DefaultVideoStrategy.BITRATE_UNKNOWN) // tries to estimate
         .frameRate(frameRate) // will be capped to the input frameRate
-        .iFrameInterval(interval) // interval between I-frames in seconds
+        .keyFrameInterval(interval) // interval between key-frames in seconds
         .build();
 ```
 
@@ -325,7 +364,7 @@ rotation to the input video frames. Accepted values are `0`, `90`, `180`, `270`:
 
 ```java
 Transcoder.into(filePath)
-        .setRotation(rotation) // 0, 90, 180, 270
+        .setVideoRotation(rotation) // 0, 90, 180, 270
         // ...
 ```
 

@@ -34,14 +34,6 @@ public interface TrackTranscoder {
      */
     boolean transcode();
 
-    /**
-     * Get presentation time of last sample taken from encoder.
-     * This presentation time should not be affected by {@link com.otaliastudios.transcoder.time.TimeInterpolator}s.
-     *
-     * @return Presentation time in microseconds. Return value is undefined if finished writing.
-     */
-    long getLastPresentationTime();
-
     boolean isFinished();
 
     void release();

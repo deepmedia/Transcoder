@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.demo;
 
+import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.widget.Toast;
 
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
+import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
@@ -51,7 +53,9 @@ public class TranscoderActivity extends AppCompatActivity implements
 
     private boolean mIsTranscoding;
     private Future<Void> mTranscodeFuture;
-    private Uri mTranscodeInputUri;
+    private Uri mTranscodeInputUri1;
+    private Uri mTranscodeInputUri2;
+    private Uri mTranscodeInputUri3;
     private File mTranscodeOutputFile;
     private long mTranscodeStartTime;
     private TrackStrategy mTranscodeVideoStrategy;
@@ -66,7 +70,9 @@ public class TranscoderActivity extends AppCompatActivity implements
         mButtonView = findViewById(R.id.button);
         mButtonView.setOnClickListener(v -> {
             if (!mIsTranscoding) {
-                startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT).setType("video/*"), REQUEST_CODE_PICK);
+                startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT)
+                        .setType("video/*")
+                        .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true), REQUEST_CODE_PICK);
             } else {
                 mTranscodeFuture.cancel(true);
             }
@@ -141,10 +147,19 @@ public class TranscoderActivity extends AppCompatActivity implements
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_PICK
                 && resultCode == RESULT_OK
-                && data != null
-                && data.getData() != null) {
-            mTranscodeInputUri = data.getData();
-            transcode();
+                && data != null) {
+            if (data.getData() != null) {
+                mTranscodeInputUri1 = data.getData();
+                mTranscodeInputUri2 = null;
+                mTranscodeInputUri3 = null;
+                transcode();
+            } else if (data.getClipData() != null) {
+                ClipData clipData = data.getClipData();
+                mTranscodeInputUri1 = clipData.getItemAt(0).getUri();
+                mTranscodeInputUri2 = clipData.getItemCount() >= 2 ? clipData.getItemAt(1).getUri() : null;
+                mTranscodeInputUri3 = clipData.getItemCount() >= 3 ? clipData.getItemAt(2).getUri() : null;
+                transcode();
+            }
         }
     }
 
@@ -180,12 +195,14 @@ public class TranscoderActivity extends AppCompatActivity implements
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
-        mTranscodeFuture = Transcoder.into(mTranscodeOutputFile.getAbsolutePath())
-                .setDataSource(this, mTranscodeInputUri)
-                .setListener(this)
+        TranscoderOptions.Builder builder = Transcoder.into(mTranscodeOutputFile.getAbsolutePath());
+        if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1);
+        if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2);
+        if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3);
+        mTranscodeFuture = builder.setListener(this)
                 .setAudioTrackStrategy(mTranscodeAudioStrategy)
                 .setVideoTrackStrategy(mTranscodeVideoStrategy)
-                .setRotation(rotation)
+                .setVideoRotation(rotation)
                 .setSpeed(speed)
                 .transcode();
     }
@@ -216,7 +233,7 @@ public class TranscoderActivity extends AppCompatActivity implements
             LOG.i("Transcoding was not needed.");
             onTranscodeFinished(true, "Transcoding not needed, source file not touched.");
             startActivity(new Intent(Intent.ACTION_VIEW)
-                    .setDataAndType(mTranscodeInputUri, "video/mp4")
+                    .setDataAndType(mTranscodeInputUri1, "video/mp4")
                     .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
         }
     }

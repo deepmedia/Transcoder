@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource;
 import com.otaliastudios.transcoder.source.FilePathDataSource;
@@ -21,6 +22,8 @@ import com.otaliastudios.transcoder.validator.DefaultValidator;
 import com.otaliastudios.transcoder.validator.Validator;
 
 import java.io.FileDescriptor;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 
 import androidx.annotation.NonNull;
@@ -34,7 +37,8 @@ public class TranscoderOptions {
     private TranscoderOptions() {}
 
     private String outPath;
-    private DataSource dataSource;
+    private List<DataSource> videoDataSources;
+    private List<DataSource> audioDataSources;
     private TrackStrategy audioTrackStrategy;
     private TrackStrategy videoTrackStrategy;
     private Validator validator;
@@ -52,8 +56,14 @@ public class TranscoderOptions {
 
     @NonNull
     @SuppressWarnings("WeakerAccess")
-    public DataSource getDataSource() {
-        return dataSource;
+    public List<DataSource> getAudioDataSources() {
+        return audioDataSources;
+    }
+
+    @NonNull
+    @SuppressWarnings("WeakerAccess")
+    public List<DataSource> getVideoDataSources() {
+        return videoDataSources;
     }
 
     @NonNull
@@ -71,7 +81,7 @@ public class TranscoderOptions {
         return validator;
     }
 
-    public int getRotation() {
+    public int getVideoRotation() {
         return rotation;
     }
 
@@ -87,7 +97,8 @@ public class TranscoderOptions {
 
     public static class Builder {
         private String outPath;
-        private DataSource dataSource;
+        private final List<DataSource> audioDataSources = new ArrayList<>();
+        private final List<DataSource> videoDataSources = new ArrayList<>();
         private TranscoderListener listener;
         private Handler listenerHandler;
         private TrackStrategy audioTrackStrategy;
@@ -102,31 +113,58 @@ public class TranscoderOptions {
         }
 
         @NonNull
-        @SuppressWarnings("unused")
-        public Builder setDataSource(@NonNull DataSource dataSource) {
-            this.dataSource = dataSource;
+        @SuppressWarnings("WeakerAccess")
+        public Builder addDataSource(@NonNull DataSource dataSource) {
+            audioDataSources.add(dataSource);
+            videoDataSources.add(dataSource);
+            return this;
+        }
+
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
+        public Builder addDataSource(@NonNull TrackType type, @NonNull DataSource dataSource) {
+            if (type == TrackType.AUDIO) {
+                audioDataSources.add(dataSource);
+            } else if (type == TrackType.VIDEO) {
+                videoDataSources.add(dataSource);
+            }
             return this;
         }
 
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setDataSource(@NonNull FileDescriptor fileDescriptor) {
-            this.dataSource = new FileDescriptorDataSource(fileDescriptor);
-            return this;
+        public Builder addDataSource(@NonNull FileDescriptor fileDescriptor) {
+            return addDataSource(new FileDescriptorDataSource(fileDescriptor));
         }
 
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setDataSource(@NonNull String inPath) {
-            this.dataSource = new FilePathDataSource(inPath);
-            return this;
+        public Builder addDataSource(@NonNull TrackType type, @NonNull FileDescriptor fileDescriptor) {
+            return addDataSource(type, new FileDescriptorDataSource(fileDescriptor));
         }
 
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setDataSource(@NonNull Context context, @NonNull Uri uri) {
-            this.dataSource = new UriDataSource(context, uri);
-            return this;
+        public Builder addDataSource(@NonNull String inPath) {
+            return addDataSource(new FilePathDataSource(inPath));
+        }
+
+        @NonNull
+        @SuppressWarnings("unused")
+        public Builder addDataSource(@NonNull TrackType type, @NonNull String inPath) {
+            return addDataSource(type, new FilePathDataSource(inPath));
+        }
+
+        @NonNull
+        @SuppressWarnings({"unused", "UnusedReturnValue"})
+        public Builder addDataSource(@NonNull Context context, @NonNull Uri uri) {
+            return addDataSource(new UriDataSource(context, uri));
+        }
+
+        @NonNull
+        @SuppressWarnings("unused")
+        public Builder addDataSource(@NonNull TrackType type, @NonNull Context context, @NonNull Uri uri) {
+            return addDataSource(type, new UriDataSource(context, uri));
         }
 
         /**
@@ -202,7 +240,7 @@ public class TranscoderOptions {
          */
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setRotation(int rotation) {
+        public Builder setVideoRotation(int rotation) {
             this.rotation = rotation;
             return this;
         }
@@ -248,8 +286,8 @@ public class TranscoderOptions {
             if (listener == null) {
                 throw new IllegalStateException("listener can't be null");
             }
-            if (dataSource == null) {
-                throw new IllegalStateException("data source can't be null");
+            if (audioDataSources.isEmpty() && videoDataSources.isEmpty()) {
+                throw new IllegalStateException("we need at least one data source");
             }
             if (outPath == null) {
                 throw new IllegalStateException("out path can't be null");
@@ -279,7 +317,8 @@ public class TranscoderOptions {
             }
             TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
-            options.dataSource = dataSource;
+            options.audioDataSources = audioDataSources;
+            options.videoDataSources = videoDataSources;
             options.outPath = outPath;
             options.listenerHandler = listenerHandler;
             options.audioTrackStrategy = audioTrackStrategy;

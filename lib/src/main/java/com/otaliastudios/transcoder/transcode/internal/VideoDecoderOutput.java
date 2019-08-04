@@ -42,6 +42,7 @@ public class VideoDecoderOutput {
 
     private float mScaleX = 1F;
     private float mScaleY = 1F;
+    private int mRotation = 0;
 
     private int mTextureId;
     private float[] mTextureTransform = new float[16];
@@ -89,6 +90,15 @@ public class VideoDecoderOutput {
     public void setScale(float scaleX, float scaleY) {
         mScaleX = scaleX;
         mScaleY = scaleY;
+    }
+
+    /**
+     * Sets the desired frame rotation with respect
+     * to its natural orientation.
+     * @param rotation rotation
+     */
+    public void setRotation(int rotation) {
+        mRotation = rotation;
     }
 
     /**
@@ -164,8 +174,13 @@ public class VideoDecoderOutput {
         float glTranslX = (1F - glScaleX) / 2F;
         float glTranslY = (1F - glScaleY) / 2F;
         Matrix.translateM(mTextureTransform, 0, glTranslX, glTranslY, 0);
-        // Scale and draw.
+        // Scale.
         Matrix.scaleM(mTextureTransform, 0, glScaleX, glScaleY, 1);
+        // Apply rotation.
+        Matrix.translateM(mTextureTransform, 0, 0.5F, 0.5F, 0);
+        Matrix.rotateM(mTextureTransform, 0, mRotation, 0, 0, 1);
+        Matrix.translateM(mTextureTransform, 0, -0.5F, -0.5F, 0);
+        // Draw.
         mScene.drawTexture(mDrawable, mProgram, mTextureId, mTextureTransform);
     }
 }

@@ -70,7 +70,8 @@ public class AudioEngine {
         int outputSampleRate = encoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
         int inputSampleRate = decoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
         if (inputSampleRate != outputSampleRate) {
-            throw new UnsupportedOperationException("Audio sample rate conversion not supported yet.");
+            LOG.e("Audio sample rate conversion is not supported. The result might be corrupted.");
+            // throw new UnsupportedOperationException("Audio sample rate conversion not supported yet.");
         }
         mSampleRate = inputSampleRate;
 

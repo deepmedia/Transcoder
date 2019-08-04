@@ -107,12 +107,12 @@ public class Transcoder {
     @NonNull
     public Future<Void> transcode(@NonNull final TranscoderOptions options) {
         final TranscoderListener listenerWrapper = new ListenerWrapper(options.listenerHandler,
-                options.listener, options.getDataSource());
+                options.listener);
         return mExecutor.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
                 try {
-                    Engine engine = new Engine(options.getDataSource(), new Engine.ProgressCallback() {
+                    Engine engine = new Engine(new Engine.ProgressCallback() {
                         @Override
                         public void onProgress(final double progress) {
                             listenerWrapper.onTranscodeProgress(progress);
@@ -154,21 +154,16 @@ public class Transcoder {
     }
 
     /**
-     * Wraps a TranscoderListener and a DataSource object, ensuring that the source
-     * is released when transcoding ends, fails or is canceled.
-     *
-     * It posts events on the given handler.
+     * Wraps a TranscoderListener and posts events on the given handler.
      */
     private static class ListenerWrapper implements TranscoderListener {
 
         private Handler mHandler;
         private TranscoderListener mListener;
-        private DataSource mDataSource;
 
-        private ListenerWrapper(@NonNull Handler handler, @NonNull TranscoderListener listener, @NonNull DataSource source) {
+        private ListenerWrapper(@NonNull Handler handler, @NonNull TranscoderListener listener) {
             mHandler = handler;
             mListener = listener;
-            mDataSource = source;
         }
 
         @Override
@@ -176,7 +171,6 @@ public class Transcoder {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mDataSource.release();
                     mListener.onTranscodeCanceled();
                 }
             });
@@ -187,7 +181,6 @@ public class Transcoder {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mDataSource.release();
                     mListener.onTranscodeCompleted(successCode);
                 }
             });
@@ -198,7 +191,6 @@ public class Transcoder {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mDataSource.release();
                     mListener.onTranscodeFailed(exception);
                 }
             });

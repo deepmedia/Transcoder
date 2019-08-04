@@ -10,21 +10,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 /**
  * A {@link DataSource} backed by a file absolute path.
  */
 public class FilePathDataSource extends AndroidDataSource {
-    private static final String TAG = "FilePathDataSource";
+    private static final String TAG = FilePathDataSource.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
-    @NonNull
-    private FileDescriptorDataSource descriptor;
-    @Nullable private FileInputStream stream;
+    private final FileDescriptorDataSource descriptor;
+    private FileInputStream stream;
 
     public FilePathDataSource(@NonNull String path) {
-        super();
         FileDescriptor fileDescriptor;
         try {
             stream = new FileInputStream(path);
@@ -37,13 +34,13 @@ public class FilePathDataSource extends AndroidDataSource {
     }
 
     @Override
-    public void apply(@NonNull MediaExtractor extractor) throws IOException {
-        descriptor.apply(extractor);
+    public void applyExtractor(@NonNull MediaExtractor extractor) throws IOException {
+        descriptor.applyExtractor(extractor);
     }
 
     @Override
-    public void apply(@NonNull MediaMetadataRetriever retriever) {
-        descriptor.apply(retriever);
+    public void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
+        descriptor.applyRetriever(retriever);
     }
 
     @Override

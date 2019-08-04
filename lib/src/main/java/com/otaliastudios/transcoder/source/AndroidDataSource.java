@@ -7,7 +7,6 @@ import android.media.MediaMetadataRetriever;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
@@ -29,14 +28,13 @@ public abstract class AndroidDataSource implements DataSource {
     private boolean mExtractorApplied;
     private final TrackTypeMap<MediaFormat> mFormats = new TrackTypeMap<>();
     private final TrackTypeMap<Integer> mIndex = new TrackTypeMap<>();
-
-    @SuppressWarnings("WeakerAccess")
-    protected AndroidDataSource() { }
+    private long mLastTimestampUs;
+    private long mFirstTimestampUs = Long.MIN_VALUE;
 
     private void ensureMetadata() {
         if (!mMetadataApplied) {
             mMetadataApplied = true;
-            apply(mMetadata);
+            applyRetriever(mMetadata);
         }
     }
 
@@ -44,7 +42,7 @@ public abstract class AndroidDataSource implements DataSource {
         if (!mExtractorApplied) {
             mExtractorApplied = true;
             try {
-                apply(mExtractor);
+                applyExtractor(mExtractor);
             } catch (IOException e) {
                 LOG.e("Got IOException while trying to open MediaExtractor.", e);
                 throw new RuntimeException(e);
@@ -52,15 +50,13 @@ public abstract class AndroidDataSource implements DataSource {
         }
     }
 
-    protected abstract void apply(@NonNull MediaExtractor extractor) throws IOException;
+    protected abstract void applyExtractor(@NonNull MediaExtractor extractor) throws IOException;
 
-    protected abstract void apply(@NonNull MediaMetadataRetriever retriever);
+    protected abstract void applyRetriever(@NonNull MediaMetadataRetriever retriever);
 
     @Override
-    public void setTrackStatus(@NonNull TrackType type, @NonNull TrackStatus status) {
-        if (status.isTranscoding()) {
-            mExtractor.selectTrack(mIndex.require(type));
-        }
+    public void selectTrack(@NonNull TrackType type) {
+        mExtractor.selectTrack(mIndex.require(type));
     }
 
     @Override
@@ -70,18 +66,30 @@ public abstract class AndroidDataSource implements DataSource {
     }
 
     @Override
-    public boolean canRead(@NonNull TrackType type) {
+    public boolean canReadTrack(@NonNull TrackType type) {
         ensureExtractor();
         return mExtractor.getSampleTrackIndex() == mIndex.require(type);
     }
 
     @Override
-    public void read(@NonNull Chunk chunk) {
+    public void readTrack(@NonNull Chunk chunk) {
         ensureExtractor();
         chunk.bytes = mExtractor.readSampleData(chunk.buffer, 0);
         chunk.isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
         chunk.timestampUs = mExtractor.getSampleTime();
+        mLastTimestampUs = chunk.timestampUs;
+        if (mFirstTimestampUs == Long.MIN_VALUE) {
+            mFirstTimestampUs = mLastTimestampUs;
+        }
         mExtractor.advance();
+    }
+
+    @Override
+    public long getReadUs() {
+        if (mFirstTimestampUs == Long.MIN_VALUE) {
+            return 0;
+        }
+        return mLastTimestampUs - mFirstTimestampUs;
     }
 
     @Nullable
@@ -125,7 +133,7 @@ public abstract class AndroidDataSource implements DataSource {
 
     @Nullable
     @Override
-    public MediaFormat getFormat(@NonNull TrackType type) {
+    public MediaFormat getTrackFormat(@NonNull TrackType type) {
         if (mFormats.has(type)) return mFormats.get(type);
         ensureExtractor();
         int trackCount = mExtractor.getTrackCount();

@@ -4,6 +4,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
 
+import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.AtMostResizer;
 import com.otaliastudios.transcoder.strategy.size.ExactResizer;
@@ -16,7 +17,8 @@ import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+
+import java.util.List;
 
 /**
  * An {@link TrackStrategy} for video that converts it AVC with the given size.
@@ -32,7 +34,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
     public final static long BITRATE_UNKNOWN = Long.MIN_VALUE;
 
     @SuppressWarnings("WeakerAccess")
-    public final static float DEFAULT_I_FRAME_INTERVAL = 3;
+    public final static float DEFAULT_KEY_FRAME_INTERVAL = 3;
 
     public final static int DEFAULT_FRAME_RATE = 30;
 
@@ -45,7 +47,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         private Resizer resizer;
         private long targetBitRate;
         private int targetFrameRate;
-        private float targetIFrameInterval;
+        private float targetKeyFrameInterval;
     }
 
     /**
@@ -119,7 +121,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         private MultiResizer resizer = new MultiResizer();
         private int targetFrameRate = DEFAULT_FRAME_RATE;
         private long targetBitRate = BITRATE_UNKNOWN;
-        private float targetIFrameInterval = DEFAULT_I_FRAME_INTERVAL;
+        private float targetKeyFrameInterval = DEFAULT_KEY_FRAME_INTERVAL;
 
         @SuppressWarnings("unused")
         public Builder() { }
@@ -168,14 +170,14 @@ public class DefaultVideoStrategy implements TrackStrategy {
         }
 
         /**
-         * The interval between I-frames in seconds.
-         * @param iFrameInterval desired i-frame interval
+         * The interval between key-frames in seconds.
+         * @param keyFrameInterval desired key-frame interval
          * @return this for chaining
          */
         @NonNull
         @SuppressWarnings("WeakerAccess")
-        public Builder iFrameInterval(float iFrameInterval) {
-            targetIFrameInterval = iFrameInterval;
+        public Builder keyFrameInterval(float keyFrameInterval) {
+            targetKeyFrameInterval = keyFrameInterval;
             return this;
         }
 
@@ -186,7 +188,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
             options.resizer = resizer;
             options.targetFrameRate = targetFrameRate;
             options.targetBitRate = targetBitRate;
-            options.targetIFrameInterval = targetIFrameInterval;
+            options.targetKeyFrameInterval = targetKeyFrameInterval;
             return options;
         }
 
@@ -203,21 +205,22 @@ public class DefaultVideoStrategy implements TrackStrategy {
         this.options = options;
     }
 
-    @Nullable
+    @NonNull
     @Override
-    public MediaFormat createOutputFormat(@NonNull MediaFormat inputFormat) throws TrackStrategyException {
-        boolean typeDone = inputFormat.getString(MediaFormat.KEY_MIME).equals(MIME_TYPE);
+    public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats,
+                                          @NonNull MediaFormat outputFormat) {
+        boolean typeDone = checkMimeType(inputFormats);
 
         // Compute output size.
-        int inWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
-        int inHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        ExactSize inSize = getBestInputSize(inputFormats);
+        int inWidth = inSize.getWidth();
+        int inHeight = inSize.getHeight();
         LOG.i("Input width&height: " + inWidth + "x" + inHeight);
-        Size inSize = new ExactSize(inWidth, inHeight);
         Size outSize;
         try {
             outSize = options.resizer.getOutputSize(inSize);
         } catch (Exception e) {
-            throw TrackStrategyException.unavailable(e);
+            throw new RuntimeException("Resizer error:", e);
         }
         int outWidth, outHeight;
         if (outSize instanceof ExactSize) {
@@ -234,44 +237,112 @@ public class DefaultVideoStrategy implements TrackStrategy {
         boolean sizeDone = inSize.getMinor() <= outSize.getMinor();
 
         // Compute output frame rate. It can't be bigger than input frame rate.
-        int inputFrameRate, outFrameRate;
-        if (inputFormat.containsKey(MediaFormat.KEY_FRAME_RATE)) {
-            inputFrameRate = inputFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
+        int outFrameRate;
+        int inputFrameRate = getMinFrameRate(inputFormats);
+        if (inputFrameRate > 0) {
             outFrameRate = Math.min(inputFrameRate, options.targetFrameRate);
         } else {
-            inputFrameRate = -1;
             outFrameRate = options.targetFrameRate;
         }
         boolean frameRateDone = inputFrameRate <= outFrameRate;
 
         // Compute i frame.
-        int inputIFrameInterval = -1;
-        if (inputFormat.containsKey(MediaFormat.KEY_I_FRAME_INTERVAL)) {
-            inputIFrameInterval = inputFormat.getInteger(MediaFormat.KEY_I_FRAME_INTERVAL);
-        }
-        boolean frameIntervalDone = inputIFrameInterval >= options.targetIFrameInterval;
+        int inputIFrameInterval = getAverageIFrameInterval(inputFormats);
+        boolean frameIntervalDone = inputIFrameInterval >= options.targetKeyFrameInterval;
 
-        // See if we should go on.
-        if (typeDone && sizeDone && frameRateDone && frameIntervalDone) {
-            throw TrackStrategyException.alreadyCompressed(
-                    "Input minSize: " + inSize.getMinor() + ", desired minSize: " + outSize.getMinor() +
+        // See if we should go on or if we're already compressed.
+        // If we have more than 1 input format, we can't go through this branch,
+        // or, for example, each part would be copied into output with its own size,
+        // breaking the muxer.
+        boolean canPassThrough = inputFormats.size() == 1;
+        if (canPassThrough && typeDone && sizeDone && frameRateDone && frameIntervalDone) {
+            LOG.i("Input minSize: " + inSize.getMinor() + ", desired minSize: " + outSize.getMinor() +
                     "\nInput frameRate: " + inputFrameRate + ", desired frameRate: " + outFrameRate +
-                    "\nInput iFrameInterval: " + inputIFrameInterval + ", desired iFrameInterval: " + options.targetIFrameInterval);
+                    "\nInput iFrameInterval: " + inputIFrameInterval + ", desired iFrameInterval: " + options.targetKeyFrameInterval);
+            return TrackStatus.PASS_THROUGH;
         }
 
         // Create the actual format.
-        MediaFormat format = MediaFormat.createVideoFormat(MIME_TYPE, outWidth, outHeight);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, outFrameRate);
+        outputFormat.setString(MediaFormat.KEY_MIME, MIME_TYPE);
+        outputFormat.setInteger(MediaFormat.KEY_WIDTH, outWidth);
+        outputFormat.setInteger(MediaFormat.KEY_HEIGHT, outHeight);
+        outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, outFrameRate);
         if (Build.VERSION.SDK_INT >= 25) {
-            format.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, options.targetIFrameInterval);
+            outputFormat.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, options.targetKeyFrameInterval);
         } else {
-            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, (int) Math.ceil(options.targetIFrameInterval));
+            outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, (int) Math.ceil(options.targetKeyFrameInterval));
         }
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+        outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         int outBitRate = (int) (options.targetBitRate == BITRATE_UNKNOWN ?
                 estimateBitRate(outWidth, outHeight, outFrameRate) : options.targetBitRate);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, outBitRate);
-        return format;
+        outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, outBitRate);
+        return TrackStatus.COMPRESSING;
+    }
+
+    private boolean checkMimeType(@NonNull List<MediaFormat> formats) {
+        for (MediaFormat format : formats) {
+            if (!format.getString(MediaFormat.KEY_MIME).equals(MIME_TYPE)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private ExactSize getBestInputSize(@NonNull List<MediaFormat> formats) {
+        int count = formats.size();
+        // After thinking about it, I think the best size is the one that is closer to the
+        // average aspect ratio. Respect the rotation of the first video for now
+        float averageAspectRatio = 0;
+        float[] aspectRatio = new float[count];
+        int firstRotation = -1;
+        for (int i = 0; i < count; i++) {
+            MediaFormat format = formats.get(i);
+            float width = format.getInteger(MediaFormat.KEY_WIDTH);
+            float height = format.getInteger(MediaFormat.KEY_HEIGHT);
+            int rotation = 0;
+            if (format.containsKey(MediaFormatConstants.KEY_ROTATION_DEGREES)) {
+                rotation = format.getInteger(MediaFormatConstants.KEY_ROTATION_DEGREES);
+            }
+            if (firstRotation == -1) firstRotation = 0;
+            boolean flip = (rotation - firstRotation + 360) % 180 != 0;
+            aspectRatio[i] = flip ? height / width : width / height;
+            averageAspectRatio += aspectRatio[i];
+        }
+        averageAspectRatio = averageAspectRatio / count;
+        float bestDelta = Float.MAX_VALUE;
+        int bestMatch = 0;
+        for (int i = 0; i < count; i++) {
+            float delta = Math.abs(aspectRatio[i] - averageAspectRatio);
+            if (delta < bestDelta) {
+                bestMatch = i;
+                bestDelta = delta;
+            }
+        }
+        MediaFormat bestFormat = formats.get(bestMatch);
+        return new ExactSize(bestFormat.getInteger(MediaFormat.KEY_WIDTH),
+                bestFormat.getInteger(MediaFormat.KEY_HEIGHT));
+    }
+
+    private int getMinFrameRate(@NonNull List<MediaFormat> formats) {
+        int frameRate = Integer.MAX_VALUE;
+        for (MediaFormat format : formats) {
+            if (format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
+                frameRate = Math.min(frameRate, format.getInteger(MediaFormat.KEY_FRAME_RATE));
+            }
+        }
+        return (frameRate == Integer.MAX_VALUE) ? -1 : frameRate;
+    }
+
+    private int getAverageIFrameInterval(@NonNull List<MediaFormat> formats) {
+        int count = 0;
+        int sum = 0;
+        for (MediaFormat format : formats) {
+            if (format.containsKey(MediaFormat.KEY_I_FRAME_INTERVAL)) {
+                count++;
+                sum += format.getInteger(MediaFormat.KEY_I_FRAME_INTERVAL);
+            }
+        }
+        return (count > 0) ? Math.round((float) sum / count) : -1;
     }
 
     // Depends on the codec, but for AVC this is a reasonable default ?

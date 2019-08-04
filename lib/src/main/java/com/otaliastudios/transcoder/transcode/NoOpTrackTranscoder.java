@@ -34,11 +34,6 @@ public class NoOpTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public long getLastPresentationTime() {
-        return 0;
-    }
-
-    @Override
     public boolean isFinished() {
         return true;
     }

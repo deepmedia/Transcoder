@@ -1,3 +1,12 @@
+### v0.7.0 (to be released)
+
+- New: video concatenation to stitch together multiple media ([#14][14])
+- New: select a specific track type (`VIDEO` or `AUDIO`) for sources ([#14][14])
+- Breaking change: `TranscoderOptions.setDataSource()` renamed to `addDataSource()` ([#14][14])
+- Breaking change: `TranscoderOptions.setRotation()` renamed to `setVideoRotation()` ([#14][14])
+- Breaking change: `DefaultVideoStrategy.iFrameInterval()` renamed to `keyFrameInterval()` ([#14][14])
+- Improvement: rotate videos through OpenGL instead of using metadata ([#14][14])
+
 ### v0.6.0
 
 - New: ability to change video/audio speed and change each frame timestamp ([#10][10])
@@ -23,3 +32,4 @@
 [8]: https://github.com/natario1/Transcoder/pull/8
 [9]: https://github.com/natario1/Transcoder/pull/9
 [10]: https://github.com/natario1/Transcoder/pull/10
+[14]: https://github.com/natario1/Transcoder/pull/14
