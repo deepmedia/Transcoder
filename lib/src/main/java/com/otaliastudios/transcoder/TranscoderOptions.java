@@ -301,7 +301,7 @@ public class TranscoderOptions {
                 listenerHandler = new Handler(looper);
             }
             if (audioTrackStrategy == null) {
-                audioTrackStrategy = new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS);
+                audioTrackStrategy = DefaultAudioStrategy.builder().build();
             }
             if (videoTrackStrategy == null) {
                 videoTrackStrategy = DefaultVideoStrategies.for720x1280();

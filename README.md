@@ -48,6 +48,7 @@ Take a look at the demo app for a real example or keep reading below for documen
 - Choose output speed [[docs]](#video-speed)
 - Choose output frame rate [[docs]](#other-options)
 - Choose output audio channels [[docs]](#audio-strategies)
+- Choose output audio sample rate [[docs]](#audio-strategies)
 - Override frames timestamp, e.g. to slow down the middle part of the video [[docs]](#time-interpolation) 
 - Error handling [[docs]](#listening-for-events)
 - Configurable validators to e.g. avoid transcoding if the source is already compressed enough [[docs]](#validators)
@@ -268,13 +269,20 @@ This will set the `TrackStatus` to `TrackStatus.REMOVING`.
 ## Audio Strategies
 
 The default internal strategy for audio is a `DefaultAudioStrategy`, which converts the
-audio stream to AAC format with the specified number of channels.
+audio stream to AAC format with the specified number of channels and sample rate.
 
 ```java
+DefaultAudioStrategy strategy = DefaultAudioStrategy.builder()
+        .channels(DefaultAudioStrategy.CHANNELS_AS_INPUT)
+        .channels(1)
+        .channels(2)
+        .sampleRate(DefaultAudioStrategy.SAMPLE_RATE_AS_INPUT)
+        .sampleRate(44100)
+        .sampleRate(30000)
+        .build();
+
 Transcoder.into(filePath)
-        .setAudioTrackStrategy(new DefaultAudioStrategy(1)) // or..
-        .setAudioTrackStrategy(new DefaultAudioStrategy(2)) // or..
-        .setAudioTrackStrategy(new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
+        .setAudioTrackStrategy(strategy)
         // ...
 ```
 

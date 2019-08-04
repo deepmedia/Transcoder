@@ -54,6 +54,42 @@
                     android:layout_height="wrap_content" />
             </RadioGroup>
 
+            <!-- AUDIO SAMPLE RATE -->
+            <TextView
+                android:padding="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Audio sample rate" />
+            <RadioGroup
+                android:id="@+id/sampleRate"
+                android:checkedButton="@id/sampleRate_input"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/sampleRate_input"
+                    android:text="As input"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/sampleRate_32"
+                    android:text="32 kHz"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/sampleRate_48"
+                    android:text="48 kHz"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </RadioGroup>
+
             <!-- VIDEO FRAME RATE -->
             <TextView
                 android:padding="16dp"

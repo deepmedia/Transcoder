@@ -34,7 +34,7 @@ public class AudioEngine {
 
     private static final String TAG = AudioEngine.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
-    private static final boolean ENABLE_RESAMPLING = false;
+    private static final boolean ENABLE_RESAMPLING = true;
 
     private final Queue<AudioBuffer> mEmptyBuffers = new ArrayDeque<>();
     private final Queue<AudioBuffer> mPendingBuffers = new ArrayDeque<>();
@@ -261,8 +261,8 @@ public class AudioEngine {
         mTempBuffer1.rewind();
 
         // 6. Do the actual remixing.
-        ensureTempBuffer2(mRemixer.getRemixedSize(finalInputSize + stretchShorts));
         if (ENABLE_RESAMPLING) {
+            ensureTempBuffer2(mRemixer.getRemixedSize(finalInputSize + stretchShorts));
             mRemixer.remix(mTempBuffer1, mTempBuffer2);
             mTempBuffer2.rewind();
         } else {

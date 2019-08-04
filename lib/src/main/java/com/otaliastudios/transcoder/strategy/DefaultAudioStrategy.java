@@ -20,20 +20,79 @@ public class DefaultAudioStrategy implements TrackStrategy {
     private final static String TAG = DefaultAudioStrategy.class.getSimpleName();
     private final static Logger LOG = new Logger(TAG);
 
-    public final static int AUDIO_CHANNELS_AS_IS = -1;
+    public final static int CHANNELS_AS_INPUT = -1;
+    public final static int SAMPLE_RATE_AS_INPUT = -1;
 
-    private int channels;
+    /**
+     * Holds configuration values.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static class Options {
+        private Options() {}
+        private int channels;
+        private int sampleRate;
+    }
 
-    public DefaultAudioStrategy(int channels) {
-        this.channels = channels;
+    /**
+     * Creates a new {@link DefaultAudioStrategy.Builder}.
+     *
+     * @return a strategy builder
+     */
+    @NonNull
+    @SuppressWarnings("unused")
+    public static DefaultAudioStrategy.Builder builder() {
+        return new DefaultAudioStrategy.Builder();
+    }
+
+    public static class Builder {
+        private int channels = CHANNELS_AS_INPUT;
+        private int sampleRate = SAMPLE_RATE_AS_INPUT;
+
+        @SuppressWarnings("unused")
+        public Builder() { }
+
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
+        public Builder channels(int channels) {
+            this.channels = channels;
+            return this;
+        }
+
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
+        public Builder sampleRate(int sampleRate) {
+            this.sampleRate = sampleRate;
+            return this;
+        }
+
+        @NonNull
+        @SuppressWarnings("WeakerAccess")
+        public DefaultAudioStrategy.Options options() {
+            DefaultAudioStrategy.Options options = new DefaultAudioStrategy.Options();
+            options.channels = channels;
+            options.sampleRate = sampleRate;
+            return options;
+        }
+
+        @NonNull
+        public DefaultAudioStrategy build() {
+            return new DefaultAudioStrategy(options());
+        }
+    }
+
+    private Options options;
+
+    public DefaultAudioStrategy(@NonNull Options options) {
+        this.options = options;
     }
 
     @NonNull
     @Override
     public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats, @NonNull MediaFormat outputFormat) {
-        int outputChannels = (channels == AUDIO_CHANNELS_AS_IS) ? getInputChannelCount(inputFormats) : channels;
+        int outputChannels = (options.channels == CHANNELS_AS_INPUT) ? getInputChannelCount(inputFormats) : options.channels;
+        int outputSampleRate = (options.sampleRate == SAMPLE_RATE_AS_INPUT) ? getInputSampleRate(inputFormats) : options.sampleRate;
         outputFormat.setString(MediaFormat.KEY_MIME, MediaFormatConstants.MIMETYPE_AUDIO_AAC);
-        outputFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, getInputSampleRate(inputFormats));
+        outputFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, outputSampleRate);
         outputFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, outputChannels);
         outputFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
         outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, getAverageInputBitRate(inputFormats));
@@ -48,12 +107,16 @@ public class DefaultAudioStrategy implements TrackStrategy {
         return count;
     }
 
-    // Since this is a quality parameter, it makes sense to take the lowest.
     private int getInputSampleRate(@NonNull List<MediaFormat> formats) {
-        int minRate = Integer.MAX_VALUE;
+        int minRate = Integer.MAX_VALUE; // 41000
+        int maxRate = Integer.MIN_VALUE; // 48000
         for (MediaFormat format : formats) {
             minRate = Math.min(minRate, format.getInteger(MediaFormat.KEY_SAMPLE_RATE));
+            maxRate = Math.max(maxRate, format.getInteger(MediaFormat.KEY_SAMPLE_RATE));
         }
+        // return maxRate: this tests upsampling. The upsampled video is extremely slow down.
+        // return minRate: this tests downsampling. The downsampled video seems to have no audio, it skips
+        // Since this is a quality parameter, it makes sense to take the lowest.
         return minRate;
     }
 
