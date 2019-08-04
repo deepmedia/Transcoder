@@ -42,6 +42,7 @@ Take a look at the demo app for a real example or keep reading below for documen
 - Hardware accelerated
 - Multithreaded
 - Convenient, fluent API
+- Concatenate multiple video and audio tracks [[docs]](#video-concatenation)
 - Choose output size, with automatic cropping [[docs]](#video-size)
 - Choose output rotation [[docs]](#video-rotation) 
 - Choose output speed [[docs]](#video-speed)
@@ -91,6 +92,44 @@ simply `addDataSource(descriptor)` in the transcoding builder.
 
 A data source backed by a file absolute path. Use `new FilePathDataSource(path)` or
 simply `addDataSource(path)` in the transcoding builder.
+
+## Video Concatenation
+
+As you might have guessed, you can use `addDataSource(source)` multiple times. All the source
+files will be stitched together:
+
+```java
+Transcoder.into(filePath)
+        .addDataSource(source1)
+        .addDataSource(source2)
+        .addDataSource(source3)
+        // ...
+```
+
+In the above example, the three videos will be stitched together in the order they are added
+to the builder. Once `source1` ends, we'll append `source2` and so on. The library will take care
+of applying consistent parameters (frame rate, bit rate, sample rate) during the conversion.
+
+This is a powerful tool since it can be used per-track:
+
+```java
+Transcoder.into(filePath)
+        .addDataSource(source1) // Audio & Video, 20 seconds
+        .addDataSource(TrackType.VIDEO, source2) // Video, 5 seconds
+        .addDataSource(TrackType.VIDEO, source3) // Video, 5 seconds
+        .addDataSource(TrackType.AUDIO, source4) // Audio, 10 sceonds
+        // ...
+```
+
+In the above example, the output file will be 30 seconds long:
+
+```
+       _____________________________________________________________________________________
+Video |___________________source1_____________________:_____source2_____:______source3______|
+Audio |___________________source1_____________________:______________source4________________|       
+```
+
+And that's all you need.
 
 ## Listening for events
 
