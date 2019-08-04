@@ -13,10 +13,6 @@ public interface AudioResampler {
 
     /**
      * Resamples input audio from input buffer into the output buffer.
-     * The output buffer is guaranteed to have a {@link Buffer#remaining()} size that is
-     * consistent with the sample rates difference. This means that the sample rate values
-     * can be ignored and implementors can just think in terms of {@link Buffer#remaining()}
-     * for both buffers.
      *
      * @param inputBuffer the input buffer
      * @param inputSampleRate the input sample rate

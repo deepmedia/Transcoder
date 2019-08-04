@@ -269,7 +269,7 @@ This will set the `TrackStatus` to `TrackStatus.REMOVING`.
 ## Audio Strategies
 
 The default internal strategy for audio is a `DefaultAudioStrategy`, which converts the
-audio stream to AAC format with the specified number of channels and sample rate.
+audio stream to AAC format with the specified number of channels and [sample rate](#audio-resampling).
 
 ```java
 DefaultAudioStrategy strategy = DefaultAudioStrategy.builder()
@@ -437,6 +437,28 @@ The default audio stretcher, `DefaultAudioStretcher`, will:
 
 - When we need to shrink a group of samples, cut the last ones
 - When we need to stretch a group of samples, insert noise samples in between
+
+Please take a look at the implementation and read class documentation.
+
+#### Audio resampling
+
+When a sample rate different than the input is specified (by the `TrackStrategy`, or, when using the
+default audio strategy, by `DefaultAudioStategy.Builder.sampleRate()`), this library will automatically
+perform sample rate conversion for you. 
+
+This operation is performed by a class called `AudioResampler`. We offer the option to pass your
+own resamplers through the transcoder builder:
+
+```java
+Transcoder.into(filePath)
+        .setAudioResampler(audioResampler)
+        // ...
+```
+
+The default audio resampler, `DefaultAudioResampler`, will perform both upsampling and downsampling
+with very basic algorithms (drop samples when downsampling, repeat samples when upsampling).
+Upsampling is generally discouraged - implementing a real upsampling algorithm is probably out of
+the scope of this library.
 
 Please take a look at the implementation and read class documentation.
 

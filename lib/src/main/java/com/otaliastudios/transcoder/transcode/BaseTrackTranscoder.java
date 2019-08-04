@@ -82,7 +82,6 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
      * @param format output format
      * @param encoder encoder
      */
-    @SuppressWarnings("WeakerAccess")
     protected void onConfigureEncoder(@NonNull MediaFormat format, @NonNull MediaCodec encoder) {
         encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
     }

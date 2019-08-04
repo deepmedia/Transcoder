@@ -167,11 +167,14 @@ public class Engine {
                 switch (type) {
                     case VIDEO:
                         transcoder = new VideoTrackTranscoder(dataSource, mDataSink,
-                                interpolator, options.getVideoRotation());
+                                interpolator,
+                                options.getVideoRotation());
                         break;
                     case AUDIO:
                         transcoder = new AudioTrackTranscoder(dataSource, mDataSink,
-                                interpolator, options.getAudioStretcher());
+                                interpolator,
+                                options.getAudioStretcher(),
+                                options.getAudioResampler());
                         break;
                     default:
                         throw new RuntimeException("Unknown type: " + type);
@@ -301,7 +304,6 @@ public class Engine {
         LOG.v("Duration (us): " + totalDurationUs);
 
         // TODO if audio and video have different lengths, we should clip the longer one!
-        // TODO audio resampling
         // TODO ClipDataSource or something like that, to choose
 
         // Compute the TrackStatus.

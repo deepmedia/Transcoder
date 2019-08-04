@@ -34,7 +34,6 @@ public class AudioEngine {
 
     private static final String TAG = AudioEngine.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
-    private static final boolean ENABLE_RESAMPLING = true;
 
     private final Queue<AudioBuffer> mEmptyBuffers = new ArrayDeque<>();
     private final Queue<AudioBuffer> mPendingBuffers = new ArrayDeque<>();
@@ -67,7 +66,8 @@ public class AudioEngine {
                        @NonNull MediaCodec encoder,
                        @NonNull MediaFormat encoderOutputFormat,
                        @NonNull TimeInterpolator timeInterpolator,
-                       @NonNull AudioStretcher audioStretcher) {
+                       @NonNull AudioStretcher audioStretcher,
+                       @NonNull AudioResampler audioResampler) {
         mDecoder = decoder;
         mEncoder = encoder;
         mTimeInterpolator = timeInterpolator;
@@ -95,7 +95,7 @@ public class AudioEngine {
             mRemixer = AudioRemixer.PASSTHROUGH;
         }
         mStretcher = audioStretcher;
-        mResampler = new DefaultAudioResampler();
+        mResampler = audioResampler;
     }
 
     /**
@@ -234,9 +234,7 @@ public class AudioEngine {
 
         // 3. After remixing we'll resample.
         // Resampling will change the input size based on the sample rate ratio.
-        if (ENABLE_RESAMPLING) {
-            processedInputSize = (int) Math.ceil((double) processedInputSize * mEncoderSampleRate / mDecoderSampleRate);
-        }
+        processedInputSize = (int) Math.ceil((double) processedInputSize * mEncoderSampleRate / mDecoderSampleRate);
 
         // 4. Compare processedInputSize and outputSize. If processedInputSize > outputSize, we overflow.
         // In this case, isolate the valid data.
@@ -261,20 +259,14 @@ public class AudioEngine {
         mTempBuffer1.rewind();
 
         // 6. Do the actual remixing.
-        if (ENABLE_RESAMPLING) {
-            ensureTempBuffer2(mRemixer.getRemixedSize(finalInputSize + stretchShorts));
-            mRemixer.remix(mTempBuffer1, mTempBuffer2);
-            mTempBuffer2.rewind();
-        } else {
-            mRemixer.remix(mTempBuffer1, encoderBuffer);
-        }
+        ensureTempBuffer2(mRemixer.getRemixedSize(finalInputSize + stretchShorts));
+        mRemixer.remix(mTempBuffer1, mTempBuffer2);
+        mTempBuffer2.rewind();
 
         // 7. Do the actual resampling.
-        if (ENABLE_RESAMPLING) {
-            mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate, mDecoderChannels);
-        }
+        mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate, mDecoderChannels);
 
-        // 7. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
+        // 8. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
         // We need an updated timestamp for the next cycle, since we will cycle on the same input
         // buffer that has overflown.
         if (overflow) {
@@ -282,7 +274,7 @@ public class AudioEngine {
             buffer.decoderData.limit(buffer.decoderData.limit() + overflowReduction);
         }
 
-        // 8. Write the buffer.
+        // 9. Write the buffer.
         // This is the encoder buffer: we have likely written it all, but let's use
         // encoderBuffer.position() to know how much anyway.
         mEncoder.queueInputBuffer(encoderBufferIndex,

@@ -22,24 +22,25 @@ public class DownsampleAudioResampler implements AudioResampler {
             throw new IllegalArgumentException("Illegal use of DownsampleAudioResampler. Channels:" + channels);
         }
         final int inputSamples = inputBuffer.remaining() / channels;
-        final int dropSamples = (int) Math.floor((double) (outputBuffer.remaining() - inputBuffer.remaining()) / channels);
-        int remainingInputSamples = inputSamples;
+        final int outputSamples = (int) Math.ceil(inputSamples * ((double) outputSampleRate / inputSampleRate));
+        final int dropSamples = inputSamples - outputSamples;
+        int remainingOutputSamples = outputSamples;
         int remainingDropSamples = dropSamples;
-        float remainingInputSamplesRatio = ratio(remainingInputSamples, inputSamples);
+        float remainingOutputSamplesRatio = ratio(remainingOutputSamples, outputSamples);
         float remainingDropSamplesRatio = ratio(remainingDropSamples, dropSamples);
-        while (remainingInputSamples > 0 && remainingDropSamples > 0) {
+        while (remainingOutputSamples > 0 && remainingDropSamples > 0) {
             // Will this be an input sample or a drop sample?
             // Choose the one with the bigger ratio.
-            if (remainingInputSamplesRatio >= remainingDropSamplesRatio) {
+            if (remainingOutputSamplesRatio >= remainingDropSamplesRatio) {
                 outputBuffer.put(inputBuffer.get());
                 if (channels == 2) outputBuffer.put(inputBuffer.get());
-                remainingInputSamples--;
-                remainingInputSamplesRatio = ratio(remainingInputSamples, inputSamples);
+                remainingOutputSamples--;
+                remainingOutputSamplesRatio = ratio(remainingOutputSamples, outputSamples);
             } else {
                 // Drop this - read from input without writing.
                 inputBuffer.position(inputBuffer.position() + channels);
                 remainingDropSamples--;
-                remainingDropSamplesRatio = ratio(remainingDropSamples, inputSamples);
+                remainingDropSamplesRatio = ratio(remainingDropSamples, dropSamples);
             }
         }
     }

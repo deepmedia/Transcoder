@@ -48,18 +48,16 @@ public class DefaultAudioStrategy implements TrackStrategy {
         private int channels = CHANNELS_AS_INPUT;
         private int sampleRate = SAMPLE_RATE_AS_INPUT;
 
-        @SuppressWarnings("unused")
+        @SuppressWarnings({"unused", "WeakerAccess"})
         public Builder() { }
 
         @NonNull
-        @SuppressWarnings("WeakerAccess")
         public Builder channels(int channels) {
             this.channels = channels;
             return this;
         }
 
         @NonNull
-        @SuppressWarnings("WeakerAccess")
         public Builder sampleRate(int sampleRate) {
             this.sampleRate = sampleRate;
             return this;
@@ -82,6 +80,7 @@ public class DefaultAudioStrategy implements TrackStrategy {
 
     private Options options;
 
+    @SuppressWarnings("WeakerAccess")
     public DefaultAudioStrategy(@NonNull Options options) {
         this.options = options;
     }
@@ -108,15 +107,13 @@ public class DefaultAudioStrategy implements TrackStrategy {
     }
 
     private int getInputSampleRate(@NonNull List<MediaFormat> formats) {
-        int minRate = Integer.MAX_VALUE; // 41000
-        int maxRate = Integer.MIN_VALUE; // 48000
+        int minRate = Integer.MAX_VALUE;
         for (MediaFormat format : formats) {
             minRate = Math.min(minRate, format.getInteger(MediaFormat.KEY_SAMPLE_RATE));
-            maxRate = Math.max(maxRate, format.getInteger(MediaFormat.KEY_SAMPLE_RATE));
         }
-        // return maxRate: this tests upsampling. The upsampled video is extremely slow down.
-        // return minRate: this tests downsampling. The downsampled video seems to have no audio, it skips
         // Since this is a quality parameter, it makes sense to take the lowest.
+        // This is very important to avoid useless upsampling in concatenated videos,
+        // also because our upsample algorithm is not that good.
         return minRate;
     }
 
