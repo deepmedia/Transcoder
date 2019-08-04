@@ -34,6 +34,7 @@ public class AudioEngine {
 
     private static final String TAG = AudioEngine.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
+    private static final boolean ENABLE_RESAMPLING = false;
 
     private final Queue<AudioBuffer> mEmptyBuffers = new ArrayDeque<>();
     private final Queue<AudioBuffer> mPendingBuffers = new ArrayDeque<>();
@@ -233,7 +234,9 @@ public class AudioEngine {
 
         // 3. After remixing we'll resample.
         // Resampling will change the input size based on the sample rate ratio.
-        processedInputSize = (int) Math.ceil((double) processedInputSize * mEncoderSampleRate / mDecoderSampleRate);
+        if (ENABLE_RESAMPLING) {
+            processedInputSize = (int) Math.ceil((double) processedInputSize * mEncoderSampleRate / mDecoderSampleRate);
+        }
 
         // 4. Compare processedInputSize and outputSize. If processedInputSize > outputSize, we overflow.
         // In this case, isolate the valid data.
@@ -259,11 +262,17 @@ public class AudioEngine {
 
         // 6. Do the actual remixing.
         ensureTempBuffer2(mRemixer.getRemixedSize(finalInputSize + stretchShorts));
-        mRemixer.remix(mTempBuffer1, mTempBuffer2);
-        mTempBuffer2.rewind();
+        if (ENABLE_RESAMPLING) {
+            mRemixer.remix(mTempBuffer1, mTempBuffer2);
+            mTempBuffer2.rewind();
+        } else {
+            mRemixer.remix(mTempBuffer1, encoderBuffer);
+        }
 
         // 7. Do the actual resampling.
-        mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate, mDecoderChannels);
+        if (ENABLE_RESAMPLING) {
+            mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate, mDecoderChannels);
+        }
 
         // 7. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
         // We need an updated timestamp for the next cycle, since we will cycle on the same input
