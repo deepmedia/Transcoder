@@ -85,13 +85,11 @@ public abstract class AndroidDataSource implements DataSource {
     }
 
     @Override
-    public long getFirstTimestampUs() {
-        return mFirstTimestampUs;
-    }
-
-    @Override
-    public long getLastTimestampUs() {
-        return mLastTimestampUs;
+    public long getReadUs() {
+        if (mFirstTimestampUs == Long.MIN_VALUE) {
+            return 0;
+        }
+        return mLastTimestampUs - mFirstTimestampUs;
     }
 
     @Nullable

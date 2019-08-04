@@ -79,20 +79,11 @@ public interface DataSource {
     void readTrack(@NonNull DataSource.Chunk chunk);
 
     /**
-     * Returns the latest timestamp that was read using
-     * {@link #readTrack(Chunk)}.
+     * Returns the total number of microseconds that have been read until now.
      *
-     * @return latest timestamp
+     * @return total read us
      */
-    long getLastTimestampUs();
-
-    /**
-     * Returns the first timestamp that was read using
-     * {@link #readTrack(Chunk)}.
-     *
-     * @return first timestamp
-     */
-    long getFirstTimestampUs();
+    long getReadUs();
 
     /**
      * When this source has been totally read, it can return true here to

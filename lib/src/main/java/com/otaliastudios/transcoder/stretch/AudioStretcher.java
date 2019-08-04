@@ -33,18 +33,4 @@ public interface AudioStretcher {
     AudioStretcher CUT = new CutAudioStretcher();
 
     AudioStretcher INSERT = new InsertAudioStretcher();
-
-
-    AudioStretcher CUT_OR_INSERT = new AudioStretcher() {
-        @Override
-        public void stretch(@NonNull ShortBuffer input, @NonNull ShortBuffer output, int channels) {
-            if (input.remaining() < output.remaining()) {
-                INSERT.stretch(input, output, channels);
-            } else if (input.remaining() > output.remaining()) {
-                CUT.stretch(input, output, channels);
-            } else {
-                PASSTHROUGH.stretch(input, output, channels);
-            }
-        }
-    };
 }

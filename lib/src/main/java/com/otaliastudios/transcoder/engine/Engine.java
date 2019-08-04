@@ -256,11 +256,11 @@ public class Engine {
         for (int i = 0; i < mDataSources.require(type).size(); i++) {
             DataSource source = mDataSources.require(type).get(i);
             if (i < current) {
-                totalDurationUs += source.getLastTimestampUs() - source.getFirstTimestampUs();
-                completedDurationUs += source.getLastTimestampUs() - source.getFirstTimestampUs();
+                totalDurationUs += source.getReadUs();
+                completedDurationUs += source.getReadUs();
             } else if (i == current) {
                 totalDurationUs += source.getDurationUs();
-                completedDurationUs += source.getLastTimestampUs() - source.getFirstTimestampUs();
+                completedDurationUs += source.getReadUs();
             } else {
                 totalDurationUs += source.getDurationUs();
                 completedDurationUs += 0;
@@ -299,7 +299,10 @@ public class Engine {
         for (DataSource source : options.getAudioDataSources()) audioDurationUs += source.getDurationUs();
         long totalDurationUs = Math.min(audioDurationUs, videoDurationUs);
         LOG.v("Duration (us): " + totalDurationUs);
+
         // TODO if audio and video have different lengths, we should clip the longer one!
+        // TODO audio resampling
+        // TODO ClipDataSource or something like that, to choose
 
         // Compute the TrackStatus.
         int activeTracks = 0;
