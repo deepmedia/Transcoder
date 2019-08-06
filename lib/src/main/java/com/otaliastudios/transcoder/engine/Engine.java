@@ -251,26 +251,48 @@ public class Engine {
         };
     }
 
-    private double getTrackProgress(@NonNull TrackType type) {
-        if (!mStatuses.require(type).isTranscoding()) return 0.0D;
+    private long getTrackDurationUs(@NonNull TrackType type) {
+        if (!mStatuses.require(type).isTranscoding()) return 0L;
         int current = mCurrentStep.require(type);
         long totalDurationUs = 0;
+        for (int i = 0; i < mDataSources.require(type).size(); i++) {
+            DataSource source = mDataSources.require(type).get(i);
+            if (i < current) { // getReadUs() is a better approximation for sure.
+                totalDurationUs += source.getReadUs();
+            } else {
+                totalDurationUs += source.getDurationUs();
+            }
+        }
+        return totalDurationUs;
+    }
+
+    private long getTotalDurationUs() {
+        boolean hasVideo = hasVideoSources() && mStatuses.requireVideo().isTranscoding();
+        boolean hasAudio = hasAudioSources() && mStatuses.requireVideo().isTranscoding();
+        long video = hasVideo ? getTrackDurationUs(TrackType.VIDEO) : Long.MAX_VALUE;
+        long audio = hasAudio ? getTrackDurationUs(TrackType.AUDIO) : Long.MAX_VALUE;
+        return Math.min(video, audio);
+    }
+
+    private long getTrackReadUs(@NonNull TrackType type) {
+        if (!mStatuses.require(type).isTranscoding()) return 0L;
+        int current = mCurrentStep.require(type);
         long completedDurationUs = 0;
         for (int i = 0; i < mDataSources.require(type).size(); i++) {
             DataSource source = mDataSources.require(type).get(i);
-            if (i < current) {
-                totalDurationUs += source.getReadUs();
+            if (i <= current) {
                 completedDurationUs += source.getReadUs();
-            } else if (i == current) {
-                totalDurationUs += source.getDurationUs();
-                completedDurationUs += source.getReadUs();
-            } else {
-                totalDurationUs += source.getDurationUs();
-                completedDurationUs += 0;
             }
         }
-        if (totalDurationUs == 0) totalDurationUs = 1;
-        return (double) completedDurationUs / (double) totalDurationUs;
+        return completedDurationUs;
+    }
+
+    private double getTrackProgress(@NonNull TrackType type) {
+        if (!mStatuses.require(type).isTranscoding()) return 0.0D;
+        long readUs = getTrackReadUs(type);
+        long totalUs = getTotalDurationUs();
+        if (totalUs == 0) totalUs = 1; // Avoid NaN
+        return (double) readUs / (double) totalUs;
     }
 
     /**
@@ -295,16 +317,7 @@ public class Engine {
             }
         }
 
-        // Compute total duration: it is the minimum between the two.
-        long audioDurationUs = hasAudioSources() ? 0 : Long.MAX_VALUE;
-        long videoDurationUs = hasVideoSources() ? 0 : Long.MAX_VALUE;
-        for (DataSource source : options.getVideoDataSources()) videoDurationUs += source.getDurationUs();
-        for (DataSource source : options.getAudioDataSources()) audioDurationUs += source.getDurationUs();
-        long totalDurationUs = Math.min(audioDurationUs, videoDurationUs);
-        LOG.v("Duration (us): " + totalDurationUs);
-
-        // TODO if audio and video have different lengths, we should clip the longer one!
-        // TODO ClipDataSource or something like that, to choose
+        // TODO ClipDataSource or something like that
 
         // Compute the TrackStatus.
         int activeTracks = 0;
@@ -314,6 +327,7 @@ public class Engine {
         TrackStatus audioStatus = mStatuses.requireAudio();
         if (videoStatus.isTranscoding()) activeTracks++;
         if (audioStatus.isTranscoding()) activeTracks++;
+        LOG.v("Duration (us): " + getTotalDurationUs());
 
         // Pass to Validator.
         //noinspection UnusedAssignment
@@ -331,18 +345,30 @@ public class Engine {
             long loopCount = 0;
             boolean stepped = false;
             boolean audioCompleted = false, videoCompleted = false;
+            boolean forceInputEos = false;
             while (!(audioCompleted && videoCompleted)) {
                 if (Thread.interrupted()) {
                     throw new InterruptedException();
                 }
                 stepped = false;
+                forceInputEos = false;
+                if (videoCompleted || audioCompleted) {
+                    // One was completed, the other was not. We might have to stop the one that's
+                    // slower, for example if user adds 1 minute of video with 20 seconds of audio.
+                    // The output must be stopped once the audio stops.
+                    long toleranceUs = 100;
+                    long totalUs = getTotalDurationUs() + toleranceUs;
+                    forceInputEos =
+                            (audioCompleted && getTrackReadUs(TrackType.VIDEO) > totalUs) ||
+                            (videoCompleted && getTrackReadUs(TrackType.AUDIO) > totalUs);
+                }
                 audioCompleted = isCompleted(TrackType.AUDIO);
                 videoCompleted = isCompleted(TrackType.VIDEO);
                 if (!audioCompleted) {
-                    stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode();
+                    stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode(forceInputEos);
                 }
                 if (!videoCompleted) {
-                    stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode();
+                    stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode(forceInputEos);
                 }
                 if (++loopCount % PROGRESS_INTERVAL_STEPS == 0) {
                     setProgress((getTrackProgress(TrackType.VIDEO)

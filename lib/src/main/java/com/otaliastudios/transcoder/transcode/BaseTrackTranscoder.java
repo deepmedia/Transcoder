@@ -157,7 +157,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public final boolean transcode() {
+    public final boolean transcode(boolean forceInputEos) {
         boolean busy = false;
         int status;
         while (drainEncoder(0) != DRAIN_STATE_NONE) busy = true;
@@ -168,7 +168,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         } while (status == DRAIN_STATE_SHOULD_RETRY_IMMEDIATELY);
 
         while (feedEncoder(0)) busy = true;
-        while (feedDecoder(0) != DRAIN_STATE_NONE) busy = true;
+        while (feedDecoder(0, forceInputEos) != DRAIN_STATE_NONE) busy = true;
         return busy;
     }
 
@@ -194,12 +194,12 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private int feedDecoder(long timeoutUs) {
+    private int feedDecoder(long timeoutUs, boolean forceInputEos) {
         if (mIsExtractorEOS) {
             return DRAIN_STATE_NONE;
         }
 
-        if (mDataSource.isDrained()) {
+        if (mDataSource.isDrained() || forceInputEos) {
             int result = mDecoder.dequeueInputBuffer(timeoutUs);
             if (result < 0) return DRAIN_STATE_NONE;
             mIsExtractorEOS = true;

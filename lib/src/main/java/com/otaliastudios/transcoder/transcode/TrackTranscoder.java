@@ -32,7 +32,7 @@ public interface TrackTranscoder {
      *
      * @return true if data moved in pipeline.
      */
-    boolean transcode();
+    boolean transcode(boolean forceInputEos);
 
     boolean isFinished();
 
