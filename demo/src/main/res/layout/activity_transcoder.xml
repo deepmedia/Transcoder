@@ -318,6 +318,8 @@
                 android:text="No replacement selected."
                 android:maxLines="1"
                 android:ellipsize="end"
+                android:paddingLeft="32dp"
+                android:paddingRight="32dp"
                 android:layout_gravity="center"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />

@@ -16,6 +16,7 @@
 package com.otaliastudios.transcoder.engine;
 
 import android.media.MediaFormat;
+import android.util.Log;
 
 import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.internal.TrackTypeMap;
@@ -205,7 +206,6 @@ public class Engine {
     private TrackTranscoder getCurrentTrackTranscoder(@NonNull TrackType type, @NonNull TranscoderOptions options) {
         int current = mCurrentStep.require(type);
         int last = mTranscoders.require(type).size() - 1;
-        int max = mDataSources.require(type).size();
         if (last == current) {
             // We have already created a transcoder for this step.
             // But this step might be completed and we might need to create a new one.
@@ -291,6 +291,7 @@ public class Engine {
         if (!mStatuses.require(type).isTranscoding()) return 0.0D;
         long readUs = getTrackReadUs(type);
         long totalUs = getTotalDurationUs();
+        LOG.v("getTrackProgress - readUs:" + readUs + ", totalUs:" + totalUs);
         if (totalUs == 0) totalUs = 1; // Avoid NaN
         return (double) readUs / (double) totalUs;
     }
@@ -345,34 +346,35 @@ public class Engine {
             long loopCount = 0;
             boolean stepped = false;
             boolean audioCompleted = false, videoCompleted = false;
-            boolean forceInputEos = false;
+            boolean forceAudioEos = false, forceVideoEos = false;
+            double audioProgress = 0, videoProgress = 0;
             while (!(audioCompleted && videoCompleted)) {
                 if (Thread.interrupted()) {
                     throw new InterruptedException();
                 }
                 stepped = false;
-                forceInputEos = false;
-                if (videoCompleted || audioCompleted) {
-                    // One was completed, the other was not. We might have to stop the one that's
-                    // slower, for example if user adds 1 minute of video with 20 seconds of audio.
-                    // The output must be stopped once the audio stops.
-                    long toleranceUs = 100;
-                    long totalUs = getTotalDurationUs() + toleranceUs;
-                    forceInputEos =
-                            (audioCompleted && getTrackReadUs(TrackType.VIDEO) > totalUs) ||
-                            (videoCompleted && getTrackReadUs(TrackType.AUDIO) > totalUs);
-                }
+
+                // First, check if we have to force an input end of stream for some track.
+                // This can happen, for example, if user adds 1 minute (video only) with 20 seconds
+                // of audio. The video track must be stopped once the audio stops.
+                long totalUs = getTotalDurationUs() + 100 /* tolerance */;
+                forceAudioEos = getTrackReadUs(TrackType.AUDIO) > totalUs;
+                forceVideoEos = getTrackReadUs(TrackType.VIDEO) > totalUs;
+
+                // Now step for transcoders that are not completed.
                 audioCompleted = isCompleted(TrackType.AUDIO);
                 videoCompleted = isCompleted(TrackType.VIDEO);
                 if (!audioCompleted) {
-                    stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode(forceInputEos);
+                    stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode(forceAudioEos);
                 }
                 if (!videoCompleted) {
-                    stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode(forceInputEos);
+                    stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode(forceVideoEos);
                 }
                 if (++loopCount % PROGRESS_INTERVAL_STEPS == 0) {
-                    setProgress((getTrackProgress(TrackType.VIDEO)
-                            + getTrackProgress(TrackType.AUDIO)) / activeTracks);
+                    audioProgress = getTrackProgress(TrackType.AUDIO);
+                    videoProgress = getTrackProgress(TrackType.VIDEO);
+                    LOG.v("progress - video:" + videoProgress + " audio:" + audioProgress);
+                    setProgress((videoProgress + audioProgress) / activeTracks);
                 }
                 if (!stepped) {
                     Thread.sleep(SLEEP_TO_WAIT_TRACK_TRANSCODERS);
