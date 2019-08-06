@@ -113,7 +113,7 @@ public class TranscoderActivity extends AppCompatActivity implements
             mAudioReplaceView.setText("No replacement selected.");
             if (checkedId == R.id.replace_yes && !mIsTranscoding) {
                 startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT)
-                        .setType("video/*"), REQUEST_CODE_PICK_AUDIO);
+                        .setType("audio/*"), REQUEST_CODE_PICK_AUDIO);
             }
         });
     }
