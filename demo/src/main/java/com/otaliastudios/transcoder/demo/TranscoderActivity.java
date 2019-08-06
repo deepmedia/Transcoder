@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.demo;
 
+import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
 import com.otaliastudios.transcoder.TranscoderOptions;
+import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
@@ -39,6 +41,7 @@ public class TranscoderActivity extends AppCompatActivity implements
 
     private static final String FILE_PROVIDER_AUTHORITY = "com.otaliastudios.transcoder.demo.fileprovider";
     private static final int REQUEST_CODE_PICK = 1;
+    private static final int REQUEST_CODE_PICK_AUDIO = 5;
     private static final int PROGRESS_BAR_MAX = 1000;
 
     private RadioGroup mAudioChannelsGroup;
@@ -48,20 +51,24 @@ public class TranscoderActivity extends AppCompatActivity implements
     private RadioGroup mVideoAspectGroup;
     private RadioGroup mVideoRotationGroup;
     private RadioGroup mSpeedGroup;
+    private RadioGroup mAudioReplaceGroup;
 
     private ProgressBar mProgressView;
     private TextView mButtonView;
+    private TextView mAudioReplaceView;
 
     private boolean mIsTranscoding;
     private Future<Void> mTranscodeFuture;
     private Uri mTranscodeInputUri1;
     private Uri mTranscodeInputUri2;
     private Uri mTranscodeInputUri3;
+    private Uri mAudioReplacementUri;
     private File mTranscodeOutputFile;
     private long mTranscodeStartTime;
     private TrackStrategy mTranscodeVideoStrategy;
     private TrackStrategy mTranscodeAudioStrategy;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +90,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         mProgressView = findViewById(R.id.progress);
         mProgressView.setMax(PROGRESS_BAR_MAX);
 
+        mAudioReplaceView = findViewById(R.id.replace_info);
+
         mAudioChannelsGroup = findViewById(R.id.channels);
         mVideoFramesGroup = findViewById(R.id.frames);
         mVideoResolutionGroup = findViewById(R.id.resolution);
@@ -90,6 +99,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         mVideoRotationGroup = findViewById(R.id.rotation);
         mSpeedGroup = findViewById(R.id.speed);
         mAudioSampleRateGroup = findViewById(R.id.sampleRate);
+        mAudioReplaceGroup = findViewById(R.id.replace);
 
         mAudioChannelsGroup.setOnCheckedChangeListener(this);
         mVideoFramesGroup.setOnCheckedChangeListener(this);
@@ -97,6 +107,15 @@ public class TranscoderActivity extends AppCompatActivity implements
         mVideoAspectGroup.setOnCheckedChangeListener(this);
         mAudioSampleRateGroup.setOnCheckedChangeListener(this);
         syncParameters();
+
+        mAudioReplaceGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            mAudioReplacementUri = null;
+            mAudioReplaceView.setText("No replacement selected.");
+            if (checkedId == R.id.replace_yes && !mIsTranscoding) {
+                startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT)
+                        .setType("video/*"), REQUEST_CODE_PICK_AUDIO);
+            }
+        });
     }
 
     @Override
@@ -173,6 +192,14 @@ public class TranscoderActivity extends AppCompatActivity implements
                 transcode();
             }
         }
+        if (requestCode == REQUEST_CODE_PICK_AUDIO
+                && resultCode == RESULT_OK
+                && data != null
+                && data.getData() != null) {
+            mAudioReplacementUri = data.getData();
+            mAudioReplaceView.setText(mAudioReplacementUri.toString());
+
+        }
     }
 
     private void transcode() {
@@ -208,9 +235,16 @@ public class TranscoderActivity extends AppCompatActivity implements
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
         TranscoderOptions.Builder builder = Transcoder.into(mTranscodeOutputFile.getAbsolutePath());
-        if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1);
-        if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2);
-        if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3);
+        if (mAudioReplacementUri == null) {
+            if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1);
+            if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2);
+            if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3);
+        } else {
+            if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1);
+            if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri2);
+            if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3);
+            builder.addDataSource(TrackType.AUDIO, this, mAudioReplacementUri);
+        }
         mTranscodeFuture = builder.setListener(this)
                 .setAudioTrackStrategy(mTranscodeAudioStrategy)
                 .setVideoTrackStrategy(mTranscodeVideoStrategy)
