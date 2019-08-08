@@ -42,6 +42,7 @@ public class TranscoderActivity extends AppCompatActivity implements
     private static final int PROGRESS_BAR_MAX = 1000;
 
     private RadioGroup mAudioChannelsGroup;
+    private RadioGroup mAudioSampleRateGroup;
     private RadioGroup mVideoFramesGroup;
     private RadioGroup mVideoResolutionGroup;
     private RadioGroup mVideoAspectGroup;
@@ -88,11 +89,13 @@ public class TranscoderActivity extends AppCompatActivity implements
         mVideoAspectGroup = findViewById(R.id.aspect);
         mVideoRotationGroup = findViewById(R.id.rotation);
         mSpeedGroup = findViewById(R.id.speed);
+        mAudioSampleRateGroup = findViewById(R.id.sampleRate);
 
         mAudioChannelsGroup.setOnCheckedChangeListener(this);
         mVideoFramesGroup.setOnCheckedChangeListener(this);
         mVideoResolutionGroup.setOnCheckedChangeListener(this);
         mVideoAspectGroup.setOnCheckedChangeListener(this);
+        mAudioSampleRateGroup.setOnCheckedChangeListener(this);
         syncParameters();
     }
 
@@ -106,9 +109,18 @@ public class TranscoderActivity extends AppCompatActivity implements
         switch (mAudioChannelsGroup.getCheckedRadioButtonId()) {
             case R.id.channels_mono: channels = 1; break;
             case R.id.channels_stereo: channels = 2; break;
-            default: channels = DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS;
+            default: channels = DefaultAudioStrategy.CHANNELS_AS_INPUT;
         }
-        mTranscodeAudioStrategy = new DefaultAudioStrategy(channels);
+        int sampleRate;
+        switch (mAudioSampleRateGroup.getCheckedRadioButtonId()) {
+            case R.id.sampleRate_32: sampleRate = 32000; break;
+            case R.id.sampleRate_48: sampleRate = 48000; break;
+            default: sampleRate = DefaultAudioStrategy.SAMPLE_RATE_AS_INPUT;
+        }
+        mTranscodeAudioStrategy = DefaultAudioStrategy.builder()
+                .channels(channels)
+                .sampleRate(sampleRate)
+                .build();
 
         int frames;
         switch (mVideoFramesGroup.getCheckedRadioButtonId()) {

@@ -48,6 +48,7 @@ Take a look at the demo app for a real example or keep reading below for documen
 - Choose output speed [[docs]](#video-speed)
 - Choose output frame rate [[docs]](#other-options)
 - Choose output audio channels [[docs]](#audio-strategies)
+- Choose output audio sample rate [[docs]](#audio-strategies)
 - Override frames timestamp, e.g. to slow down the middle part of the video [[docs]](#time-interpolation) 
 - Error handling [[docs]](#listening-for-events)
 - Configurable validators to e.g. avoid transcoding if the source is already compressed enough [[docs]](#validators)
@@ -124,9 +125,8 @@ Transcoder.into(filePath)
 In the above example, the output file will be 30 seconds long:
 
 ```
-       _____________________________________________________________________________________
-Video |___________________source1_____________________:_____source2_____:______source3______|
-Audio |___________________source1_____________________:______________source4________________|       
+Video: | •••••••••••••••••• source1 •••••••••••••••••• | •••• source2 •••• | •••• source3 •••• |  
+Audio: | •••••••••••••••••• source1 •••••••••••••••••• | •••••••••••••• source4 •••••••••••••• | 
 ```
 
 And that's all you need.
@@ -268,13 +268,20 @@ This will set the `TrackStatus` to `TrackStatus.REMOVING`.
 ## Audio Strategies
 
 The default internal strategy for audio is a `DefaultAudioStrategy`, which converts the
-audio stream to AAC format with the specified number of channels.
+audio stream to AAC format with the specified number of channels and [sample rate](#audio-resampling).
 
 ```java
+DefaultAudioStrategy strategy = DefaultAudioStrategy.builder()
+        .channels(DefaultAudioStrategy.CHANNELS_AS_INPUT)
+        .channels(1)
+        .channels(2)
+        .sampleRate(DefaultAudioStrategy.SAMPLE_RATE_AS_INPUT)
+        .sampleRate(44100)
+        .sampleRate(30000)
+        .build();
+
 Transcoder.into(filePath)
-        .setAudioTrackStrategy(new DefaultAudioStrategy(1)) // or..
-        .setAudioTrackStrategy(new DefaultAudioStrategy(2)) // or..
-        .setAudioTrackStrategy(new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS))
+        .setAudioTrackStrategy(strategy)
         // ...
 ```
 
@@ -429,6 +436,28 @@ The default audio stretcher, `DefaultAudioStretcher`, will:
 
 - When we need to shrink a group of samples, cut the last ones
 - When we need to stretch a group of samples, insert noise samples in between
+
+Please take a look at the implementation and read class documentation.
+
+#### Audio resampling
+
+When a sample rate different than the input is specified (by the `TrackStrategy`, or, when using the
+default audio strategy, by `DefaultAudioStategy.Builder.sampleRate()`), this library will automatically
+perform sample rate conversion for you. 
+
+This operation is performed by a class called `AudioResampler`. We offer the option to pass your
+own resamplers through the transcoder builder:
+
+```java
+Transcoder.into(filePath)
+        .setAudioResampler(audioResampler)
+        // ...
+```
+
+The default audio resampler, `DefaultAudioResampler`, will perform both upsampling and downsampling
+with very basic algorithms (drop samples when downsampling, repeat samples when upsampling).
+Upsampling is generally discouraged - implementing a real upsampling algorithm is probably out of
+the scope of this library.
 
 Please take a look at the implementation and read class documentation.
 

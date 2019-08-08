@@ -6,6 +6,8 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.resample.AudioResampler;
+import com.otaliastudios.transcoder.resample.DefaultAudioResampler;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource;
 import com.otaliastudios.transcoder.source.FilePathDataSource;
@@ -45,6 +47,7 @@ public class TranscoderOptions {
     private int rotation;
     private TimeInterpolator timeInterpolator;
     private AudioStretcher audioStretcher;
+    private AudioResampler audioResampler;
 
     TranscoderListener listener;
     Handler listenerHandler;
@@ -55,13 +58,11 @@ public class TranscoderOptions {
     }
 
     @NonNull
-    @SuppressWarnings("WeakerAccess")
     public List<DataSource> getAudioDataSources() {
         return audioDataSources;
     }
 
     @NonNull
-    @SuppressWarnings("WeakerAccess")
     public List<DataSource> getVideoDataSources() {
         return videoDataSources;
     }
@@ -95,6 +96,11 @@ public class TranscoderOptions {
         return audioStretcher;
     }
 
+    @NonNull
+    public AudioResampler getAudioResampler() {
+        return audioResampler;
+    }
+
     public static class Builder {
         private String outPath;
         private final List<DataSource> audioDataSources = new ArrayList<>();
@@ -107,6 +113,7 @@ public class TranscoderOptions {
         private int rotation;
         private TimeInterpolator timeInterpolator;
         private AudioStretcher audioStretcher;
+        private AudioResampler audioResampler;
 
         Builder(@NonNull String outPath) {
             this.outPath = outPath;
@@ -274,10 +281,33 @@ public class TranscoderOptions {
             return setTimeInterpolator(new SpeedTimeInterpolator(speedFactor));
         }
 
+        /**
+         * Sets an {@link AudioStretcher} to perform stretching of audio samples
+         * as a consequence of speed and time interpolator changes.
+         * Defaults to {@link DefaultAudioStretcher}.
+         *
+         * @param audioStretcher an audio stretcher
+         * @return this for chaining
+         */
         @NonNull
         @SuppressWarnings("unused")
         public Builder setAudioStretcher(@NonNull AudioStretcher audioStretcher) {
             this.audioStretcher = audioStretcher;
+            return this;
+        }
+
+        /**
+         * Sets an {@link AudioResampler} to change the sample rate of audio
+         * frames when sample rate conversion is needed. Upsampling is discouraged.
+         * Defaults to {@link DefaultAudioResampler}.
+         *
+         * @param audioResampler an audio resampler
+         * @return this for chaining
+         */
+        @NonNull
+        @SuppressWarnings("unused")
+        public Builder setAudioResampler(@NonNull AudioResampler audioResampler) {
+            this.audioResampler = audioResampler;
             return this;
         }
 
@@ -301,7 +331,7 @@ public class TranscoderOptions {
                 listenerHandler = new Handler(looper);
             }
             if (audioTrackStrategy == null) {
-                audioTrackStrategy = new DefaultAudioStrategy(DefaultAudioStrategy.AUDIO_CHANNELS_AS_IS);
+                audioTrackStrategy = DefaultAudioStrategy.builder().build();
             }
             if (videoTrackStrategy == null) {
                 videoTrackStrategy = DefaultVideoStrategies.for720x1280();
@@ -315,6 +345,9 @@ public class TranscoderOptions {
             if (audioStretcher == null) {
                 audioStretcher = new DefaultAudioStretcher();
             }
+            if (audioResampler == null) {
+                audioResampler = new DefaultAudioResampler();
+            }
             TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
             options.audioDataSources = audioDataSources;
@@ -327,6 +360,7 @@ public class TranscoderOptions {
             options.rotation = rotation;
             options.timeInterpolator = timeInterpolator;
             options.audioStretcher = audioStretcher;
+            options.audioResampler = audioResampler;
             return options;
         }
 

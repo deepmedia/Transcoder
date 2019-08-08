@@ -9,6 +9,8 @@ import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
+import com.otaliastudios.transcoder.resample.AudioResampler;
+import com.otaliastudios.transcoder.resample.DefaultAudioResampler;
 import com.otaliastudios.transcoder.stretch.AudioStretcher;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 
@@ -37,15 +39,18 @@ public class AudioEngine {
     private final Queue<AudioBuffer> mPendingBuffers = new ArrayDeque<>();
     private final MediaCodec mDecoder;
     private final MediaCodec mEncoder;
-    private final int mSampleRate;
+    private final int mDecoderSampleRate;
+    private final int mEncoderSampleRate;
     private final int mDecoderChannels;
     @SuppressWarnings("FieldCanBeLocal") private final int mEncoderChannels;
     private final AudioRemixer mRemixer;
+    private final AudioResampler mResampler;
     private final AudioStretcher mStretcher;
     private final TimeInterpolator mTimeInterpolator;
     private long mLastDecoderUs = Long.MIN_VALUE;
     private long mLastEncoderUs = Long.MIN_VALUE;
-    private ShortBuffer mTempBuffer;
+    private ShortBuffer mTempBuffer1;
+    private ShortBuffer mTempBuffer2;
 
     /**
      * The AudioEngine should be created when we know the actual decoded format,
@@ -61,19 +66,15 @@ public class AudioEngine {
                        @NonNull MediaCodec encoder,
                        @NonNull MediaFormat encoderOutputFormat,
                        @NonNull TimeInterpolator timeInterpolator,
-                       @NonNull AudioStretcher audioStretcher) {
+                       @NonNull AudioStretcher audioStretcher,
+                       @NonNull AudioResampler audioResampler) {
         mDecoder = decoder;
         mEncoder = encoder;
         mTimeInterpolator = timeInterpolator;
 
-        // Get and check sample rate.
-        int outputSampleRate = encoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-        int inputSampleRate = decoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-        if (inputSampleRate != outputSampleRate) {
-            LOG.e("Audio sample rate conversion is not supported. The result might be corrupted.");
-            // throw new UnsupportedOperationException("Audio sample rate conversion not supported yet.");
-        }
-        mSampleRate = inputSampleRate;
+        // Get sample rate.
+        mEncoderSampleRate = encoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        mDecoderSampleRate = decoderOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
 
         // Check channel count.
         mEncoderChannels = encoderOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
@@ -85,7 +86,7 @@ public class AudioEngine {
             throw new UnsupportedOperationException("Input channel count (" + mDecoderChannels + ") not supported.");
         }
 
-        // Create remixer and stretcher.
+        // Create remixer, stretcher and resampler.
         if (mDecoderChannels > mEncoderChannels) {
             mRemixer = AudioRemixer.DOWNMIX;
         } else if (mDecoderChannels < mEncoderChannels) {
@@ -94,6 +95,7 @@ public class AudioEngine {
             mRemixer = AudioRemixer.PASSTHROUGH;
         }
         mStretcher = audioStretcher;
+        mResampler = audioResampler;
     }
 
     /**
@@ -220,7 +222,7 @@ public class AudioEngine {
         mLastDecoderUs = buffer.decoderTimestampUs;
         mLastEncoderUs = encoderUs;
         long stretchUs = encoderDeltaUs - decoderDeltaUs; // microseconds that the TimeInterpolator adds (or removes).
-        int stretchShorts = AudioConversions.usToShorts(stretchUs, mSampleRate, mDecoderChannels);
+        int stretchShorts = AudioConversions.usToShorts(stretchUs, mDecoderSampleRate, mDecoderChannels);
         LOG.i("process - time stretching - decoderDeltaUs:" + decoderDeltaUs +
                 " encoderDeltaUs:" + encoderDeltaUs +
                 " stretchUs:" + stretchUs +
@@ -230,7 +232,11 @@ public class AudioEngine {
         // 2. Ask remixers how much space they need for the given input
         processedInputSize = mRemixer.getRemixedSize(processedInputSize);
 
-        // 3. Compare processedInputSize and outputSize. If processedInputSize > outputSize, we overflow.
+        // 3. After remixing we'll resample.
+        // Resampling will change the input size based on the sample rate ratio.
+        processedInputSize = (int) Math.ceil((double) processedInputSize * mEncoderSampleRate / mDecoderSampleRate);
+
+        // 4. Compare processedInputSize and outputSize. If processedInputSize > outputSize, we overflow.
         // In this case, isolate the valid data.
         boolean overflow = processedInputSize > outputSize;
         int overflowReduction = 0;
@@ -247,23 +253,28 @@ public class AudioEngine {
                 " outputSize:" + outputSize +
                 " finalInputSize:" + finalInputSize);
 
-        // 4. Do the stretching. We need a bridge buffer for its output.
-        ensureTempBuffer(finalInputSize + stretchShorts);
-        mStretcher.stretch(buffer.decoderData, mTempBuffer, mDecoderChannels);
+        // 5. Do the stretching. We need a bridge buffer for its output.
+        ensureTempBuffer1(finalInputSize + stretchShorts);
+        mStretcher.stretch(buffer.decoderData, mTempBuffer1, mDecoderChannels);
+        mTempBuffer1.rewind();
 
-        // 5. Do the actual remixing.
-        mTempBuffer.position(0);
-        mRemixer.remix(mTempBuffer, encoderBuffer);
+        // 6. Do the actual remixing.
+        ensureTempBuffer2(mRemixer.getRemixedSize(finalInputSize + stretchShorts));
+        mRemixer.remix(mTempBuffer1, mTempBuffer2);
+        mTempBuffer2.rewind();
 
-        // 6. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
+        // 7. Do the actual resampling.
+        mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate, mDecoderChannels);
+
+        // 8. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
         // We need an updated timestamp for the next cycle, since we will cycle on the same input
         // buffer that has overflown.
         if (overflow) {
-            buffer.decoderTimestampUs += AudioConversions.shortsToUs(finalInputSize, mSampleRate, mDecoderChannels);
+            buffer.decoderTimestampUs += AudioConversions.shortsToUs(finalInputSize, mDecoderSampleRate, mDecoderChannels);
             buffer.decoderData.limit(buffer.decoderData.limit() + overflowReduction);
         }
 
-        // 7. Write the buffer.
+        // 9. Write the buffer.
         // This is the encoder buffer: we have likely written it all, but let's use
         // encoderBuffer.position() to know how much anyway.
         mEncoder.queueInputBuffer(encoderBufferIndex,
@@ -276,15 +287,27 @@ public class AudioEngine {
         return overflow;
     }
 
-    private void ensureTempBuffer(int desiredSize) {
-        LOG.w("ensureTempBuffer - desiredSize:" + desiredSize);
-        if (mTempBuffer == null || mTempBuffer.capacity() < desiredSize) {
-            LOG.w("ensureTempBuffer - creating new buffer.");
-            mTempBuffer = ByteBuffer.allocateDirect(desiredSize * BYTES_PER_SHORT)
+    private void ensureTempBuffer1(int desiredSize) {
+        LOG.w("ensureTempBuffer1 - desiredSize:" + desiredSize);
+        if (mTempBuffer1 == null || mTempBuffer1.capacity() < desiredSize) {
+            LOG.w("ensureTempBuffer1 - creating new buffer.");
+            mTempBuffer1 = ByteBuffer.allocateDirect(desiredSize * BYTES_PER_SHORT)
                     .order(ByteOrder.nativeOrder())
                     .asShortBuffer();
         }
-        mTempBuffer.clear();
-        mTempBuffer.limit(desiredSize);
+        mTempBuffer1.clear();
+        mTempBuffer1.limit(desiredSize);
+    }
+
+    private void ensureTempBuffer2(int desiredSize) {
+        LOG.w("ensureTempBuffer2 - desiredSize:" + desiredSize);
+        if (mTempBuffer2 == null || mTempBuffer2.capacity() < desiredSize) {
+            LOG.w("ensureTempBuffer2 - creating new buffer.");
+            mTempBuffer2 = ByteBuffer.allocateDirect(desiredSize * BYTES_PER_SHORT)
+                    .order(ByteOrder.nativeOrder())
+                    .asShortBuffer();
+        }
+        mTempBuffer2.clear();
+        mTempBuffer2.limit(desiredSize);
     }
 }
