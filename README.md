@@ -124,12 +124,12 @@ Transcoder.into(filePath)
 
 In the above example, the output file will be 30 seconds long:
 
-```
+```kotlin
 Video: | •••••••••••••••••• source1 •••••••••••••••••• | •••• source2 •••• | •••• source3 •••• |  
 Audio: | •••••••••••••••••• source1 •••••••••••••••••• | •••••••••••••• source4 •••••••••••••• | 
 ```
 
-And that's all you need.
+And that's all you need to do.
 
 ## Listening for events
 
