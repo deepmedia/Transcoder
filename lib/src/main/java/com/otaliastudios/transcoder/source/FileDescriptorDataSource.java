@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 /**
  * A {@link DataSource} backed by a file descriptor.
  */
-public class FileDescriptorDataSource extends AndroidDataSource {
+public class FileDescriptorDataSource extends DefaultDataSource {
 
     @NonNull
     private FileDescriptor descriptor;

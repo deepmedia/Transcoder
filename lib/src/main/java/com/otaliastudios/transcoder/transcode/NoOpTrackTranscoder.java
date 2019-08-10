@@ -29,7 +29,7 @@ public class NoOpTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public boolean transcode() {
+    public boolean transcode(boolean forceInputEos) {
         return false;
     }
 

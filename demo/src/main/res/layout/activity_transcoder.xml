@@ -285,12 +285,51 @@
                     android:layout_height="wrap_content" />
             </RadioGroup>
 
+            <!-- REPLACE AUDIO -->
+            <TextView
+                android:padding="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Replace audio" />
+            <RadioGroup
+                android:id="@+id/replace"
+                android:checkedButton="@id/replace_no"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/replace_no"
+                    android:text="No"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/replace_yes"
+                    android:text="Yes (choose source)"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </RadioGroup>
+            <TextView
+                android:id="@+id/replace_info"
+                android:text="No replacement selected."
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingLeft="32dp"
+                android:paddingRight="32dp"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
             <!-- INFO TEXT -->
             <TextView
                 android:padding="16dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Note: our API offers many more options than these!" />
+                android:text="Note: our API offers many more options than these!\nYou can select more than one video, in which case they will be concatenated together." />
 
             <!-- SPACE AND BUTTONS -->
             <Space

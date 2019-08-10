@@ -131,6 +131,24 @@ Audio: | •••••••••••••••••• source1 ••�
 
 And that's all you need to do.
 
+#### Automatic clipping
+
+When concatenating data from multiple sources and on different tracks, it's common to have
+a total audio length that is different than the total video length.
+
+In this case, `Transcoder` will automatically clip the longest track to match the shorter.
+For example:
+
+```java
+Transcoder.into(filePath)
+        .addDataSource(TrackType.VIDEO, video1) // Video, 30 seconds
+        .addDataSource(TrackType.VIDEO, video2) // Video, 30 seconds
+        .addDataSource(TrackType.AUDIO, music) // Audio, 3 minutes
+        // ...
+```
+
+In the situation above, we won't use the full music track, but only the first minute of it.
+
 ## Listening for events
 
 Transcoding will happen on a background thread, but we will send updates through the `TranscoderListener`

@@ -61,13 +61,13 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     public void setUp(@NonNull MediaFormat desiredOutputFormat) { }
 
     @Override
-    public boolean transcode() {
+    public boolean transcode(boolean forceInputEos) {
         if (mIsEOS) return false;
         if (!mOutputFormatSet) {
             mDataSink.setTrackFormat(mTrackType, mOutputFormat);
             mOutputFormatSet = true;
         }
-        if (mDataSource.isDrained()) {
+        if (mDataSource.isDrained() || forceInputEos) {
             mDataChunk.buffer.clear();
             mBufferInfo.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             mDataSink.writeTrack(mTrackType, mDataChunk.buffer, mBufferInfo);

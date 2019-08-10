@@ -22,7 +22,7 @@ import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.ValidatorException;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.InvalidOutputFormatException;
-import com.otaliastudios.transcoder.sink.MediaMuxerDataSink;
+import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
@@ -37,7 +37,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -205,7 +204,6 @@ public class Engine {
     private TrackTranscoder getCurrentTrackTranscoder(@NonNull TrackType type, @NonNull TranscoderOptions options) {
         int current = mCurrentStep.require(type);
         int last = mTranscoders.require(type).size() - 1;
-        int max = mDataSources.require(type).size();
         if (last == current) {
             // We have already created a transcoder for this step.
             // But this step might be completed and we might need to create a new one.
@@ -251,26 +249,49 @@ public class Engine {
         };
     }
 
-    private double getTrackProgress(@NonNull TrackType type) {
-        if (!mStatuses.require(type).isTranscoding()) return 0.0D;
+    private long getTrackDurationUs(@NonNull TrackType type) {
+        if (!mStatuses.require(type).isTranscoding()) return 0L;
         int current = mCurrentStep.require(type);
         long totalDurationUs = 0;
+        for (int i = 0; i < mDataSources.require(type).size(); i++) {
+            DataSource source = mDataSources.require(type).get(i);
+            if (i < current) { // getReadUs() is a better approximation for sure.
+                totalDurationUs += source.getReadUs();
+            } else {
+                totalDurationUs += source.getDurationUs();
+            }
+        }
+        return totalDurationUs;
+    }
+
+    private long getTotalDurationUs() {
+        boolean hasVideo = hasVideoSources() && mStatuses.requireVideo().isTranscoding();
+        boolean hasAudio = hasAudioSources() && mStatuses.requireVideo().isTranscoding();
+        long video = hasVideo ? getTrackDurationUs(TrackType.VIDEO) : Long.MAX_VALUE;
+        long audio = hasAudio ? getTrackDurationUs(TrackType.AUDIO) : Long.MAX_VALUE;
+        return Math.min(video, audio);
+    }
+
+    private long getTrackReadUs(@NonNull TrackType type) {
+        if (!mStatuses.require(type).isTranscoding()) return 0L;
+        int current = mCurrentStep.require(type);
         long completedDurationUs = 0;
         for (int i = 0; i < mDataSources.require(type).size(); i++) {
             DataSource source = mDataSources.require(type).get(i);
-            if (i < current) {
-                totalDurationUs += source.getReadUs();
+            if (i <= current) {
                 completedDurationUs += source.getReadUs();
-            } else if (i == current) {
-                totalDurationUs += source.getDurationUs();
-                completedDurationUs += source.getReadUs();
-            } else {
-                totalDurationUs += source.getDurationUs();
-                completedDurationUs += 0;
             }
         }
-        if (totalDurationUs == 0) totalDurationUs = 1;
-        return (double) completedDurationUs / (double) totalDurationUs;
+        return completedDurationUs;
+    }
+
+    private double getTrackProgress(@NonNull TrackType type) {
+        if (!mStatuses.require(type).isTranscoding()) return 0.0D;
+        long readUs = getTrackReadUs(type);
+        long totalUs = getTotalDurationUs();
+        LOG.v("getTrackProgress - readUs:" + readUs + ", totalUs:" + totalUs);
+        if (totalUs == 0) totalUs = 1; // Avoid NaN
+        return (double) readUs / (double) totalUs;
     }
 
     /**
@@ -281,7 +302,7 @@ public class Engine {
      * @throws InterruptedException when cancel to transcode
      */
     public void transcode(@NonNull TranscoderOptions options) throws InterruptedException {
-        mDataSink = new MediaMuxerDataSink(options.getOutputPath());
+        mDataSink = new DefaultDataSink(options.getOutputPath());
         mDataSources.setVideo(options.getVideoDataSources());
         mDataSources.setAudio(options.getAudioDataSources());
 
@@ -295,16 +316,7 @@ public class Engine {
             }
         }
 
-        // Compute total duration: it is the minimum between the two.
-        long audioDurationUs = hasAudioSources() ? 0 : Long.MAX_VALUE;
-        long videoDurationUs = hasVideoSources() ? 0 : Long.MAX_VALUE;
-        for (DataSource source : options.getVideoDataSources()) videoDurationUs += source.getDurationUs();
-        for (DataSource source : options.getAudioDataSources()) audioDurationUs += source.getDurationUs();
-        long totalDurationUs = Math.min(audioDurationUs, videoDurationUs);
-        LOG.v("Duration (us): " + totalDurationUs);
-
-        // TODO if audio and video have different lengths, we should clip the longer one!
-        // TODO ClipDataSource or something like that, to choose
+        // TODO ClipDataSource or something like that
 
         // Compute the TrackStatus.
         int activeTracks = 0;
@@ -314,6 +326,7 @@ public class Engine {
         TrackStatus audioStatus = mStatuses.requireAudio();
         if (videoStatus.isTranscoding()) activeTracks++;
         if (audioStatus.isTranscoding()) activeTracks++;
+        LOG.v("Duration (us): " + getTotalDurationUs());
 
         // Pass to Validator.
         //noinspection UnusedAssignment
@@ -331,22 +344,35 @@ public class Engine {
             long loopCount = 0;
             boolean stepped = false;
             boolean audioCompleted = false, videoCompleted = false;
+            boolean forceAudioEos = false, forceVideoEos = false;
+            double audioProgress = 0, videoProgress = 0;
             while (!(audioCompleted && videoCompleted)) {
                 if (Thread.interrupted()) {
                     throw new InterruptedException();
                 }
                 stepped = false;
+
+                // First, check if we have to force an input end of stream for some track.
+                // This can happen, for example, if user adds 1 minute (video only) with 20 seconds
+                // of audio. The video track must be stopped once the audio stops.
+                long totalUs = getTotalDurationUs() + 100 /* tolerance */;
+                forceAudioEos = getTrackReadUs(TrackType.AUDIO) > totalUs;
+                forceVideoEos = getTrackReadUs(TrackType.VIDEO) > totalUs;
+
+                // Now step for transcoders that are not completed.
                 audioCompleted = isCompleted(TrackType.AUDIO);
                 videoCompleted = isCompleted(TrackType.VIDEO);
                 if (!audioCompleted) {
-                    stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode();
+                    stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode(forceAudioEos);
                 }
                 if (!videoCompleted) {
-                    stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode();
+                    stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode(forceVideoEos);
                 }
                 if (++loopCount % PROGRESS_INTERVAL_STEPS == 0) {
-                    setProgress((getTrackProgress(TrackType.VIDEO)
-                            + getTrackProgress(TrackType.AUDIO)) / activeTracks);
+                    audioProgress = getTrackProgress(TrackType.AUDIO);
+                    videoProgress = getTrackProgress(TrackType.VIDEO);
+                    LOG.v("progress - video:" + videoProgress + " audio:" + audioProgress);
+                    setProgress((videoProgress + audioProgress) / activeTracks);
                 }
                 if (!stepped) {
                     Thread.sleep(SLEEP_TO_WAIT_TRACK_TRANSCODERS);

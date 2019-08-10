@@ -25,7 +25,7 @@ import java.util.List;
  * - Uses {@link MediaMuxer} to collect data
  * - Creates an output file with the readable media
  */
-public class MediaMuxerDataSink implements DataSink {
+public class DefaultDataSink implements DataSink {
 
     /**
      * A queued sample is a sample that we haven't written yet because
@@ -46,7 +46,7 @@ public class MediaMuxerDataSink implements DataSink {
         }
     }
 
-    private final static String TAG = MediaMuxerDataSink.class.getSimpleName();
+    private final static String TAG = DefaultDataSink.class.getSimpleName();
     private final static Logger LOG = new Logger(TAG);
 
     // I have no idea whether this value is appropriate or not...
@@ -59,11 +59,15 @@ public class MediaMuxerDataSink implements DataSink {
     private TrackTypeMap<TrackStatus> mStatus = new TrackTypeMap<>();
     private TrackTypeMap<MediaFormat> mLastFormat = new TrackTypeMap<>();
     private TrackTypeMap<Integer> mMuxerIndex = new TrackTypeMap<>();
-    private final MediaMuxerChecks mMuxerChecks = new MediaMuxerChecks();
+    private final DefaultDataSinkChecks mMuxerChecks = new DefaultDataSinkChecks();
 
-    public MediaMuxerDataSink(@NonNull String outputFilePath) {
+    public DefaultDataSink(@NonNull String outputFilePath) {
+        this(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+    }
+
+    public DefaultDataSink(@NonNull String outputFilePath, int format) {
         try {
-            mMuxer = new MediaMuxer(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            mMuxer = new MediaMuxer(outputFilePath, format);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
