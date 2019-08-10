@@ -8,6 +8,8 @@ import android.os.Looper;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.resample.DefaultAudioResampler;
+import com.otaliastudios.transcoder.sink.DataSink;
+import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource;
 import com.otaliastudios.transcoder.source.FilePathDataSource;
@@ -38,7 +40,7 @@ public class TranscoderOptions {
 
     private TranscoderOptions() {}
 
-    private String outPath;
+    private DataSink dataSink;
     private List<DataSource> videoDataSources;
     private List<DataSource> audioDataSources;
     private TrackStrategy audioTrackStrategy;
@@ -53,8 +55,8 @@ public class TranscoderOptions {
     Handler listenerHandler;
 
     @NonNull
-    public String getOutputPath() {
-        return outPath;
+    public DataSink getDataSink() {
+        return dataSink;
     }
 
     @NonNull
@@ -102,7 +104,7 @@ public class TranscoderOptions {
     }
 
     public static class Builder {
-        private String outPath;
+        private DataSink dataSink;
         private final List<DataSource> audioDataSources = new ArrayList<>();
         private final List<DataSource> videoDataSources = new ArrayList<>();
         private TranscoderListener listener;
@@ -116,7 +118,11 @@ public class TranscoderOptions {
         private AudioResampler audioResampler;
 
         Builder(@NonNull String outPath) {
-            this.outPath = outPath;
+            this.dataSink = new DefaultDataSink(outPath);
+        }
+
+        Builder(@NonNull DataSink dataSink) {
+            this.dataSink = dataSink;
         }
 
         @NonNull
@@ -169,7 +175,7 @@ public class TranscoderOptions {
         }
 
         @NonNull
-        @SuppressWarnings("unused")
+        @SuppressWarnings({"unused", "UnusedReturnValue"})
         public Builder addDataSource(@NonNull TrackType type, @NonNull Context context, @NonNull Uri uri) {
             return addDataSource(type, new UriDataSource(context, uri));
         }
@@ -319,9 +325,6 @@ public class TranscoderOptions {
             if (audioDataSources.isEmpty() && videoDataSources.isEmpty()) {
                 throw new IllegalStateException("we need at least one data source");
             }
-            if (outPath == null) {
-                throw new IllegalStateException("out path can't be null");
-            }
             if (rotation != 0 && rotation != 90 && rotation != 180 && rotation != 270) {
                 throw new IllegalArgumentException("Accepted values for rotation are 0, 90, 180, 270");
             }
@@ -352,7 +355,7 @@ public class TranscoderOptions {
             options.listener = listener;
             options.audioDataSources = audioDataSources;
             options.videoDataSources = videoDataSources;
-            options.outPath = outPath;
+            options.dataSink = dataSink;
             options.listenerHandler = listenerHandler;
             options.audioTrackStrategy = audioTrackStrategy;
             options.videoTrackStrategy = videoTrackStrategy;

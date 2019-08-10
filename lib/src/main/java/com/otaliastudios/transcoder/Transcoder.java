@@ -18,6 +18,7 @@ package com.otaliastudios.transcoder;
 import android.os.Handler;
 
 import com.otaliastudios.transcoder.engine.Engine;
+import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
@@ -96,6 +97,18 @@ public class Transcoder {
     @NonNull
     public static TranscoderOptions.Builder into(@NonNull String outPath) {
         return new TranscoderOptions.Builder(outPath);
+    }
+
+    /**
+     * Starts building transcoder options.
+     * Requires a non null sink.
+     *
+     * @param dataSink the output sink
+     * @return an options builder
+     */
+    @NonNull
+    public static TranscoderOptions.Builder into(@NonNull DataSink dataSink) {
+        return new TranscoderOptions.Builder(dataSink);
     }
 
     /**

@@ -302,7 +302,7 @@ public class Engine {
      * @throws InterruptedException when cancel to transcode
      */
     public void transcode(@NonNull TranscoderOptions options) throws InterruptedException {
-        mDataSink = new DefaultDataSink(options.getOutputPath());
+        mDataSink = options.getDataSink();
         mDataSources.setVideo(options.getVideoDataSources());
         mDataSources.setAudio(options.getAudioDataSources());
 
