@@ -16,14 +16,13 @@
 package com.otaliastudios.transcoder.engine;
 
 import android.media.MediaFormat;
-import android.util.Log;
 
 import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.ValidatorException;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.InvalidOutputFormatException;
-import com.otaliastudios.transcoder.sink.MediaMuxerDataSink;
+import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
@@ -38,7 +37,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -304,7 +302,7 @@ public class Engine {
      * @throws InterruptedException when cancel to transcode
      */
     public void transcode(@NonNull TranscoderOptions options) throws InterruptedException {
-        mDataSink = new MediaMuxerDataSink(options.getOutputPath());
+        mDataSink = new DefaultDataSink(options.getOutputPath());
         mDataSources.setVideo(options.getVideoDataSources());
         mDataSources.setAudio(options.getAudioDataSources());
 

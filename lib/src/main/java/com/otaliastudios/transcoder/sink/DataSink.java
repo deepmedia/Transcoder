@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
 
 /**
  * A DataSink is an abstract representation of an encoded data collector.
- * Currently the only implementation is {@link MediaMuxerDataSink} which collects
+ * Currently the only implementation is {@link DefaultDataSink} which collects
  * data into a {@link java.io.File} using {@link android.media.MediaMuxer}.
  *
  * However there might be other implementations in the future, for example to stream data

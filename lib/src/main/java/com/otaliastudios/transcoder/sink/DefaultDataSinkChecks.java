@@ -27,8 +27,8 @@ import java.nio.ByteBuffer;
 
 import androidx.annotation.NonNull;
 
-class MediaMuxerChecks {
-    private static final String TAG = MediaMuxerChecks.class.getSimpleName();
+class DefaultDataSinkChecks {
+    private static final String TAG = DefaultDataSinkChecks.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
     void checkOutputFormat(@NonNull TrackType type, @NonNull MediaFormat format) {
