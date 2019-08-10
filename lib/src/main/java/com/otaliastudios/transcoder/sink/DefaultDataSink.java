@@ -62,8 +62,12 @@ public class DefaultDataSink implements DataSink {
     private final DefaultDataSinkChecks mMuxerChecks = new DefaultDataSinkChecks();
 
     public DefaultDataSink(@NonNull String outputFilePath) {
+        this(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+    }
+
+    public DefaultDataSink(@NonNull String outputFilePath, int format) {
         try {
-            mMuxer = new MediaMuxer(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            mMuxer = new MediaMuxer(outputFilePath, format);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
