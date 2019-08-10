@@ -1,9 +1,11 @@
 package com.otaliastudios.transcoder.sink;
 
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -64,7 +66,13 @@ public class TrackDataSink implements DataSink {
     public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (type == this.type) {
             try {
-                stream.write(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit() - byteBuffer.position());
+                int position = byteBuffer.position();
+                int limit = byteBuffer.limit();
+                byteBuffer.position(bufferInfo.offset);
+                byteBuffer.limit(bufferInfo.offset + bufferInfo.size);
+                stream.getChannel().write(byteBuffer);
+                byteBuffer.position(position);
+                byteBuffer.limit(limit);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

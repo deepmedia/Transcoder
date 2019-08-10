@@ -16,6 +16,10 @@ import com.otaliastudios.transcoder.TranscoderListener;
 import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.sink.DataSink;
+import com.otaliastudios.transcoder.sink.DefaultDataSink;
+import com.otaliastudios.transcoder.sink.MultiDataSink;
+import com.otaliastudios.transcoder.sink.TrackDataSink;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
@@ -64,6 +68,8 @@ public class TranscoderActivity extends AppCompatActivity implements
     private Uri mTranscodeInputUri3;
     private Uri mAudioReplacementUri;
     private File mTranscodeOutputFile;
+    private File mTranscodeOutputFileAudio;
+    private File mTranscodeOutputFileVideo;
     private long mTranscodeStartTime;
     private TrackStrategy mTranscodeVideoStrategy;
     private TrackStrategy mTranscodeAudioStrategy;
@@ -209,6 +215,8 @@ public class TranscoderActivity extends AppCompatActivity implements
             //noinspection ResultOfMethodCallIgnored
             outputDir.mkdir();
             mTranscodeOutputFile = File.createTempFile("transcode_test", ".mp4", outputDir);
+            mTranscodeOutputFileAudio = File.createTempFile("transcode_test", ".aac", outputDir);
+            mTranscodeOutputFileVideo = File.createTempFile("transcode_test", ".h264", outputDir);
             LOG.i("Transcoding into " + mTranscodeOutputFile);
         } catch (IOException e) {
             LOG.e("Failed to create temporary file.", e);
@@ -234,7 +242,12 @@ public class TranscoderActivity extends AppCompatActivity implements
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
-        TranscoderOptions.Builder builder = Transcoder.into(mTranscodeOutputFile.getAbsolutePath());
+        DataSink sink = new MultiDataSink(
+                new DefaultDataSink(mTranscodeOutputFile.getAbsolutePath()),
+                new TrackDataSink(mTranscodeOutputFileVideo.getAbsolutePath(), TrackType.VIDEO),
+                new TrackDataSink(mTranscodeOutputFileAudio.getAbsolutePath(), TrackType.AUDIO)
+        );
+        TranscoderOptions.Builder builder = Transcoder.into(sink);
         if (mAudioReplacementUri == null) {
             if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1);
             if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2);
@@ -268,11 +281,14 @@ public class TranscoderActivity extends AppCompatActivity implements
         if (successCode == Transcoder.SUCCESS_TRANSCODED) {
             LOG.w("Transcoding took " + (SystemClock.uptimeMillis() - mTranscodeStartTime) + "ms");
             onTranscodeFinished(true, "Transcoded file placed on " + mTranscodeOutputFile);
+            File file; String type;
+            file = mTranscodeOutputFile; type = "video/mp4";
+            file = mTranscodeOutputFileAudio; type = "audio/aac";
+            // file = mTranscodeOutputFileVideo; type = "video/avc";
             Uri uri = FileProvider.getUriForFile(TranscoderActivity.this,
-                    FILE_PROVIDER_AUTHORITY,
-                    mTranscodeOutputFile);
+                    FILE_PROVIDER_AUTHORITY, file);
             startActivity(new Intent(Intent.ACTION_VIEW)
-                    .setDataAndType(uri, "video/mp4")
+                    .setDataAndType(uri, type)
                     .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
         } else if (successCode == Transcoder.SUCCESS_NOT_NEEDED) {
             // TODO: Not sure this works
