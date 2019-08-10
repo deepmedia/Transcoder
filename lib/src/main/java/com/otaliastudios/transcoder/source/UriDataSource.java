@@ -13,7 +13,7 @@ import androidx.annotation.NonNull;
  * A {@link DataSource} backed by an Uri, possibly
  * a content:// uri.
  */
-public class UriDataSource extends AndroidDataSource {
+public class UriDataSource extends DefaultDataSource {
 
     @NonNull private Context context;
     @NonNull private Uri uri;

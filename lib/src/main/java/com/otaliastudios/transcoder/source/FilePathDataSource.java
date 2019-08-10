@@ -14,7 +14,7 @@ import androidx.annotation.NonNull;
 /**
  * A {@link DataSource} backed by a file absolute path.
  */
-public class FilePathDataSource extends AndroidDataSource {
+public class FilePathDataSource extends DefaultDataSource {
     private static final String TAG = FilePathDataSource.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 

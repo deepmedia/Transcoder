@@ -17,9 +17,9 @@ import java.io.IOException;
 /**
  * A DataSource implementation that uses Android's Media APIs.
  */
-public abstract class AndroidDataSource implements DataSource {
+public abstract class DefaultDataSource implements DataSource {
 
-    private final static String TAG = AndroidDataSource.class.getSimpleName();
+    private final static String TAG = DefaultDataSource.class.getSimpleName();
     private final static Logger LOG = new Logger(TAG);
 
     private final MediaMetadataRetriever mMetadata = new MediaMetadataRetriever();
