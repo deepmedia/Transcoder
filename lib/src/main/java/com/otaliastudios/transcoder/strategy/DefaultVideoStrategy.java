@@ -28,8 +28,6 @@ public class DefaultVideoStrategy implements TrackStrategy {
     private final static String TAG = "DefaultVideoStrategy";
     private final static Logger LOG = new Logger(TAG);
 
-    private final static String MIME_TYPE = MediaFormatConstants.MIMETYPE_VIDEO_AVC;
-
     @SuppressWarnings("WeakerAccess")
     public final static long BITRATE_UNKNOWN = Long.MIN_VALUE;
 
@@ -48,6 +46,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         private long targetBitRate;
         private int targetFrameRate;
         private float targetKeyFrameInterval;
+        private String targetMimeType;
     }
 
     /**
@@ -122,6 +121,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         private int targetFrameRate = DEFAULT_FRAME_RATE;
         private long targetBitRate = BITRATE_UNKNOWN;
         private float targetKeyFrameInterval = DEFAULT_KEY_FRAME_INTERVAL;
+        private String targetMimeType = MediaFormatConstants.MIMETYPE_VIDEO_AVC;
 
         @SuppressWarnings("unused")
         public Builder() { }
@@ -182,6 +182,12 @@ public class DefaultVideoStrategy implements TrackStrategy {
         }
 
         @NonNull
+        public Builder mimeType(@NonNull String mimeType) {
+            this.targetMimeType = mimeType;
+            return this;
+        }
+
+        @NonNull
         @SuppressWarnings("WeakerAccess")
         public Options options() {
             Options options = new Options();
@@ -189,6 +195,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
             options.targetFrameRate = targetFrameRate;
             options.targetBitRate = targetBitRate;
             options.targetKeyFrameInterval = targetKeyFrameInterval;
+            options.targetMimeType = targetMimeType;
             return options;
         }
 
@@ -263,7 +270,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         }
 
         // Create the actual format.
-        outputFormat.setString(MediaFormat.KEY_MIME, MIME_TYPE);
+        outputFormat.setString(MediaFormat.KEY_MIME, options.targetMimeType);
         outputFormat.setInteger(MediaFormat.KEY_WIDTH, outWidth);
         outputFormat.setInteger(MediaFormat.KEY_HEIGHT, outHeight);
         outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, outFrameRate);
@@ -281,7 +288,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
 
     private boolean checkMimeType(@NonNull List<MediaFormat> formats) {
         for (MediaFormat format : formats) {
-            if (!format.getString(MediaFormat.KEY_MIME).equals(MIME_TYPE)) {
+            if (!format.getString(MediaFormat.KEY_MIME).equalsIgnoreCase(options.targetMimeType)) {
                 return false;
             }
         }

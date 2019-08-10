@@ -31,6 +31,7 @@ public class DefaultAudioStrategy implements TrackStrategy {
         private Options() {}
         private int channels;
         private int sampleRate;
+        private String mimeType;
     }
 
     /**
@@ -47,6 +48,7 @@ public class DefaultAudioStrategy implements TrackStrategy {
     public static class Builder {
         private int channels = CHANNELS_AS_INPUT;
         private int sampleRate = SAMPLE_RATE_AS_INPUT;
+        private String mimeType = MediaFormatConstants.MIMETYPE_AUDIO_AAC;
 
         @SuppressWarnings({"unused", "WeakerAccess"})
         public Builder() { }
@@ -64,11 +66,18 @@ public class DefaultAudioStrategy implements TrackStrategy {
         }
 
         @NonNull
+        public Builder mimeType(@NonNull String mimeType) {
+            this.mimeType = mimeType;
+            return this;
+        }
+
+        @NonNull
         @SuppressWarnings("WeakerAccess")
         public DefaultAudioStrategy.Options options() {
             DefaultAudioStrategy.Options options = new DefaultAudioStrategy.Options();
             options.channels = channels;
             options.sampleRate = sampleRate;
+            options.mimeType = mimeType;
             return options;
         }
 
@@ -90,10 +99,12 @@ public class DefaultAudioStrategy implements TrackStrategy {
     public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats, @NonNull MediaFormat outputFormat) {
         int outputChannels = (options.channels == CHANNELS_AS_INPUT) ? getInputChannelCount(inputFormats) : options.channels;
         int outputSampleRate = (options.sampleRate == SAMPLE_RATE_AS_INPUT) ? getInputSampleRate(inputFormats) : options.sampleRate;
-        outputFormat.setString(MediaFormat.KEY_MIME, MediaFormatConstants.MIMETYPE_AUDIO_AAC);
+        outputFormat.setString(MediaFormat.KEY_MIME, options.mimeType);
         outputFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, outputSampleRate);
         outputFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, outputChannels);
-        outputFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+        if (MediaFormatConstants.MIMETYPE_AUDIO_AAC.equalsIgnoreCase(options.mimeType)) {
+            outputFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+        }
         outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, getAverageInputBitRate(inputFormats));
         return TrackStatus.COMPRESSING;
     }
