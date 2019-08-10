@@ -132,6 +132,7 @@ public class Engine {
     }
 
     private boolean isCompleted(@NonNull TrackType type) {
+        if (mDataSources.require(type).isEmpty()) return true;
         int current = mCurrentStep.require(type);
         return !mDataSources.require(type).isEmpty()
                 && current == mDataSources.require(type).size() - 1
@@ -266,7 +267,7 @@ public class Engine {
 
     private long getTotalDurationUs() {
         boolean hasVideo = hasVideoSources() && mStatuses.requireVideo().isTranscoding();
-        boolean hasAudio = hasAudioSources() && mStatuses.requireVideo().isTranscoding();
+        boolean hasAudio = hasAudioSources() && mStatuses.requireAudio().isTranscoding();
         long video = hasVideo ? getTrackDurationUs(TrackType.VIDEO) : Long.MAX_VALUE;
         long audio = hasAudio ? getTrackDurationUs(TrackType.AUDIO) : Long.MAX_VALUE;
         return Math.min(video, audio);
@@ -347,6 +348,8 @@ public class Engine {
             boolean forceAudioEos = false, forceVideoEos = false;
             double audioProgress = 0, videoProgress = 0;
             while (!(audioCompleted && videoCompleted)) {
+                LOG.v("new step: " + loopCount);
+
                 if (Thread.interrupted()) {
                     throw new InterruptedException();
                 }
