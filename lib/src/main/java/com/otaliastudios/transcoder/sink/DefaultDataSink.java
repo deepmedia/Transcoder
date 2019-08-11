@@ -65,6 +65,7 @@ public class DefaultDataSink implements DataSink {
         this(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public DefaultDataSink(@NonNull String outputFilePath, int format) {
         try {
             mMuxer = new MediaMuxer(outputFilePath, format);
@@ -91,15 +92,13 @@ public class DefaultDataSink implements DataSink {
     }
 
     @Override
-    public void setTrackFormat(@NonNull TrackType type,
-                               @NonNull MediaFormat format) {
+    public void setTrackFormat(@NonNull TrackType type, @NonNull MediaFormat format) {
         boolean shouldValidate = mStatus.require(type) == TrackStatus.COMPRESSING;
         if (shouldValidate) {
             mMuxerChecks.checkOutputFormat(type, format);
         }
         mLastFormat.set(type, format);
         startIfNeeded();
-
     }
 
     private void startIfNeeded() {

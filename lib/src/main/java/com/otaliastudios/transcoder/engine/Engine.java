@@ -22,7 +22,6 @@ import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.ValidatorException;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.InvalidOutputFormatException;
-import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
@@ -132,9 +131,9 @@ public class Engine {
     }
 
     private boolean isCompleted(@NonNull TrackType type) {
+        if (mDataSources.require(type).isEmpty()) return true;
         int current = mCurrentStep.require(type);
-        return !mDataSources.require(type).isEmpty()
-                && current == mDataSources.require(type).size() - 1
+        return current == mDataSources.require(type).size() - 1
                 && current == mTranscoders.require(type).size() - 1
                 && mTranscoders.require(type).get(current).isFinished();
     }
@@ -196,7 +195,7 @@ public class Engine {
         TrackTranscoder transcoder = mTranscoders.require(type).get(current);
         DataSource dataSource = mDataSources.require(type).get(current);
         transcoder.release();
-        dataSource.release();
+        dataSource.releaseTrack(type);
         mCurrentStep.set(type, current + 1);
     }
 
@@ -266,7 +265,7 @@ public class Engine {
 
     private long getTotalDurationUs() {
         boolean hasVideo = hasVideoSources() && mStatuses.requireVideo().isTranscoding();
-        boolean hasAudio = hasAudioSources() && mStatuses.requireVideo().isTranscoding();
+        boolean hasAudio = hasAudioSources() && mStatuses.requireAudio().isTranscoding();
         long video = hasVideo ? getTrackDurationUs(TrackType.VIDEO) : Long.MAX_VALUE;
         long audio = hasAudio ? getTrackDurationUs(TrackType.AUDIO) : Long.MAX_VALUE;
         return Math.min(video, audio);
@@ -302,7 +301,7 @@ public class Engine {
      * @throws InterruptedException when cancel to transcode
      */
     public void transcode(@NonNull TranscoderOptions options) throws InterruptedException {
-        mDataSink = new DefaultDataSink(options.getOutputPath());
+        mDataSink = options.getDataSink();
         mDataSources.setVideo(options.getVideoDataSources());
         mDataSources.setAudio(options.getAudioDataSources());
 
@@ -347,6 +346,8 @@ public class Engine {
             boolean forceAudioEos = false, forceVideoEos = false;
             double audioProgress = 0, videoProgress = 0;
             while (!(audioCompleted && videoCompleted)) {
+                LOG.v("new step: " + loopCount);
+
                 if (Thread.interrupted()) {
                     throw new InterruptedException();
                 }

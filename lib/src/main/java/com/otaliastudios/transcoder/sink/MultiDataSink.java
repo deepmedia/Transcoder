@@ -50,8 +50,12 @@ public class MultiDataSink implements DataSink {
 
     @Override
     public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
+        int position = byteBuffer.position();
+        int limit = byteBuffer.limit();
         for (DataSink sink : sinks) {
             sink.writeTrack(type, byteBuffer, bufferInfo);
+            byteBuffer.position(position);
+            byteBuffer.limit(limit);
         }
     }
 
