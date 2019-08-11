@@ -25,7 +25,7 @@ import java.util.List;
  * The input and output aspect ratio must match.
  */
 public class DefaultVideoStrategy implements TrackStrategy {
-    private final static String TAG = "DefaultVideoStrategy";
+    private final static String TAG = DefaultVideoStrategy.class.getSimpleName();
     private final static Logger LOG = new Logger(TAG);
 
     @SuppressWarnings("WeakerAccess")

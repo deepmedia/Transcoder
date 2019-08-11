@@ -65,6 +65,7 @@ public class DefaultDataSink implements DataSink {
         this(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public DefaultDataSink(@NonNull String outputFilePath, int format) {
         try {
             mMuxer = new MediaMuxer(outputFilePath, format);

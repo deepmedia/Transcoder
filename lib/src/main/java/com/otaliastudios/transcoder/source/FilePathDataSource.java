@@ -3,6 +3,7 @@ package com.otaliastudios.transcoder.source;
 import android.media.MediaExtractor;
 import android.media.MediaMetadataRetriever;
 
+import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 
 import java.io.FileDescriptor;
@@ -44,7 +45,7 @@ public class FilePathDataSource extends DefaultDataSource {
     }
 
     @Override
-    public void release() {
+    protected void release() {
         super.release();
         descriptor.release();
         if (stream != null) {

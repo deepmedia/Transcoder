@@ -13,6 +13,7 @@ import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.Logger;
 
 import java.io.IOException;
+import java.util.HashSet;
 
 /**
  * A DataSource implementation that uses Android's Media APIs.
@@ -28,6 +29,7 @@ public abstract class DefaultDataSource implements DataSource {
     private boolean mExtractorApplied;
     private final TrackTypeMap<MediaFormat> mFormats = new TrackTypeMap<>();
     private final TrackTypeMap<Integer> mIndex = new TrackTypeMap<>();
+    private final HashSet<TrackType> mSelectedTracks = new HashSet<>();
     private long mLastTimestampUs;
     private long mFirstTimestampUs = Long.MIN_VALUE;
 
@@ -56,6 +58,7 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public void selectTrack(@NonNull TrackType type) {
+        mSelectedTracks.add(type);
         mExtractor.selectTrack(mIndex.require(type));
     }
 
@@ -155,7 +158,14 @@ public abstract class DefaultDataSource implements DataSource {
     }
 
     @Override
-    public void release() {
+    public void releaseTrack(@NonNull TrackType type) {
+        mSelectedTracks.remove(type);
+        if (mSelectedTracks.isEmpty()) {
+            release();
+        }
+    }
+
+    protected void release() {
         try {
             mExtractor.release();
         } catch (Exception e) {

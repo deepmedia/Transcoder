@@ -24,6 +24,7 @@ import com.otaliastudios.transcoder.sink.MultiDataSink;
 import com.otaliastudios.transcoder.sink.TrackDataSink;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
+import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
 import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.FractionResizer;
@@ -120,10 +121,13 @@ public class TranscoderActivity extends AppCompatActivity implements
         mAudioReplaceGroup.setOnCheckedChangeListener((group, checkedId) -> {
             mAudioReplacementUri = null;
             mAudioReplaceView.setText("No replacement selected.");
-            if (checkedId == R.id.replace_yes && !mIsTranscoding) {
-                startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT)
-                        .setType("audio/*"), REQUEST_CODE_PICK_AUDIO);
+            if (checkedId == R.id.replace_yes) {
+                if (!mIsTranscoding) {
+                    startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT)
+                            .setType("audio/*"), REQUEST_CODE_PICK_AUDIO);
+                }
             }
+            onCheckedChanged(group, checkedId);
         });
     }
 
@@ -145,10 +149,20 @@ public class TranscoderActivity extends AppCompatActivity implements
             case R.id.sampleRate_48: sampleRate = 48000; break;
             default: sampleRate = DefaultAudioStrategy.SAMPLE_RATE_AS_INPUT;
         }
-        mTranscodeAudioStrategy = DefaultAudioStrategy.builder()
-                .channels(channels)
-                .sampleRate(sampleRate)
-                .build();
+        boolean removeAudio;
+        switch (mAudioReplaceGroup.getCheckedRadioButtonId()) {
+            case R.id.replace_remove: removeAudio = true; break;
+            case R.id.replace_yes: removeAudio = false; break;
+            default: removeAudio = false;
+        }
+        if (removeAudio) {
+            mTranscodeAudioStrategy = new RemoveTrackStrategy();
+        } else {
+            mTranscodeAudioStrategy = DefaultAudioStrategy.builder()
+                    .channels(channels)
+                    .sampleRate(sampleRate)
+                    .build();
+        }
 
         int frames;
         switch (mVideoFramesGroup.getCheckedRadioButtonId()) {

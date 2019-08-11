@@ -1,17 +1,12 @@
 package com.otaliastudios.transcoder.source;
 
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.MediaMetadataRetriever;
-import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.engine.TrackType;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -94,9 +89,10 @@ public interface DataSource {
     boolean isDrained();
 
     /**
-     * Called to release resources.
+     * Called to release resources for a given track.
+     * @param type track type
      */
-    void release();
+    void releaseTrack(@NonNull TrackType type);
 
     /**
      * Represents a chunk of data.

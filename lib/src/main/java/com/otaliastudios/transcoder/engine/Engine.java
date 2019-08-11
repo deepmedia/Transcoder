@@ -22,7 +22,6 @@ import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.ValidatorException;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.InvalidOutputFormatException;
-import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
@@ -134,8 +133,7 @@ public class Engine {
     private boolean isCompleted(@NonNull TrackType type) {
         if (mDataSources.require(type).isEmpty()) return true;
         int current = mCurrentStep.require(type);
-        return !mDataSources.require(type).isEmpty()
-                && current == mDataSources.require(type).size() - 1
+        return current == mDataSources.require(type).size() - 1
                 && current == mTranscoders.require(type).size() - 1
                 && mTranscoders.require(type).get(current).isFinished();
     }
@@ -197,7 +195,7 @@ public class Engine {
         TrackTranscoder transcoder = mTranscoders.require(type).get(current);
         DataSource dataSource = mDataSources.require(type).get(current);
         transcoder.release();
-        dataSource.release();
+        dataSource.releaseTrack(type);
         mCurrentStep.set(type, current + 1);
     }
 
