@@ -181,6 +181,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
             return this;
         }
 
+        @SuppressWarnings("unused")
         @NonNull
         public Builder mimeType(@NonNull String mimeType) {
             this.targetMimeType = mimeType;
@@ -218,7 +219,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
                                           @NonNull MediaFormat outputFormat) {
         boolean typeDone = checkMimeType(inputFormats);
 
-        // Compute output size.
+        // Compute output size in rotation=0 reference.
         ExactSize inSize = getBestInputSize(inputFormats);
         int inWidth = inSize.getWidth();
         int inHeight = inSize.getHeight();
@@ -273,6 +274,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         outputFormat.setString(MediaFormat.KEY_MIME, options.targetMimeType);
         outputFormat.setInteger(MediaFormat.KEY_WIDTH, outWidth);
         outputFormat.setInteger(MediaFormat.KEY_HEIGHT, outHeight);
+        outputFormat.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, outFrameRate);
         if (Build.VERSION.SDK_INT >= 25) {
             outputFormat.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, options.targetKeyFrameInterval);
@@ -295,13 +297,22 @@ public class DefaultVideoStrategy implements TrackStrategy {
         return true;
     }
 
+    /**
+     * Chooses one of the input sizes that is considered to be the best.
+     * After thinking about it, I think the best size is the one that is closer to the
+     * average aspect ratio.
+     *
+     * Of course, we must consider all formats' rotation.
+     * The size returned is rotated in the reference of a format with rotation = 0.
+     *
+     * @param formats input formats
+     * @return best input size
+     */
     private ExactSize getBestInputSize(@NonNull List<MediaFormat> formats) {
         int count = formats.size();
-        // After thinking about it, I think the best size is the one that is closer to the
-        // average aspect ratio. Respect the rotation of the first video for now
         float averageAspectRatio = 0;
         float[] aspectRatio = new float[count];
-        int firstRotation = -1;
+        boolean[] flipSize = new boolean[count];
         for (int i = 0; i < count; i++) {
             MediaFormat format = formats.get(i);
             float width = format.getInteger(MediaFormat.KEY_WIDTH);
@@ -310,8 +321,8 @@ public class DefaultVideoStrategy implements TrackStrategy {
             if (format.containsKey(MediaFormatConstants.KEY_ROTATION_DEGREES)) {
                 rotation = format.getInteger(MediaFormatConstants.KEY_ROTATION_DEGREES);
             }
-            if (firstRotation == -1) firstRotation = 0;
-            boolean flip = (rotation - firstRotation + 360) % 180 != 0;
+            boolean flip = (rotation % 180) != 0;
+            flipSize[i] = flip;
             aspectRatio[i] = flip ? height / width : width / height;
             averageAspectRatio += aspectRatio[i];
         }
@@ -326,8 +337,11 @@ public class DefaultVideoStrategy implements TrackStrategy {
             }
         }
         MediaFormat bestFormat = formats.get(bestMatch);
-        return new ExactSize(bestFormat.getInteger(MediaFormat.KEY_WIDTH),
-                bestFormat.getInteger(MediaFormat.KEY_HEIGHT));
+        int bestWidth = bestFormat.getInteger(MediaFormat.KEY_WIDTH);
+        int bestHeight = bestFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        return new ExactSize(
+                flipSize[bestMatch] ? bestHeight : bestWidth,
+                flipSize[bestMatch] ? bestWidth : bestHeight);
     }
 
     private int getMinFrameRate(@NonNull List<MediaFormat> formats) {

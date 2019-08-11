@@ -46,8 +46,8 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     private MediaCodec mEncoder; // Keep this since we want to signal EOS on it.
     private VideoFrameDropper mFrameDropper;
     private final TimeInterpolator mTimeInterpolator;
-    private final int mRotation;
-    private final boolean mFlip;
+    private final int mSourceRotation;
+    private final int mExtraRotation;
 
     public VideoTrackTranscoder(
             @NonNull DataSource dataSource,
@@ -56,17 +56,21 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
             int rotation) {
         super(dataSource, dataSink, TrackType.VIDEO);
         mTimeInterpolator = timeInterpolator;
-        mRotation = (rotation + dataSource.getOrientation()) % 360;
-        mFlip = mRotation % 180 != 0;
+        mSourceRotation = dataSource.getOrientation();
+        mExtraRotation = rotation;
     }
 
     @Override
     protected void onConfigureEncoder(@NonNull MediaFormat format, @NonNull MediaCodec encoder) {
-        // Flip the width and height as needed.
+        // Flip the width and height as needed. This means rotating the VideoStrategy rotation
+        // by the amount that was set in the TranscoderOptions.
+        // It is possible that the format has its own KEY_ROTATION, but we don't care, that will
+        // be respected at playback time.
         int width = format.getInteger(MediaFormat.KEY_WIDTH);
         int height = format.getInteger(MediaFormat.KEY_HEIGHT);
-        format.setInteger(MediaFormat.KEY_WIDTH, mFlip ? height : width);
-        format.setInteger(MediaFormat.KEY_HEIGHT, mFlip ? width : height);
+        boolean flip = (mExtraRotation % 180) != 0;
+        format.setInteger(MediaFormat.KEY_WIDTH, flip ? height : width);
+        format.setInteger(MediaFormat.KEY_HEIGHT, flip ? width : height);
         super.onConfigureEncoder(format, encoder);
     }
 
@@ -78,13 +82,26 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
 
     @Override
     protected void onConfigureDecoder(@NonNull MediaFormat format, @NonNull MediaCodec decoder) {
+        // Just a sanity check that the rotation coming from DataSource is not different from
+        // the one found in the DataSource's MediaFormat for video.
+        int sourceRotation = 0;
         if (format.containsKey(MediaFormatConstants.KEY_ROTATION_DEGREES)) {
-            // Decoded video is rotated automatically in Android 5.0 lollipop. Turn off here because we don't want to encode rotated one.
-            // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
-            format.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
+            sourceRotation = format.getInteger(MediaFormatConstants.KEY_ROTATION_DEGREES);
         }
+        if (sourceRotation != mSourceRotation) {
+            throw new RuntimeException("Unexpected difference in rotation." +
+                    " DataSource:" + mSourceRotation +
+                    " MediaFormat:" + sourceRotation);
+        }
+
+        // Decoded video is rotated automatically in Android 5.0 lollipop. Turn off here because we don't want to encode rotated one.
+        // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
+        format.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
+
+        // The rotation we should apply is the intrinsic source rotation, plus any extra
+        // rotation that was set into the TranscoderOptions.
         mDecoderOutputSurface = new VideoDecoderOutput();
-        mDecoderOutputSurface.setRotation(mRotation);
+        mDecoderOutputSurface.setRotation((mSourceRotation + mExtraRotation) % 360);
         decoder.configure(format, mDecoderOutputSurface.getSurface(), null, 0);
     }
 
@@ -97,11 +114,15 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         mEncoder = encoder;
 
         // Cropping support.
+        // Ignoring any outputFormat KEY_ROTATION (which is applied at playback time), the rotation
+        // difference between input and output is mSourceRotation + mExtraRotation.
+        int rotation = (mSourceRotation + mExtraRotation) % 360;
+        boolean flip = (rotation % 180) != 0;
         float inputWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
         float inputHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
         float inputRatio = inputWidth / inputHeight;
-        float outputWidth = mFlip ? outputFormat.getInteger(MediaFormat.KEY_HEIGHT) : outputFormat.getInteger(MediaFormat.KEY_WIDTH);
-        float outputHeight = mFlip ? outputFormat.getInteger(MediaFormat.KEY_WIDTH) : outputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        float outputWidth = flip ? outputFormat.getInteger(MediaFormat.KEY_HEIGHT) : outputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        float outputHeight = flip ? outputFormat.getInteger(MediaFormat.KEY_WIDTH) : outputFormat.getInteger(MediaFormat.KEY_HEIGHT);
         float outputRatio = outputWidth / outputHeight;
         float scaleX = 1, scaleY = 1;
         if (inputRatio > outputRatio) { // Input wider. We have a scaleX.
