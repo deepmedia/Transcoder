@@ -131,7 +131,7 @@ Audio: | •••••••••••••••••• source1 ••�
 
 And that's all you need to do.
 
-#### Automatic clipping
+### Automatic clipping
 
 When concatenating data from multiple sources and on different tracks, it's common to have
 a total audio length that is different than the total video length.
@@ -382,7 +382,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
 
 ## Advanced Options
 
-#### Video rotation
+### Video rotation
 
 You can set the output video rotation with the `setRotation(int)` method. This will apply a clockwise
 rotation to the input video frames. Accepted values are `0`, `90`, `180`, `270`:
@@ -393,7 +393,7 @@ Transcoder.into(filePath)
         // ...
 ```
 
-#### Time interpolation
+### Time interpolation
 
 We offer APIs to change the timestamp of each video and audio frame. You can pass a `TimeInterpolator`
 to the transcoder builder to be able to receive the frame timestamp as input, and return a new one
@@ -419,7 +419,7 @@ public long interpolate(@NonNull TrackType type, long time) {
 It should be obvious that returning invalid times can make the process crash at any point, or at least
 the transcoding operation fail.
 
-#### Video speed
+### Video speed
 
 We also offer a special time interpolator called `SpeedTimeInterpolator` that accepts a `float` parameter
 and will modify the video speed.
@@ -439,7 +439,7 @@ Transcoder.into(filePath)
         // ...
 ```
 
-#### Audio stretching
+### Audio stretching
 
 When a time interpolator alters the frames and samples timestamps, you can either remove audio or
 stretch the audio samples to the new length. This is done through the `AudioStretcher` interface:
@@ -457,7 +457,7 @@ The default audio stretcher, `DefaultAudioStretcher`, will:
 
 Please take a look at the implementation and read class documentation.
 
-#### Audio resampling
+### Audio resampling
 
 When a sample rate different than the input is specified (by the `TrackStrategy`, or, when using the
 default audio strategy, by `DefaultAudioStategy.Builder.sampleRate()`), this library will automatically
