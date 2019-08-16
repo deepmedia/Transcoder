@@ -8,10 +8,8 @@ import android.view.Surface;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.opengl.draw.EglDrawable;
-import com.otaliastudios.opengl.draw.EglRect;
-import com.otaliastudios.opengl.program.EglTextureProgram;
-import com.otaliastudios.opengl.scene.EglScene;
+import com.otaliastudios.opengl.draw.GlRect;
+import com.otaliastudios.opengl.program.GlTextureProgram;
 import com.otaliastudios.transcoder.internal.Logger;
 
 /**
@@ -36,16 +34,12 @@ public class VideoDecoderOutput {
     private SurfaceTexture mSurfaceTexture;
     private Surface mSurface;
 
-    private EglScene mScene;
-    private EglTextureProgram mProgram;
-    private EglDrawable mDrawable;
+    private GlTextureProgram mProgram;
+    private GlRect mDrawable;
 
     private float mScaleX = 1F;
     private float mScaleY = 1F;
     private int mRotation = 0;
-
-    private int mTextureId;
-    private float[] mTextureTransform = new float[16];
 
     @GuardedBy("mFrameAvailableLock")
     private boolean mFrameAvailable;
@@ -56,16 +50,14 @@ public class VideoDecoderOutput {
      * new one). Creates a Surface that can be passed to MediaCodec.configure().
      */
     public VideoDecoderOutput() {
-        mScene = new EglScene();
-        mProgram = new EglTextureProgram();
-        mDrawable = new EglRect();
-        mTextureId = mProgram.createTexture();
+        mProgram = new GlTextureProgram();
+        mDrawable = new GlRect();
 
         // Even if we don't access the SurfaceTexture after the constructor returns, we
         // still need to keep a reference to it.  The Surface doesn't retain a reference
         // at the Java level, so if we don't either then the object can get GCed, which
         // causes the native finalizer to run.
-        mSurfaceTexture = new SurfaceTexture(mTextureId);
+        mSurfaceTexture = new SurfaceTexture(mProgram.getTextureId());
         mSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
             @Override
             public void onFrameAvailable(SurfaceTexture surfaceTexture) {
@@ -123,7 +115,6 @@ public class VideoDecoderOutput {
         mSurfaceTexture = null;
         mDrawable = null;
         mProgram = null;
-        mScene = null;
     }
 
     /**
@@ -166,21 +157,21 @@ public class VideoDecoderOutput {
      * Draws the data from SurfaceTexture onto the current EGL surface.
      */
     private void drawNewFrame() {
-        mSurfaceTexture.getTransformMatrix(mTextureTransform);
+        mSurfaceTexture.getTransformMatrix(mProgram.getTextureTransform());
         // Invert the scale.
         float glScaleX = 1F / mScaleX;
         float glScaleY = 1F / mScaleY;
         // Compensate before scaling.
         float glTranslX = (1F - glScaleX) / 2F;
         float glTranslY = (1F - glScaleY) / 2F;
-        Matrix.translateM(mTextureTransform, 0, glTranslX, glTranslY, 0);
+        Matrix.translateM(mProgram.getTextureTransform(), 0, glTranslX, glTranslY, 0);
         // Scale.
-        Matrix.scaleM(mTextureTransform, 0, glScaleX, glScaleY, 1);
+        Matrix.scaleM(mProgram.getTextureTransform(), 0, glScaleX, glScaleY, 1);
         // Apply rotation.
-        Matrix.translateM(mTextureTransform, 0, 0.5F, 0.5F, 0);
-        Matrix.rotateM(mTextureTransform, 0, mRotation, 0, 0, 1);
-        Matrix.translateM(mTextureTransform, 0, -0.5F, -0.5F, 0);
+        Matrix.translateM(mProgram.getTextureTransform(), 0, 0.5F, 0.5F, 0);
+        Matrix.rotateM(mProgram.getTextureTransform(), 0, mRotation, 0, 0, 1);
+        Matrix.translateM(mProgram.getTextureTransform(), 0, -0.5F, -0.5F, 0);
         // Draw.
-        mScene.drawTexture(mDrawable, mProgram, mTextureId, mTextureTransform);
+        mProgram.draw(mDrawable);
     }
 }
