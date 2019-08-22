@@ -78,7 +78,7 @@ Feel free to <a href="mailto:mat.iavarone@gmail.com">contact me</a> for support,
 
 ## Setup
 
-This library requires API level 18 (Android 4.3, JELLY_BEAN_MR2) or later.
+This library requires API level 18 (Android 4.3) or later.
 If your app targets older versions, you can override the minSdkVersion by
 adding this line to your manifest file:
 
