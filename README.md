@@ -70,13 +70,9 @@ Take a look at the demo app for a real example or keep reading below for documen
 
 Transcoder is trusted and supported by [ShareChat](https://sharechat.com/), a social media app with over 14 million daily active users. 
 
-&#10240;  <!-- Hack to add whitespace -->
-
 <p align="center">
   <img src="static/sharechat.png" width="100%">
 </p>
-
-&#10240;  <!-- Hack to add whitespace -->
 
 Feel free to <a href="mailto:mat.iavarone@gmail.com">contact me</a> for support, consulting or any other business-related question.
 
