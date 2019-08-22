@@ -34,12 +34,6 @@ implementation 'com.otaliastudios:transcoder:0.7.0'
 - Configurable validators to e.g. avoid transcoding if the source is already compressed enough [[docs]](#validators)
 - Configurable video and audio strategies [[docs]](#track-strategies)
 
-*This project started as a fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
-With respect to the source project, which misses most of the functionality listed above, 
-we have also fixed a huge number of bugs and are much less conservative when choosing options 
-that might not be supported. The source project will always throw - for example, accepting only 16:9,
-AVC Baseline Profile videos - we prefer to try and let the codec fail if it wants to*.
-
 &#10240;  <!-- Hack to add whitespace -->
 
 <p align="center">
@@ -47,6 +41,12 @@ AVC Baseline Profile videos - we prefer to try and let the codec fail if it want
 </p>
 
 &#10240;  <!-- Hack to add whitespace -->
+
+*This project started as a fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
+With respect to the source project, which misses most of the functionality listed above, 
+we have also fixed a huge number of bugs and are much less conservative when choosing options 
+that might not be supported. The source project will always throw - for example, accepting only 16:9,
+AVC Baseline Profile videos - we prefer to try and let the codec fail if it wants to*.
 
 Using Transcoder in the most basic form is pretty simple:
 
