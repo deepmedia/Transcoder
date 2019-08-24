@@ -1,6 +1,7 @@
 ### v0.7.1
 
 - Improvement: update the underlying OpenGL library ([#20][20])
+
 ## v0.7.0
 
 - New: video concatenation to stitch together multiple media ([#14][14])
