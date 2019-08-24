@@ -3,7 +3,7 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 // Required by bintray
-version = '0.7.0'
+version = '0.7.1'
 group = 'com.otaliastudios'
 archivesBaseName = 'transcoder'
 
@@ -33,7 +33,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'org.mockito:mockito-android:2.28.2'
 
-    api 'com.otaliastudios.opengl:egloo:0.2.1'
+    api 'com.otaliastudios.opengl:egloo:0.2.3'
     api "androidx.annotation:annotation:1.1.0"
 }
 
@@ -105,7 +105,7 @@ bintray {
 }
 
 task sourcesJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier.set('sources')
     from android.sourceSets.main.java.sourceFiles
 }
 
@@ -124,7 +124,7 @@ task javadoc(type: Javadoc) {
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier.set('javadoc')
     from javadoc.destinationDir
 }
 
