@@ -1,4 +1,8 @@
-### v0.7.0
+### v0.7.1
+
+- Improvement: update the underlying OpenGL library ([#20][20])
+
+## v0.7.0
 
 - New: video concatenation to stitch together multiple media ([#14][14])
 - New: select a specific track type (`VIDEO` or `AUDIO`) for sources ([#14][14])
@@ -14,7 +18,7 @@
 
 https://github.com/natario1/Transcoder/compare/v0.6.0...v0.7.0
 
-### v0.6.0
+## v0.6.0
 
 - New: ability to change video/audio speed and change each frame timestamp ([#10][10])
 - New: ability to set the video output rotation ([#8][8])
@@ -23,7 +27,7 @@ https://github.com/natario1/Transcoder/compare/v0.6.0...v0.7.0
 
 https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0
 
-### v0.5.0
+## v0.5.0
 
 - New: video cropping to any dimension. Encoder will crop the exceeding size. ([#6][6])
 - New: `AspectRatioResizer` to crop to a given aspect ratio. ([#6][6])
@@ -45,3 +49,4 @@ https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0
 [16]: https://github.com/natario1/Transcoder/pull/16
 [17]: https://github.com/natario1/Transcoder/pull/17
 [18]: https://github.com/natario1/Transcoder/pull/18
+[20]: https://github.com/natario1/Transcoder/pull/20
