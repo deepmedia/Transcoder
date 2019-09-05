@@ -208,69 +208,72 @@ public class AudioEngine {
     private boolean process(@NonNull AudioBuffer buffer, @NonNull ShortBuffer encoderBuffer, int encoderBufferIndex) {
         // Only process the amount of data that can fill in the encoderBuffer.
         final int outputSize = encoderBuffer.remaining();
-        final int inputSize = buffer.decoderData.remaining();
-        int processedInputSize = inputSize;
+        final int totalInputSize = buffer.decoderData.remaining();
+        int processedTotalInputSize = totalInputSize;
 
         // 1. Perform TimeInterpolator computation
+        // TODO we should compare the NEXT timestamp with this, instead of comparing this with previous!
         long encoderUs = mTimeInterpolator.interpolate(TrackType.AUDIO, buffer.decoderTimestampUs);
         if (mLastDecoderUs == Long.MIN_VALUE) {
             mLastDecoderUs = buffer.decoderTimestampUs;
             mLastEncoderUs = encoderUs;
         }
-        long decoderDeltaUs = buffer.decoderTimestampUs - mLastDecoderUs;
-        long encoderDeltaUs = encoderUs - mLastEncoderUs;
+        long decoderDurationUs = buffer.decoderTimestampUs - mLastDecoderUs;
+        long encoderDurationUs = encoderUs - mLastEncoderUs;
         mLastDecoderUs = buffer.decoderTimestampUs;
         mLastEncoderUs = encoderUs;
-        long stretchUs = encoderDeltaUs - decoderDeltaUs; // microseconds that the TimeInterpolator adds (or removes).
-        int stretchShorts = AudioConversions.usToShorts(stretchUs, mDecoderSampleRate, mDecoderChannels);
-        LOG.i("process - time stretching - decoderDeltaUs:" + decoderDeltaUs +
-                " encoderDeltaUs:" + encoderDeltaUs +
-                " stretchUs:" + stretchUs +
-                " stretchShorts:" + stretchShorts);
-        processedInputSize += stretchShorts;
+        double stretchFactor = (double) encoderDurationUs / decoderDurationUs;
+        LOG.i("process - time stretching -" +
+                " decoderDurationUs:" + decoderDurationUs +
+                " encoderDeltaUs:" + encoderDurationUs +
+                " stretchFactor:" + stretchFactor);
+        processedTotalInputSize = (int) Math.ceil(processedTotalInputSize * stretchFactor);
 
         // 2. Ask remixers how much space they need for the given input
-        processedInputSize = mRemixer.getRemixedSize(processedInputSize);
+        processedTotalInputSize = mRemixer.getRemixedSize(processedTotalInputSize);
 
         // 3. After remixing we'll resample.
         // Resampling will change the input size based on the sample rate ratio.
-        processedInputSize = (int) Math.ceil((double) processedInputSize * mEncoderSampleRate / mDecoderSampleRate);
+        processedTotalInputSize = (int) Math.ceil((double) processedTotalInputSize
+                * mEncoderSampleRate / mDecoderSampleRate);
 
-        // 4. Compare processedInputSize and outputSize. If processedInputSize > outputSize, we overflow.
-        // In this case, isolate the valid data.
-        boolean overflow = processedInputSize > outputSize;
+        // 4. Compare processedInputSize and outputSize. If processedInputSize > outputSize,
+        // we overflow. In this case, isolate the valid data.
+        boolean overflow = processedTotalInputSize > outputSize;
         int overflowReduction = 0;
         if (overflow) {
             // Compute the input size that matches this output size.
-            double ratio = (double) processedInputSize / inputSize; // > 1
-            overflowReduction = inputSize - (int) Math.floor((double) outputSize / ratio);
+            double ratio = (double) processedTotalInputSize / totalInputSize; // > 1
+            overflowReduction = totalInputSize - (int) Math.floor((double) outputSize / ratio);
             LOG.w("process - overflowing! Reduction:" + overflowReduction);
             buffer.decoderData.limit(buffer.decoderData.limit() - overflowReduction);
         }
-        final int finalInputSize = buffer.decoderData.remaining();
-        LOG.i("process - inputSize:" + inputSize +
-                " processedInputSize:" + processedInputSize +
+        final int inputSize = buffer.decoderData.remaining();
+        LOG.i("process - totalInputSize:" + totalInputSize +
+                " processedTotalInputSize:" + processedTotalInputSize +
                 " outputSize:" + outputSize +
-                " finalInputSize:" + finalInputSize);
+                " inputSize:" + inputSize);
 
         // 5. Do the stretching. We need a bridge buffer for its output.
-        ensureTempBuffer1(finalInputSize + stretchShorts);
+        ensureTempBuffer1((int) Math.ceil(inputSize * stretchFactor));
         mStretcher.stretch(buffer.decoderData, mTempBuffer1, mDecoderChannels);
         mTempBuffer1.rewind();
 
         // 6. Do the actual remixing.
-        ensureTempBuffer2(mRemixer.getRemixedSize(finalInputSize + stretchShorts));
+        ensureTempBuffer2(mRemixer.getRemixedSize((int) Math.ceil(inputSize * stretchFactor)));
         mRemixer.remix(mTempBuffer1, mTempBuffer2);
         mTempBuffer2.rewind();
 
         // 7. Do the actual resampling.
-        mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate, mDecoderChannels);
+        mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate,
+                mDecoderChannels);
 
         // 8. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
         // We need an updated timestamp for the next cycle, since we will cycle on the same input
         // buffer that has overflown.
         if (overflow) {
-            buffer.decoderTimestampUs += AudioConversions.shortsToUs(finalInputSize, mDecoderSampleRate, mDecoderChannels);
+            buffer.decoderTimestampUs += AudioConversions.shortsToUs(inputSize, mDecoderSampleRate,
+                    mDecoderChannels);
             buffer.decoderData.limit(buffer.decoderData.limit() + overflowReduction);
         }
 
