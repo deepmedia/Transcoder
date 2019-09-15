@@ -10,6 +10,8 @@
 
 *Looking for a powerful camera library to take videos? Take a look at our [CameraView](https://github.com/natario1/CameraView).*
 
+*Need support, consulting, or have any other business-related question? Feel free to <a href="mailto:mat.iavarone@gmail.com">get in touch</a>.*
+
 # Transcoder
 
 Transcodes and compresses video files into the MP4 format, with audio support, using hardware accelerated Android codecs available on the device. Works on API 18+.
@@ -68,7 +70,7 @@ Take a look at the demo app for a real example or keep reading below for documen
 
 ## Sponsors
 
-Transcoder is trusted and supported by [ShareChat](https://sharechat.com/), a social media app with over 14 million daily active users. 
+Transcoder is trusted and supported by [ShareChat](https://sharechat.com/), a social media app with over 100 million downloads. 
 
 <p align="center">
   <img src="static/sharechat.png" width="100%">
