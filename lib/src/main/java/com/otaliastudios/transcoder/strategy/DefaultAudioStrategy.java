@@ -132,8 +132,18 @@ public class DefaultAudioStrategy implements TrackStrategy {
         int count = formats.size();
         double bitRate = 0;
         for (MediaFormat format : formats) {
-            bitRate += format.getInteger(MediaFormat.KEY_BIT_RATE);
+            try {
+                bitRate += format.getInteger(MediaFormat.KEY_BIT_RATE);
+            } catch(Exception e) {
+                bitRate += calculateBitRate(format);
+            }
         }
         return (int) (bitRate / count);
+    }
+    
+    private int calculateBitRate(MediaFormat format) {
+        int sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+        int channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        return sampleRate * channelCount * 16;
     }
 }
