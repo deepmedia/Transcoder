@@ -95,6 +95,16 @@ public interface DataSource {
     void releaseTrack(@NonNull TrackType type);
 
     /**
+     * Rewinds this source, moving it to its default state.
+     * To be used again, tracks will be selected again.
+     * After this call, for instance,
+     * - {@link #getReadUs()} should be 0
+     * - {@link #isDrained()} should be false
+     * - {@link #readTrack(Chunk)} should return the very first bytes
+     */
+    void rewind();
+
+    /**
      * Represents a chunk of data.
      * Can be used to read input from {@link #readTrack(Chunk)}.
      */
