@@ -5,6 +5,7 @@ import android.media.MediaFormat;
 import android.os.Build;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
+import com.otaliastudios.transcoder.internal.BitRates;
 import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.AtMostResizer;
 import com.otaliastudios.transcoder.strategy.size.ExactResizer;
@@ -282,8 +283,9 @@ public class DefaultVideoStrategy implements TrackStrategy {
             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, (int) Math.ceil(options.targetKeyFrameInterval));
         }
         outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
-        int outBitRate = (int) (options.targetBitRate == BITRATE_UNKNOWN ?
-                estimateBitRate(outWidth, outHeight, outFrameRate) : options.targetBitRate);
+        int outBitRate = (int) (options.targetBitRate == BITRATE_UNKNOWN
+                ? BitRates.estimateVideoBitRate(outWidth, outHeight, outFrameRate)
+                : options.targetBitRate);
         outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, outBitRate);
         return TrackStatus.COMPRESSING;
     }
@@ -364,11 +366,5 @@ public class DefaultVideoStrategy implements TrackStrategy {
             }
         }
         return (count > 0) ? Math.round((float) sum / count) : -1;
-    }
-
-    // Depends on the codec, but for AVC this is a reasonable default ?
-    // https://stackoverflow.com/a/5220554/4288782
-    private static long estimateBitRate(int width, int height, int frameRate) {
-        return (long) (0.07F * 2 * width * height * frameRate);
     }
 }

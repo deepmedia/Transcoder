@@ -4,6 +4,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
+import com.otaliastudios.transcoder.internal.BitRates;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 
@@ -23,15 +24,19 @@ public class DefaultAudioStrategy implements TrackStrategy {
     public final static int CHANNELS_AS_INPUT = -1;
     public final static int SAMPLE_RATE_AS_INPUT = -1;
 
+    @SuppressWarnings("WeakerAccess")
+    public final static long BITRATE_UNKNOWN = Long.MIN_VALUE;
+
     /**
      * Holds configuration values.
      */
     @SuppressWarnings("WeakerAccess")
     public static class Options {
         private Options() {}
-        private int channels;
-        private int sampleRate;
-        private String mimeType;
+        private int targetChannels;
+        private int targetSampleRate;
+        private long targetBitRate;
+        private String targetMimeType;
     }
 
     /**
@@ -46,28 +51,41 @@ public class DefaultAudioStrategy implements TrackStrategy {
     }
 
     public static class Builder {
-        private int channels = CHANNELS_AS_INPUT;
-        private int sampleRate = SAMPLE_RATE_AS_INPUT;
-        private String mimeType = MediaFormatConstants.MIMETYPE_AUDIO_AAC;
+        private int targetChannels = CHANNELS_AS_INPUT;
+        private int targetSampleRate = SAMPLE_RATE_AS_INPUT;
+        private long targetBitRate = BITRATE_UNKNOWN;
+        private String targetMimeType = MediaFormatConstants.MIMETYPE_AUDIO_AAC;
 
         @SuppressWarnings({"unused", "WeakerAccess"})
         public Builder() { }
 
         @NonNull
         public Builder channels(int channels) {
-            this.channels = channels;
+            targetChannels = channels;
             return this;
         }
 
         @NonNull
         public Builder sampleRate(int sampleRate) {
-            this.sampleRate = sampleRate;
+            targetSampleRate = sampleRate;
+            return this;
+        }
+
+        /**
+         * The desired bit rate. Can optionally be {@link #BITRATE_UNKNOWN},
+         * in which case the strategy will try to estimate the bitrate.
+         * @param bitRate desired bit rate (bits per second)
+         * @return this for chaining
+         */
+        @NonNull
+        public Builder bitRate(long bitRate) {
+            targetBitRate = bitRate;
             return this;
         }
 
         @NonNull
         public Builder mimeType(@NonNull String mimeType) {
-            this.mimeType = mimeType;
+            targetMimeType = mimeType;
             return this;
         }
 
@@ -75,9 +93,10 @@ public class DefaultAudioStrategy implements TrackStrategy {
         @SuppressWarnings("WeakerAccess")
         public DefaultAudioStrategy.Options options() {
             DefaultAudioStrategy.Options options = new DefaultAudioStrategy.Options();
-            options.channels = channels;
-            options.sampleRate = sampleRate;
-            options.mimeType = mimeType;
+            options.targetChannels = targetChannels;
+            options.targetSampleRate = targetSampleRate;
+            options.targetMimeType = targetMimeType;
+            options.targetBitRate = targetBitRate;
             return options;
         }
 
@@ -96,16 +115,38 @@ public class DefaultAudioStrategy implements TrackStrategy {
 
     @NonNull
     @Override
-    public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats, @NonNull MediaFormat outputFormat) {
-        int outputChannels = (options.channels == CHANNELS_AS_INPUT) ? getInputChannelCount(inputFormats) : options.channels;
-        int outputSampleRate = (options.sampleRate == SAMPLE_RATE_AS_INPUT) ? getInputSampleRate(inputFormats) : options.sampleRate;
-        outputFormat.setString(MediaFormat.KEY_MIME, options.mimeType);
+    public TrackStatus createOutputFormat(@NonNull List<MediaFormat> inputFormats,
+                                          @NonNull MediaFormat outputFormat) {
+        int outputChannels = (options.targetChannels == CHANNELS_AS_INPUT)
+                ? getInputChannelCount(inputFormats)
+                : options.targetChannels;
+        int outputSampleRate = (options.targetSampleRate == SAMPLE_RATE_AS_INPUT)
+                ? getInputSampleRate(inputFormats)
+                : options.targetSampleRate;
+        long outputBitRate;
+        if (inputFormats.size() == 1
+                && options.targetChannels == CHANNELS_AS_INPUT
+                && options.targetSampleRate == SAMPLE_RATE_AS_INPUT
+                && options.targetBitRate == BITRATE_UNKNOWN
+                && inputFormats.get(0).containsKey(MediaFormat.KEY_BIT_RATE)) {
+            // Special case: if we have only a single input format, and channels and sample rate
+            // were unchanged, and bit rate is available, use that instead of estimating.
+            outputBitRate = inputFormats.get(0).getInteger(MediaFormat.KEY_BIT_RATE);
+        } else {
+            // Normal case: just use the user provided bit rate or try to estimate it with our
+            // new channels and sample rate values.
+            outputBitRate = (options.targetBitRate == BITRATE_UNKNOWN)
+                    ? BitRates.estimateAudioBitRate(outputChannels, outputSampleRate)
+                    : options.targetBitRate;
+        }
+        outputFormat.setString(MediaFormat.KEY_MIME, options.targetMimeType);
         outputFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, outputSampleRate);
         outputFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, outputChannels);
-        if (MediaFormatConstants.MIMETYPE_AUDIO_AAC.equalsIgnoreCase(options.mimeType)) {
-            outputFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+        outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, (int) outputBitRate);
+        if (MediaFormatConstants.MIMETYPE_AUDIO_AAC.equalsIgnoreCase(options.targetMimeType)) {
+            outputFormat.setInteger(MediaFormat.KEY_AAC_PROFILE,
+                    MediaCodecInfo.CodecProfileLevel.AACObjectLC);
         }
-        outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, getAverageInputBitRate(inputFormats));
         return TrackStatus.COMPRESSING;
     }
 
@@ -126,14 +167,5 @@ public class DefaultAudioStrategy implements TrackStrategy {
         // This is very important to avoid useless upsampling in concatenated videos,
         // also because our upsample algorithm is not that good.
         return minRate;
-    }
-
-    private int getAverageInputBitRate(@NonNull List<MediaFormat> formats) {
-        int count = formats.size();
-        double bitRate = 0;
-        for (MediaFormat format : formats) {
-            bitRate += format.getInteger(MediaFormat.KEY_BIT_RATE);
-        }
-        return (int) (bitRate / count);
     }
 }

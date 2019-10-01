@@ -24,7 +24,7 @@ public abstract class DefaultDataSource implements DataSource {
     private final static Logger LOG = new Logger(TAG);
 
     private final MediaMetadataRetriever mMetadata = new MediaMetadataRetriever();
-    private final MediaExtractor mExtractor = new MediaExtractor();
+    private MediaExtractor mExtractor = new MediaExtractor();
     private boolean mMetadataApplied;
     private boolean mExtractorApplied;
     private final TrackTypeMap<MediaFormat> mFormats = new TrackTypeMap<>();
@@ -171,5 +171,15 @@ public abstract class DefaultDataSource implements DataSource {
         } catch (Exception e) {
             LOG.w("Could not release extractor:", e);
         }
+    }
+
+    @Override
+    public void rewind() {
+        mSelectedTracks.clear();
+        release();
+        mExtractorApplied = false;
+        mExtractor = new MediaExtractor();
+        mFirstTimestampUs = Long.MIN_VALUE;
+        mLastTimestampUs = 0;
     }
 }

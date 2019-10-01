@@ -113,11 +113,12 @@ public class Engine {
         TrackStatus status = TrackStatus.ABSENT;
         MediaFormat outputFormat = new MediaFormat();
         if (!sources.isEmpty()) {
+            MediaFormatProvider provider = new MediaFormatProvider();
             List<MediaFormat> inputFormats = new ArrayList<>();
             for (DataSource source : sources) {
                 MediaFormat inputFormat = source.getTrackFormat(type);
                 if (inputFormat != null) {
-                    inputFormats.add(inputFormat);
+                    inputFormats.add(provider.provideMediaFormat(source, type, inputFormat));
                 } else if (sources.size() > 1) {
                     throw new IllegalArgumentException("More than one source selected for type " + type
                             + ", but getTrackFormat returned null.");
