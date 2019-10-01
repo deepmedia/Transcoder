@@ -1,6 +1,15 @@
+### v0.7.2
+
+- Improvement: better input format detection. Fixes bugs with certain files ([#29][29])
+- Improvement: added `DefaultAudioStrategy.Builder.bitRate()` option ([#29][29])
+
+https://github.com/natario1/Transcoder/compare/v0.7.1...v0.7.2
+
 ### v0.7.1
 
 - Improvement: update the underlying OpenGL library ([#20][20])
+
+https://github.com/natario1/Transcoder/compare/v0.7.0...v0.7.1
 
 ## v0.7.0
 
@@ -50,3 +59,4 @@ https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0
 [17]: https://github.com/natario1/Transcoder/pull/17
 [18]: https://github.com/natario1/Transcoder/pull/18
 [20]: https://github.com/natario1/Transcoder/pull/20
+[29]: https://github.com/natario1/Transcoder/pull/29
