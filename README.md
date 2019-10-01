@@ -314,6 +314,8 @@ DefaultAudioStrategy strategy = DefaultAudioStrategy.builder()
         .sampleRate(DefaultAudioStrategy.SAMPLE_RATE_AS_INPUT)
         .sampleRate(44100)
         .sampleRate(30000)
+        .bitRate(DefaultAudioStrategy.BITRATE_UNKNOWN)
+        .bitRate(bitRate)
         .build();
 
 Transcoder.into(filePath)
