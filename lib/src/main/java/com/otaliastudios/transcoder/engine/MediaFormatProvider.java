@@ -35,20 +35,25 @@ class MediaFormatProvider {
     MediaFormat provideMediaFormat(@NonNull DataSource source,
                                    @NonNull TrackType type,
                                    @NonNull MediaFormat format) {
+        // If this format is already complete, there's nothing we should do.
         if (isComplete(type, format)) {
             return format;
         }
         MediaFormat newFormat = decodeMediaFormat(source, type, format);
+        // If not complete, throw an exception. If we don't throw here,
+        // it would likely be thrown by strategies anyway, since they expect a
+        // complete format.
         if (!isComplete(type, newFormat)) {
             String message = "Could not get a complete format!";
-            message += " trackType:" + type;
             message += " hasMimeType:" + newFormat.containsKey(MediaFormat.KEY_MIME);
-            message += " hasWidth:" + newFormat.containsKey(MediaFormat.KEY_WIDTH);
-            message += " hasHeight:" + newFormat.containsKey(MediaFormat.KEY_HEIGHT);
-            message += " hasFrameRate:" + newFormat.containsKey(MediaFormat.KEY_FRAME_RATE);
-            message += " hasChannelCount:" + newFormat.containsKey(MediaFormat.KEY_CHANNEL_COUNT);
-            message += " hasSampleRate:" + newFormat.containsKey(MediaFormat.KEY_SAMPLE_RATE);
-            message += " hasBitRate:" + newFormat.containsKey(MediaFormat.KEY_BIT_RATE);
+            if (type == TrackType.VIDEO) {
+                message += " hasWidth:" + newFormat.containsKey(MediaFormat.KEY_WIDTH);
+                message += " hasHeight:" + newFormat.containsKey(MediaFormat.KEY_HEIGHT);
+                message += " hasFrameRate:" + newFormat.containsKey(MediaFormat.KEY_FRAME_RATE);
+            } else if (type == TrackType.AUDIO) {
+                message += " hasChannels:" + newFormat.containsKey(MediaFormat.KEY_CHANNEL_COUNT);
+                message += " hasSampleRate:" + newFormat.containsKey(MediaFormat.KEY_SAMPLE_RATE);
+            }
             throw new RuntimeException(message);
         }
         return newFormat;
@@ -72,8 +77,7 @@ class MediaFormatProvider {
     private boolean isCompleteAudioFormat(@NonNull MediaFormat format) {
         return format.containsKey(MediaFormat.KEY_MIME)
                 && format.containsKey(MediaFormat.KEY_CHANNEL_COUNT)
-                && format.containsKey(MediaFormat.KEY_SAMPLE_RATE)
-                && format.containsKey(MediaFormat.KEY_BIT_RATE);
+                && format.containsKey(MediaFormat.KEY_SAMPLE_RATE);
     }
 
     @NonNull
