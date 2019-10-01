@@ -8,9 +8,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.TrackTypeMap;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -140,21 +140,22 @@ public abstract class DefaultDataSource implements DataSource {
         if (mFormats.has(type)) return mFormats.get(type);
         ensureExtractor();
         int trackCount = mExtractor.getTrackCount();
-        MediaFormat format = null;
+        MediaFormat format;
         for (int i = 0; i < trackCount; i++) {
             format = mExtractor.getTrackFormat(i);
             String mime = format.getString(MediaFormat.KEY_MIME);
             if (type == TrackType.VIDEO && mime.startsWith("video/")) {
                 mIndex.set(TrackType.VIDEO, i);
-                break;
+                mFormats.set(TrackType.VIDEO, format);
+                return format;
             }
             if (type == TrackType.AUDIO && mime.startsWith("audio/")) {
                 mIndex.set(TrackType.AUDIO, i);
-                break;
+                mFormats.set(TrackType.AUDIO, format);
+                return format;
             }
         }
-        mFormats.set(type, format);
-        return format;
+        return null;
     }
 
     @Override
