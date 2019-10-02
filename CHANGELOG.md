@@ -1,3 +1,10 @@
+### v0.7.3
+
+- Fix: fixed bug with files that do not have an audio track, thanks to [@pawegio][pawegio] ([#31][31])
+- Fix: fixed possible issues with FilePathDataSource ([#32][32])
+
+https://github.com/natario1/Transcoder/compare/v0.7.2...v0.7.3
+
 ### v0.7.2
 
 - Improvement: better input format detection. Fixes bugs with certain files ([#29][29])
@@ -47,6 +54,7 @@ https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0
 - Improvement: bug fixes and a new demo app to test transcoding options easily ([#4][4])
 
 [Saqrag]: https://github.com/Saqrag
+[pawegio]: https://github.com/pawegio
 
 [4]: https://github.com/natario1/Transcoder/pull/4
 [5]: https://github.com/natario1/Transcoder/pull/5
@@ -60,3 +68,5 @@ https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0
 [18]: https://github.com/natario1/Transcoder/pull/18
 [20]: https://github.com/natario1/Transcoder/pull/20
 [29]: https://github.com/natario1/Transcoder/pull/29
+[31]: https://github.com/natario1/Transcoder/pull/31
+[32]: https://github.com/natario1/Transcoder/pull/32
