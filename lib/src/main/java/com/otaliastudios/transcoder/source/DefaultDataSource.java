@@ -23,7 +23,7 @@ public abstract class DefaultDataSource implements DataSource {
     private final static String TAG = DefaultDataSource.class.getSimpleName();
     private final static Logger LOG = new Logger(TAG);
 
-    private final MediaMetadataRetriever mMetadata = new MediaMetadataRetriever();
+    private MediaMetadataRetriever mMetadata = new MediaMetadataRetriever();
     private MediaExtractor mExtractor = new MediaExtractor();
     private boolean mMetadataApplied;
     private boolean mExtractorApplied;
@@ -172,15 +172,32 @@ public abstract class DefaultDataSource implements DataSource {
         } catch (Exception e) {
             LOG.w("Could not release extractor:", e);
         }
+        try {
+            mMetadata.release();
+        } catch (Exception e) {
+            LOG.w("Could not release metadata:", e);
+        }
     }
 
     @Override
     public void rewind() {
         mSelectedTracks.clear();
-        release();
-        mExtractorApplied = false;
-        mExtractor = new MediaExtractor();
         mFirstTimestampUs = Long.MIN_VALUE;
         mLastTimestampUs = 0;
+        // Release the extractor and recreate.
+        try {
+            mExtractor.release();
+        } catch (Exception ignore) { }
+        mExtractor = new MediaExtractor();
+        mExtractorApplied = false;
+        // Release the metadata and recreate.
+        // This is not strictly needed but some subclasses could have
+        // to close the underlying resource during rewind() and this could
+        // make the metadata unusable as well.
+        try {
+            mMetadata.release();
+        } catch (Exception ignore) { }
+        mMetadata = new MediaMetadataRetriever();
+        mMetadataApplied = false;
     }
 }

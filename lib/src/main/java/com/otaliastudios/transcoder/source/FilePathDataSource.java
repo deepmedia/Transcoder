@@ -14,46 +14,78 @@ import androidx.annotation.NonNull;
 
 /**
  * A {@link DataSource} backed by a file absolute path.
+ *
+ * This class actually wraps a {@link FileDescriptorDataSource} for the apply() operations.
+ * We could pass the path directly to MediaExtractor and MediaMetadataRetriever, but that is
+ * discouraged since they could not be able to open the file from another process.
+ *
+ * See {@link MediaExtractor#setDataSource(String)} documentation.
  */
 public class FilePathDataSource extends DefaultDataSource {
     private static final String TAG = FilePathDataSource.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
-    private final FileDescriptorDataSource descriptor;
-    private FileInputStream stream;
+    private FileDescriptorDataSource mDescriptorSource;
+    private FileInputStream mStream;
+    private final String mPath;
 
     public FilePathDataSource(@NonNull String path) {
-        FileDescriptor fileDescriptor;
-        try {
-            stream = new FileInputStream(path);
-            fileDescriptor = stream.getFD();
-        } catch (IOException e) {
-            release();
-            throw new RuntimeException(e);
+        mPath = path;
+    }
+
+    private void ensureDescriptorSource() {
+        if (mDescriptorSource == null) {
+            try {
+                mStream = new FileInputStream(mPath);
+                mDescriptorSource = new FileDescriptorDataSource(mStream.getFD());
+            } catch (IOException e) {
+                release();
+                throw new RuntimeException(e);
+            }
         }
-        descriptor = new FileDescriptorDataSource(fileDescriptor);
     }
 
     @Override
     public void applyExtractor(@NonNull MediaExtractor extractor) throws IOException {
-        descriptor.applyExtractor(extractor);
+        ensureDescriptorSource();
+        mDescriptorSource.applyExtractor(extractor);
     }
 
     @Override
     public void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
-        descriptor.applyRetriever(retriever);
+        ensureDescriptorSource();
+        mDescriptorSource.applyRetriever(retriever);
     }
 
     @Override
     protected void release() {
         super.release();
-        descriptor.release();
-        if (stream != null) {
+        if (mDescriptorSource != null) {
+            mDescriptorSource.release();
+        }
+        if (mStream != null) {
             try {
-                stream.close();
+                mStream.close();
             } catch (IOException e) {
                 LOG.e("Can't close input stream: ", e);
             }
         }
+    }
+
+    @Override
+    public void rewind() {
+        super.rewind();
+        // I think we must recreate the stream to restart reading from the very first bytes.
+        // This means that we must also recreate the underlying source.
+        if (mDescriptorSource != null) {
+            mDescriptorSource.release();
+        }
+        if (mStream != null) {
+            try {
+                mStream.close();
+            } catch (IOException ignore) { }
+        }
+        mDescriptorSource = null;
+        mStream = null;
     }
 }
