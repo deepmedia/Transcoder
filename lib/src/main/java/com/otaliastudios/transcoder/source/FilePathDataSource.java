@@ -46,13 +46,13 @@ public class FilePathDataSource extends DefaultDataSource {
     }
 
     @Override
-    public void applyExtractor(@NonNull MediaExtractor extractor) throws IOException {
+    protected void applyExtractor(@NonNull MediaExtractor extractor) throws IOException {
         ensureDescriptorSource();
         mDescriptorSource.applyExtractor(extractor);
     }
 
     @Override
-    public void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
+    protected void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
         ensureDescriptorSource();
         mDescriptorSource.applyRetriever(retriever);
     }
