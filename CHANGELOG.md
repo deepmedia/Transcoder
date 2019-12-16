@@ -1,3 +1,11 @@
+### v0.7.4
+
+- Fix: fixed Xamarin incompatibility, thanks to [@aweck][aweck] ([#41][41])
+- Fix: fixed small bugs with specific API versions / media files ([#47][47])
+- Fix: fixed issues with specific media files, ensure consistent onProgress callback ([#48][48])
+
+https://github.com/natario1/Transcoder/compare/v0.7.3...v0.7.4
+
 ### v0.7.3
 
 - Fix: fixed bug with files that do not have an audio track, thanks to [@pawegio][pawegio] ([#31][31])
@@ -55,6 +63,7 @@ https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0
 
 [Saqrag]: https://github.com/Saqrag
 [pawegio]: https://github.com/pawegio
+[aweck]: https://github.com/aweck
 
 [4]: https://github.com/natario1/Transcoder/pull/4
 [5]: https://github.com/natario1/Transcoder/pull/5
@@ -70,3 +79,6 @@ https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0
 [29]: https://github.com/natario1/Transcoder/pull/29
 [31]: https://github.com/natario1/Transcoder/pull/31
 [32]: https://github.com/natario1/Transcoder/pull/32
+[41]: https://github.com/natario1/Transcoder/pull/41
+[47]: https://github.com/natario1/Transcoder/pull/47
+[48]: https://github.com/natario1/Transcoder/pull/48
