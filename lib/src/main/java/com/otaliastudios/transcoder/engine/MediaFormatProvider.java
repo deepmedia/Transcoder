@@ -60,6 +60,12 @@ class MediaFormatProvider {
     }
 
     private boolean isComplete(@NonNull TrackType type, @NonNull MediaFormat format) {
+        if (type == TrackType.VIDEO && !format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
+            // Apparently, some older APIs / files do not have a frame rate. See #44.
+            // While our strategy does not need it, other strategies might, plus the
+            // frame dropper does as well. So for now let's default to 24 in this (rare) case.
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, 24);
+        }
         switch (type) {
             case AUDIO: return isCompleteAudioFormat(format);
             case VIDEO: return isCompleteVideoFormat(format);
