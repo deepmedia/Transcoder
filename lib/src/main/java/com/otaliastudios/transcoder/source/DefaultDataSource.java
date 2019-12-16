@@ -100,15 +100,12 @@ public abstract class DefaultDataSource implements DataSource {
         if (mFirstTimestampUs == Long.MIN_VALUE) {
             return 0;
         }
-        // Return the slowest track.
-        long min = Long.MAX_VALUE;
-        if (mSelectedTracks.contains(TrackType.VIDEO)) {
-            min = Math.min(min, mLastTimestampUs.requireVideo());
-        }
-        if (mSelectedTracks.contains(TrackType.AUDIO)) {
-            min = Math.min(min, mLastTimestampUs.requireAudio());
-        }
-        return min - mFirstTimestampUs;
+        // Return the fastest track.
+        // This ensures linear behavior over time: if a track is behind the other,
+        // this will not push down the readUs value, which might break some components
+        // down the pipeline which expect a monotonically growing timestamp.
+        long last = Math.max(mLastTimestampUs.requireAudio(), mLastTimestampUs.requireVideo());
+        return last - mFirstTimestampUs;
     }
 
     @Nullable
