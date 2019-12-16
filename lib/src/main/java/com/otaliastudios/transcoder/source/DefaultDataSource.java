@@ -30,7 +30,8 @@ public abstract class DefaultDataSource implements DataSource {
     private final TrackTypeMap<MediaFormat> mFormats = new TrackTypeMap<>();
     private final TrackTypeMap<Integer> mIndex = new TrackTypeMap<>();
     private final HashSet<TrackType> mSelectedTracks = new HashSet<>();
-    private long mLastTimestampUs;
+    private final TrackTypeMap<Long> mLastTimestampUs
+            = new TrackTypeMap<>(0L, 0L);
     private long mFirstTimestampUs = Long.MIN_VALUE;
 
     private void ensureMetadata() {
@@ -77,13 +78,20 @@ public abstract class DefaultDataSource implements DataSource {
     @Override
     public void readTrack(@NonNull Chunk chunk) {
         ensureExtractor();
+        int index = mExtractor.getSampleTrackIndex();
         chunk.bytes = mExtractor.readSampleData(chunk.buffer, 0);
         chunk.isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
         chunk.timestampUs = mExtractor.getSampleTime();
-        mLastTimestampUs = chunk.timestampUs;
         if (mFirstTimestampUs == Long.MIN_VALUE) {
-            mFirstTimestampUs = mLastTimestampUs;
+            mFirstTimestampUs = chunk.timestampUs;
         }
+        TrackType type = (mIndex.hasAudio() && mIndex.requireAudio() == index) ? TrackType.AUDIO
+                : (mIndex.hasVideo() && mIndex.requireVideo() == index) ? TrackType.VIDEO
+                : null;
+        if (type == null) {
+            throw new RuntimeException("Unknown type: " + index);
+        }
+        mLastTimestampUs.set(type, chunk.timestampUs);
         mExtractor.advance();
     }
 
@@ -92,7 +100,15 @@ public abstract class DefaultDataSource implements DataSource {
         if (mFirstTimestampUs == Long.MIN_VALUE) {
             return 0;
         }
-        return mLastTimestampUs - mFirstTimestampUs;
+        // Return the slowest track.
+        long min = Long.MAX_VALUE;
+        if (mSelectedTracks.contains(TrackType.VIDEO)) {
+            min = Math.min(min, mLastTimestampUs.requireVideo());
+        }
+        if (mSelectedTracks.contains(TrackType.AUDIO)) {
+            min = Math.min(min, mLastTimestampUs.requireAudio());
+        }
+        return min - mFirstTimestampUs;
     }
 
     @Nullable
@@ -183,7 +199,8 @@ public abstract class DefaultDataSource implements DataSource {
     public void rewind() {
         mSelectedTracks.clear();
         mFirstTimestampUs = Long.MIN_VALUE;
-        mLastTimestampUs = 0;
+        mLastTimestampUs.setAudio(0L);
+        mLastTimestampUs.setVideo(0L);
         // Release the extractor and recreate.
         try {
             mExtractor.release();
