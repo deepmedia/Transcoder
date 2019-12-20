@@ -18,7 +18,7 @@ import java.util.HashSet;
 /**
  * A DataSource implementation that uses Android's Media APIs.
  */
-public abstract class DefaultDataSource implements DataSource {
+public abstract class DefaultDataSource extends MediaExtractorDataSource {
 
     private final static String TAG = DefaultDataSource.class.getSimpleName();
     private final static Logger LOG = new Logger(TAG);
@@ -213,5 +213,11 @@ public abstract class DefaultDataSource implements DataSource {
         } catch (Exception ignore) { }
         mMetadata = new MediaMetadataRetriever();
         mMetadataApplied = false;
+    }
+
+    @Override
+    protected MediaExtractor requireExtractor() {
+        ensureExtractor();
+        return mExtractor;
     }
 }
