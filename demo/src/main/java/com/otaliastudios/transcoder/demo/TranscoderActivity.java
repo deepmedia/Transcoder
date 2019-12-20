@@ -3,10 +3,12 @@ package com.otaliastudios.transcoder.demo;
 import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.Intent;
-import android.media.MediaMuxer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -20,6 +22,8 @@ import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.DefaultDataSink;
+import com.otaliastudios.transcoder.source.TrimDataSource;
+import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
@@ -61,6 +65,8 @@ public class TranscoderActivity extends AppCompatActivity implements
 
     private ProgressBar mProgressView;
     private TextView mButtonView;
+    private EditText mTrimStartView;
+    private EditText mTrimEndView;
     private TextView mAudioReplaceView;
 
     private boolean mIsTranscoding;
@@ -74,6 +80,52 @@ public class TranscoderActivity extends AppCompatActivity implements
     private long mTranscodeStartTime;
     private TrackStrategy mTranscodeVideoStrategy;
     private TrackStrategy mTranscodeAudioStrategy;
+    private long mTrimStartMillis = 0;
+    private long mTrimEndMillis = 0;
+
+    private TextWatcher mTrimStartTextWatcher = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+            if (s.length() > 0) {
+                try {
+                    mTrimStartMillis = Long.valueOf(s.toString()) * 1000;
+                } catch (NumberFormatException e) {
+                    mTrimStartMillis = 0;
+                    LOG.w("Failed to read trimStart value.");
+                }
+            }
+        }
+    };
+    private TextWatcher mTrimEndTextWatcher = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+            if (s.length() > 0) {
+                try {
+                    mTrimEndMillis = Long.valueOf(s.toString()) * 1000;
+                } catch (NumberFormatException e) {
+                    mTrimEndMillis = 0;
+                    LOG.w("Failed to read trimEnd value.");
+                }
+            }
+        }
+    };
+
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -97,6 +149,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         mProgressView = findViewById(R.id.progress);
         mProgressView.setMax(PROGRESS_BAR_MAX);
 
+        mTrimStartView = findViewById(R.id.trim_start);
+        mTrimEndView = findViewById(R.id.trim_end);
         mAudioReplaceView = findViewById(R.id.replace_info);
 
         mAudioChannelsGroup = findViewById(R.id.channels);
@@ -113,6 +167,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         mVideoResolutionGroup.setOnCheckedChangeListener(this);
         mVideoAspectGroup.setOnCheckedChangeListener(this);
         mAudioSampleRateGroup.setOnCheckedChangeListener(this);
+        mTrimStartView.addTextChangedListener(mTrimStartTextWatcher);
+        mTrimEndView.addTextChangedListener(mTrimEndTextWatcher);
         syncParameters();
 
         mAudioReplaceGroup.setOnCheckedChangeListener((group, checkedId) -> {
@@ -257,13 +313,27 @@ public class TranscoderActivity extends AppCompatActivity implements
         DataSink sink = new DefaultDataSink(mTranscodeOutputFile.getAbsolutePath());
         TranscoderOptions.Builder builder = Transcoder.into(sink);
         if (mAudioReplacementUri == null) {
-            if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1);
-            if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2);
-            if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3);
+            if (mTrimStartMillis > 0 || mTrimEndMillis > 0) {
+                if (mTranscodeInputUri1 != null) builder.addDataSource(new TrimDataSource(new UriDataSource(this, mTranscodeInputUri1), mTrimStartMillis, mTrimEndMillis));
+                if (mTranscodeInputUri2 != null) builder.addDataSource(new TrimDataSource(new UriDataSource(this, mTranscodeInputUri2), mTrimStartMillis, mTrimEndMillis));
+                if (mTranscodeInputUri3 != null) builder.addDataSource(new TrimDataSource(new UriDataSource(this, mTranscodeInputUri3), mTrimStartMillis, mTrimEndMillis));
+            }
+            else {
+                if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1);
+                if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2);
+                if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3);
+            }
         } else {
-            if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1);
-            if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri2);
-            if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3);
+            if (mTrimStartMillis > 0 || mTrimEndMillis > 0) {
+                if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, new TrimDataSource(new UriDataSource(this, mTranscodeInputUri1), mTrimStartMillis, mTrimEndMillis));
+                if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, new TrimDataSource(new UriDataSource(this, mTranscodeInputUri2), mTrimStartMillis, mTrimEndMillis));
+                if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, new TrimDataSource(new UriDataSource(this, mTranscodeInputUri3), mTrimStartMillis, mTrimEndMillis));
+            }
+            else {
+                if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1);
+                if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri2);
+                if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3);
+            }
             builder.addDataSource(TrackType.AUDIO, this, mAudioReplacementUri);
         }
         mTranscodeFuture = builder.setListener(this)
