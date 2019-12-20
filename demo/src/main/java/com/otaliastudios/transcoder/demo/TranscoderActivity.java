@@ -22,8 +22,6 @@ import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.DefaultDataSink;
-import com.otaliastudios.transcoder.source.TrimDataSource;
-import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
@@ -314,9 +312,9 @@ public class TranscoderActivity extends AppCompatActivity implements
         TranscoderOptions.Builder builder = Transcoder.into(sink);
         if (mAudioReplacementUri == null) {
             if (mTrimStartMillis > 0 || mTrimEndMillis > 0) {
-                if (mTranscodeInputUri1 != null) builder.addDataSource(new TrimDataSource(new UriDataSource(this, mTranscodeInputUri1), mTrimStartMillis, mTrimEndMillis));
-                if (mTranscodeInputUri2 != null) builder.addDataSource(new TrimDataSource(new UriDataSource(this, mTranscodeInputUri2), mTrimStartMillis, mTrimEndMillis));
-                if (mTranscodeInputUri3 != null) builder.addDataSource(new TrimDataSource(new UriDataSource(this, mTranscodeInputUri3), mTrimStartMillis, mTrimEndMillis));
+                if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1, mTrimStartMillis, mTrimEndMillis);
+                if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2, mTrimStartMillis, mTrimEndMillis);
+                if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3, mTrimStartMillis, mTrimEndMillis);
             }
             else {
                 if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1);
@@ -325,9 +323,9 @@ public class TranscoderActivity extends AppCompatActivity implements
             }
         } else {
             if (mTrimStartMillis > 0 || mTrimEndMillis > 0) {
-                if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, new TrimDataSource(new UriDataSource(this, mTranscodeInputUri1), mTrimStartMillis, mTrimEndMillis));
-                if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, new TrimDataSource(new UriDataSource(this, mTranscodeInputUri2), mTrimStartMillis, mTrimEndMillis));
-                if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, new TrimDataSource(new UriDataSource(this, mTranscodeInputUri3), mTrimStartMillis, mTrimEndMillis));
+                if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1, mTrimStartMillis, mTrimEndMillis);
+                if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri2, mTrimStartMillis, mTrimEndMillis);
+                if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3, mTrimStartMillis, mTrimEndMillis);
             }
             else {
                 if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1);
