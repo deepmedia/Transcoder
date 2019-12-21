@@ -177,8 +177,8 @@ public class TranscoderOptions {
 
         @NonNull
         @SuppressWarnings({"unused", "UnusedReturnValue"})
-        public Builder addDataSource(@NonNull Context context, @NonNull Uri uri, long trimStartMs, long trimEndMs) {
-            return addDataSource(new TrimDataSource(new UriDataSource(context, uri), trimStartMs, trimEndMs));
+        public Builder addDataSource(@NonNull Context context, @NonNull Uri uri, long trimStartUs, long trimEndUs) {
+            return addDataSource(new TrimDataSource(new UriDataSource(context, uri), trimStartUs, trimEndUs));
         }
 
         @NonNull
@@ -189,8 +189,8 @@ public class TranscoderOptions {
 
         @NonNull
         @SuppressWarnings({"unused", "UnusedReturnValue"})
-        public Builder addDataSource(@NonNull TrackType type, @NonNull Context context, @NonNull Uri uri, long trimStartMs, long trimEndMs) {
-            return addDataSource(type, new TrimDataSource(new UriDataSource(context, uri), trimStartMs, trimEndMs));
+        public Builder addDataSource(@NonNull TrackType type, @NonNull Context context, @NonNull Uri uri, long trimStartUs, long trimEndUs) {
+            return addDataSource(type, new TrimDataSource(new UriDataSource(context, uri), trimStartUs, trimEndUs));
         }
 
         /**

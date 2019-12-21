@@ -12,38 +12,36 @@ import com.otaliastudios.transcoder.internal.Logger;
 
 import org.jetbrains.annotations.Contract;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 /**
  * A {@link DataSource} wrapper that trims source at both ends.
  */
 public class TrimDataSource implements DataSource {
     private static final String TAG = "TrimDataSource";
     private static final Logger LOG = new Logger(TAG);
-    private static final int UNKNOWN = -1;
-
+    private final boolean hasVideoTrack;
     @NonNull
     private MediaExtractorDataSource source;
     private long trimStartUs;
     private long trimDurationUs;
-    private boolean isVideoTrackReady = false;
+    private boolean isSeekTrackReady = false;
     private boolean hasSelectedVideoTrack = false;
 
-    public TrimDataSource(@NonNull MediaExtractorDataSource source, long trimStartMillis, long trimEndMillis) {
+    public TrimDataSource(@NonNull MediaExtractorDataSource source, long trimStartUs, long trimEndUs) {
+        if (trimStartUs < 0 || trimEndUs < 0) {
+            throw new IllegalArgumentException("Trim values cannot be negative.");
+        }
         this.source = source;
-        this.trimStartUs = MILLISECONDS.toMicros(trimStartMillis);
-        final long trimEndUs = MILLISECONDS.toMicros(trimEndMillis);
+        this.trimStartUs = trimStartUs;
         this.trimDurationUs = computeTrimDuration(source.getDurationUs(), trimStartUs, trimEndUs);
+        this.hasVideoTrack = source.getTrackFormat(TrackType.VIDEO) != null;
     }
 
     @Contract(pure = true)
     private static long computeTrimDuration(long duration, long trimStart, long trimEnd) {
-        if (duration == UNKNOWN) {
-            return UNKNOWN;
-        } else {
-            final long result = duration - trimStart - trimEnd;
-            return result >= 0 ? result : UNKNOWN;
+        if (trimStart + trimEnd > duration) {
+            throw new IllegalArgumentException("Trim values cannot be greater than media duration.");
         }
+        return duration - trimStart - trimEnd;
     }
 
     @Override
@@ -77,7 +75,7 @@ public class TrimDataSource implements DataSource {
         if (trimStartUs > 0) {
             switch (type) {
                 case AUDIO:
-                    if (hasTrack(TrackType.VIDEO) && !hasSelectedVideoTrack) {
+                    if (hasVideoTrack && !hasSelectedVideoTrack) {
                         selectAndSeekVideoTrack();
                     }
                     source.selectTrack(TrackType.AUDIO);
@@ -93,10 +91,6 @@ public class TrimDataSource implements DataSource {
         }
     }
 
-    private boolean hasTrack(@NonNull TrackType type) {
-        return source.getTrackFormat(type) != null;
-    }
-
     private void selectAndSeekVideoTrack() {
         source.selectTrack(TrackType.VIDEO);
         source.requireExtractor().seekTo(trimStartUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
@@ -107,25 +101,25 @@ public class TrimDataSource implements DataSource {
      * Check if trim operation was completed successfully for selected track.
      * We apply the seek operation for the video track only, so all audio frames are skipped
      * until MediaExtractor reaches the first video key frame.
+     * In the case there's no video track, audio frames are skipped until extractor reaches trimStartUs.
      */
     private boolean isTrackReady(@NonNull TrackType type) {
-        if (isVideoTrackReady) {
-            return true;
-        }
         final MediaExtractor extractor = source.requireExtractor();
+        final long timestampUs = extractor.getSampleTime();
         if (type == TrackType.VIDEO) {
-            final boolean isKeyFrame = (extractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
-            if (isKeyFrame) {
-                final long originalTrimStartUs = trimStartUs;
-                trimStartUs = extractor.getSampleTime();
-                trimDurationUs += originalTrimStartUs - trimStartUs;
-                LOG.v("First video key frame is at " + trimStartUs + ", actual duration will be " + trimDurationUs);
-                isVideoTrackReady = true;
-                return true;
-            }
+            isSeekTrackReady = (extractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
+        } else if (type == TrackType.AUDIO && !hasVideoTrack) {
+            isSeekTrackReady = timestampUs >= trimStartUs;
         }
-        extractor.advance();
-        return false;
+
+        if (isSeekTrackReady) {
+            trimDurationUs += trimStartUs - timestampUs;
+            trimStartUs = timestampUs;
+            LOG.v("First " + type + " key frame is at " + trimStartUs + ", actual duration will be " + trimDurationUs);
+        } else {
+            extractor.advance();
+        }
+        return isSeekTrackReady;
     }
 
     @Override
@@ -133,7 +127,7 @@ public class TrimDataSource implements DataSource {
         boolean canRead = source.canReadTrack(type);
 
         if (canRead) {
-            return isTrackReady(type);
+            return isSeekTrackReady || isTrackReady(type);
         } else {
             return false;
         }
@@ -162,7 +156,7 @@ public class TrimDataSource implements DataSource {
                 hasSelectedVideoTrack = false;
                 break;
             case VIDEO:
-                isVideoTrackReady = false;
+                isSeekTrackReady = false;
                 break;
         }
         source.releaseTrack(type);
@@ -171,7 +165,7 @@ public class TrimDataSource implements DataSource {
     @Override
     public void rewind() {
         hasSelectedVideoTrack = false;
-        isVideoTrackReady = false;
+        isSeekTrackReady = false;
         source.rewind();
     }
 }

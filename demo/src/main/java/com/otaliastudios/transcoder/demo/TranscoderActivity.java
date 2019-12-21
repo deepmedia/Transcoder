@@ -78,8 +78,8 @@ public class TranscoderActivity extends AppCompatActivity implements
     private long mTranscodeStartTime;
     private TrackStrategy mTranscodeVideoStrategy;
     private TrackStrategy mTranscodeAudioStrategy;
-    private long mTrimStartMillis = 0;
-    private long mTrimEndMillis = 0;
+    private long mTrimStartUs = 0;
+    private long mTrimEndUs = 0;
 
     private TextWatcher mTrimStartTextWatcher = new TextWatcher() {
         @Override
@@ -94,9 +94,9 @@ public class TranscoderActivity extends AppCompatActivity implements
         public void afterTextChanged(Editable s) {
             if (s.length() > 0) {
                 try {
-                    mTrimStartMillis = Long.valueOf(s.toString()) * 1000;
+                    mTrimStartUs = Long.valueOf(s.toString()) * 1000000;
                 } catch (NumberFormatException e) {
-                    mTrimStartMillis = 0;
+                    mTrimStartUs = 0;
                     LOG.w("Failed to read trimStart value.");
                 }
             }
@@ -115,9 +115,9 @@ public class TranscoderActivity extends AppCompatActivity implements
         public void afterTextChanged(Editable s) {
             if (s.length() > 0) {
                 try {
-                    mTrimEndMillis = Long.valueOf(s.toString()) * 1000;
+                    mTrimEndUs = Long.valueOf(s.toString()) * 1000000;
                 } catch (NumberFormatException e) {
-                    mTrimEndMillis = 0;
+                    mTrimEndUs = 0;
                     LOG.w("Failed to read trimEnd value.");
                 }
             }
@@ -311,10 +311,10 @@ public class TranscoderActivity extends AppCompatActivity implements
         DataSink sink = new DefaultDataSink(mTranscodeOutputFile.getAbsolutePath());
         TranscoderOptions.Builder builder = Transcoder.into(sink);
         if (mAudioReplacementUri == null) {
-            if (mTrimStartMillis > 0 || mTrimEndMillis > 0) {
-                if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1, mTrimStartMillis, mTrimEndMillis);
-                if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2, mTrimStartMillis, mTrimEndMillis);
-                if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3, mTrimStartMillis, mTrimEndMillis);
+            if (mTrimStartUs > 0 || mTrimEndUs > 0) {
+                if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1, mTrimStartUs, mTrimEndUs);
+                if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2, mTrimStartUs, mTrimEndUs);
+                if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3, mTrimStartUs, mTrimEndUs);
             }
             else {
                 if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1);
@@ -322,10 +322,10 @@ public class TranscoderActivity extends AppCompatActivity implements
                 if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3);
             }
         } else {
-            if (mTrimStartMillis > 0 || mTrimEndMillis > 0) {
-                if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1, mTrimStartMillis, mTrimEndMillis);
-                if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri2, mTrimStartMillis, mTrimEndMillis);
-                if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3, mTrimStartMillis, mTrimEndMillis);
+            if (mTrimStartUs > 0 || mTrimEndUs > 0) {
+                if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1, mTrimStartUs, mTrimEndUs);
+                if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri2, mTrimStartUs, mTrimEndUs);
+                if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3, mTrimStartUs, mTrimEndUs);
             }
             else {
                 if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1);
