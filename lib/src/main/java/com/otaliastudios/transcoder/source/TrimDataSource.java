@@ -26,7 +26,7 @@ public class TrimDataSource implements DataSource {
     private boolean isSeekTrackReady = false;
     private boolean hasSelectedVideoTrack = false;
 
-    public TrimDataSource(@NonNull MediaExtractorDataSource source, long trimStartUs, long trimEndUs) {
+    public TrimDataSource(@NonNull MediaExtractorDataSource source, long trimStartUs, long trimEndUs) throws IllegalArgumentException {
         if (trimStartUs < 0 || trimEndUs < 0) {
             throw new IllegalArgumentException("Trim values cannot be negative.");
         }
@@ -37,7 +37,7 @@ public class TrimDataSource implements DataSource {
     }
 
     @Contract(pure = true)
-    private static long computeTrimDuration(long duration, long trimStart, long trimEnd) {
+    private static long computeTrimDuration(long duration, long trimStart, long trimEnd) throws IllegalArgumentException {
         if (trimStart + trimEnd > duration) {
             throw new IllegalArgumentException("Trim values cannot be greater than media duration.");
         }
