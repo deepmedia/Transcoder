@@ -81,10 +81,7 @@ public class TrimDataSource implements DataSource {
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
-        if (source.canReadTrack(type)) {
-            if (readyTracks.requireAudio() && readyTracks.requireVideo()) {
-                return true;
-            }
+        if (!readyTracks.requireAudio() || !readyTracks.requireVideo()) {
             switch (type) {
                 case AUDIO:
                     if (!readyTracks.requireAudio()) {
@@ -106,7 +103,7 @@ public class TrimDataSource implements DataSource {
                     return readyTracks.requireAudio();
             }
         }
-        return false;
+        return source.canReadTrack(type);
     }
 
     private void updateTrimValues(long timestampUs) {
