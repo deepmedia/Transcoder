@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.TrackTypeMap;
 
 import org.jetbrains.annotations.Contract;
 
@@ -21,8 +22,7 @@ public class TrimDataSource implements DataSource {
     private DataSource source;
     private long trimStartUs;
     private long trimDurationUs;
-    private boolean isAudioTrackReady;
-    private boolean isVideoTrackReady;
+    private TrackTypeMap<Boolean> readyTracks;
 
     public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) throws IllegalArgumentException {
         if (trimStartUs < 0 || trimEndUs < 0) {
@@ -31,8 +31,8 @@ public class TrimDataSource implements DataSource {
         this.source = source;
         this.trimStartUs = trimStartUs;
         this.trimDurationUs = computeTrimDuration(source.getDurationUs(), trimStartUs, trimEndUs);
-        this.isAudioTrackReady = !hasTrack(TrackType.AUDIO) || trimStartUs == 0;
-        this.isVideoTrackReady = !hasTrack(TrackType.VIDEO) || trimStartUs == 0;
+        this.readyTracks = new TrackTypeMap<>(!hasTrack(TrackType.VIDEO) || trimStartUs == 0,
+                !hasTrack(TrackType.AUDIO) || trimStartUs == 0);
     }
 
     @Contract(pure = true)
@@ -86,28 +86,28 @@ public class TrimDataSource implements DataSource {
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
         if (source.canReadTrack(type)) {
-            if (isAudioTrackReady && isVideoTrackReady) {
+            if (readyTracks.requireAudio() && readyTracks.requireVideo()) {
                 return true;
             }
             switch (type) {
                 case AUDIO:
-                    if (!isAudioTrackReady) {
+                    if (!readyTracks.requireAudio()) {
                         final long sampleTimeUs = seekTo(trimStartUs);
                         updateTrimValues(sampleTimeUs);
-                        isAudioTrackReady = true;
+                        readyTracks.setAudio(true);
                     }
-                    return isVideoTrackReady;
+                    return readyTracks.requireVideo();
                 case VIDEO:
-                    if (!isVideoTrackReady) {
+                    if (!readyTracks.requireVideo()) {
                         final long sampleTimeUs = seekTo(trimStartUs);
                         updateTrimValues(sampleTimeUs);
-                        isVideoTrackReady = true;
-                        if (isAudioTrackReady) {
+                        readyTracks.setVideo(true);
+                        if (readyTracks.requireAudio()) {
                             // Seeking a second time helps the extractor with Audio sampleTime issues
                             seekTo(trimStartUs);
                         }
                     }
-                    return isAudioTrackReady;
+                    return readyTracks.requireAudio();
             }
         }
         return false;
@@ -137,10 +137,10 @@ public class TrimDataSource implements DataSource {
     public void releaseTrack(@NonNull TrackType type) {
         switch (type) {
             case AUDIO:
-                isAudioTrackReady = false;
+                readyTracks.setAudio(false);
                 break;
             case VIDEO:
-                isVideoTrackReady = false;
+                readyTracks.setVideo(false);
                 break;
         }
         source.releaseTrack(type);
@@ -148,8 +148,8 @@ public class TrimDataSource implements DataSource {
 
     @Override
     public void rewind() {
-        isAudioTrackReady = false;
-        isVideoTrackReady = false;
+        readyTracks.setAudio(false);
+        readyTracks.setVideo(false);
         source.rewind();
     }
 }
