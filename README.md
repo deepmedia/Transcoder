@@ -63,7 +63,7 @@ Transcoder is trusted and supported by [ShareChat](https://sharechat.com/), a so
 over 100 million downloads. 
 
 <p align="center">
-  <img src="static/sharechat.png" width="100%">
+  <img src="docs/static/sharechat.png" width="100%">
 </p>
 
 Feel free to <a href="mailto:mat.iavarone@gmail.com">contact me</a> for support, consulting or any 
