@@ -121,7 +121,6 @@ public class TrimDataSource implements DataSource {
     @Override
     public void readTrack(@NonNull Chunk chunk) {
         source.readTrack(chunk);
-        chunk.timestampUs -= trimStartUs;
     }
 
     @Override
