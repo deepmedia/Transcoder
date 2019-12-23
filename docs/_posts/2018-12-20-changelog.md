@@ -1,30 +1,43 @@
+---
+layout: page
+title: "Changelog"
+category: about
+date: 2018-12-20 17:49:29
+order: 3
+---
+
+New versions are released through GitHub, so the reference page is the [GitHub Releases](https://github.com/natario1/Transcoder/releases) page.
+
+Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
+Companies can share a tiny part of their revenue and get private support hours in return. Thanks!
+
 ### v0.7.4
 
 - Fix: fixed Xamarin incompatibility, thanks to [@aweck][aweck] ([#41][41])
 - Fix: fixed small bugs with specific API versions / media files ([#47][47])
 - Fix: fixed issues with specific media files, ensure consistent onProgress callback ([#48][48])
 
-https://github.com/natario1/Transcoder/compare/v0.7.3...v0.7.4
+<https://github.com/natario1/Transcoder/compare/v0.7.3...v0.7.4>
 
 ### v0.7.3
 
 - Fix: fixed bug with files that do not have an audio track, thanks to [@pawegio][pawegio] ([#31][31])
 - Fix: fixed possible issues with FilePathDataSource ([#32][32])
 
-https://github.com/natario1/Transcoder/compare/v0.7.2...v0.7.3
+<https://github.com/natario1/Transcoder/compare/v0.7.2...v0.7.3>
 
 ### v0.7.2
 
 - Improvement: better input format detection. Fixes bugs with certain files ([#29][29])
 - Improvement: added `DefaultAudioStrategy.Builder.bitRate()` option ([#29][29])
 
-https://github.com/natario1/Transcoder/compare/v0.7.1...v0.7.2
+<https://github.com/natario1/Transcoder/compare/v0.7.1...v0.7.2>
 
 ### v0.7.1
 
 - Improvement: update the underlying OpenGL library ([#20][20])
 
-https://github.com/natario1/Transcoder/compare/v0.7.0...v0.7.1
+<https://github.com/natario1/Transcoder/compare/v0.7.0...v0.7.1>
 
 ## v0.7.0
 
@@ -40,7 +53,7 @@ https://github.com/natario1/Transcoder/compare/v0.7.0...v0.7.1
 - Improvement: when concatenating multiple sources, automatically clip the longer track (audio or video) ([#17][17])
 - Improvement: various bug fixed ([#18][18])
 
-https://github.com/natario1/Transcoder/compare/v0.6.0...v0.7.0
+<https://github.com/natario1/Transcoder/compare/v0.6.0...v0.7.0>
 
 ## v0.6.0
 
@@ -49,7 +62,7 @@ https://github.com/natario1/Transcoder/compare/v0.6.0...v0.7.0
 - Improvement: new frame dropping algorithm, thanks to [@Saqrag][Saqrag] ([#9][9])
 - Improvement: avoid format validation on tracks coming from PassThroughTrackTranscoder, thanks to [@Saqrag][Saqrag] ([#11][11])
 
-https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0
+<https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0>
 
 ## v0.5.0
 
