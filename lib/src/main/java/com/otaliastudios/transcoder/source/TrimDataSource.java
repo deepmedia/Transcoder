@@ -18,13 +18,12 @@ import org.jetbrains.annotations.Contract;
 public class TrimDataSource implements DataSource {
     private static final String TAG = "TrimDataSource";
     private static final Logger LOG = new Logger(TAG);
-    private final boolean hasVideoTrack;
     @NonNull
     private MediaExtractorDataSource source;
     private long trimStartUs;
     private long trimDurationUs;
-    private boolean isSeekTrackReady = false;
-    private boolean hasSelectedVideoTrack = false;
+    private boolean isAudioTrackReady;
+    private boolean isVideoTrackReady;
 
     public TrimDataSource(@NonNull MediaExtractorDataSource source, long trimStartUs, long trimEndUs) throws IllegalArgumentException {
         if (trimStartUs < 0 || trimEndUs < 0) {
@@ -33,7 +32,8 @@ public class TrimDataSource implements DataSource {
         this.source = source;
         this.trimStartUs = trimStartUs;
         this.trimDurationUs = computeTrimDuration(source.getDurationUs(), trimStartUs, trimEndUs);
-        this.hasVideoTrack = source.getTrackFormat(TrackType.VIDEO) != null;
+        this.isAudioTrackReady = !hasTrack(TrackType.AUDIO) || trimStartUs == 0;
+        this.isVideoTrackReady = !hasTrack(TrackType.VIDEO) || trimStartUs == 0;
     }
 
     @Contract(pure = true)
@@ -70,67 +70,49 @@ public class TrimDataSource implements DataSource {
         return trackFormat;
     }
 
+    private boolean hasTrack(@NonNull TrackType type) {
+        return source.getTrackFormat(type) != null;
+    }
+
     @Override
     public void selectTrack(@NonNull TrackType type) {
-        if (trimStartUs > 0) {
-            switch (type) {
-                case AUDIO:
-                    if (hasVideoTrack && !hasSelectedVideoTrack) {
-                        selectAndSeekVideoTrack();
-                    }
-                    source.selectTrack(TrackType.AUDIO);
-                    break;
-                case VIDEO:
-                    if (!hasSelectedVideoTrack) {
-                        selectAndSeekVideoTrack();
-                    }
-                    break;
-            }
-        } else {
-            source.selectTrack(type);
-        }
-    }
-
-    private void selectAndSeekVideoTrack() {
-        source.selectTrack(TrackType.VIDEO);
-        source.requireExtractor().seekTo(trimStartUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-        hasSelectedVideoTrack = true;
-    }
-
-    /**
-     * Check if trim operation was completed successfully for selected track.
-     * We apply the seek operation for the video track only, so all audio frames are skipped
-     * until MediaExtractor reaches the first video key frame.
-     * In the case there's no video track, audio frames are skipped until extractor reaches trimStartUs.
-     */
-    private boolean isTrackReady(@NonNull TrackType type) {
-        final MediaExtractor extractor = source.requireExtractor();
-        final long timestampUs = extractor.getSampleTime();
-        if (type == TrackType.VIDEO) {
-            isSeekTrackReady = (extractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
-        } else if (type == TrackType.AUDIO && !hasVideoTrack) {
-            isSeekTrackReady = timestampUs >= trimStartUs;
-        }
-
-        if (isSeekTrackReady) {
-            trimDurationUs += trimStartUs - timestampUs;
-            trimStartUs = timestampUs;
-            LOG.v("First " + type + " key frame is at " + trimStartUs + ", actual duration will be " + trimDurationUs);
-        } else {
-            extractor.advance();
-        }
-        return isSeekTrackReady;
+        source.selectTrack(type);
     }
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
-        boolean canRead = source.canReadTrack(type);
-
-        if (canRead) {
-            return isSeekTrackReady || isTrackReady(type);
-        } else {
-            return false;
+        if (source.canReadTrack(type)) {
+            if (isAudioTrackReady && isVideoTrackReady) {
+                return true;
+            }
+            final MediaExtractor extractor = source.requireExtractor();
+            switch (type) {
+                case AUDIO:
+                    if (!isAudioTrackReady) {
+                        extractor.seekTo(trimStartUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                        updateTrimValues(extractor.getSampleTime());
+                        isAudioTrackReady = true;
+                    }
+                    return isVideoTrackReady;
+                case VIDEO:
+                    if (!isVideoTrackReady) {
+                        extractor.seekTo(trimStartUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                        updateTrimValues(extractor.getSampleTime());
+                        isVideoTrackReady = true;
+                        if (isAudioTrackReady) {
+                            // Seeking a second time helps the extractor with Audio sampleTime issues
+                            extractor.seekTo(trimStartUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                        }
+                    }
+                    return isAudioTrackReady;
+            }
         }
+        return false;
+    }
+
+    private void updateTrimValues(long timestampUs) {
+        trimDurationUs += trimStartUs - timestampUs;
+        trimStartUs = timestampUs;
     }
 
     @Override
@@ -153,10 +135,10 @@ public class TrimDataSource implements DataSource {
     public void releaseTrack(@NonNull TrackType type) {
         switch (type) {
             case AUDIO:
-                hasSelectedVideoTrack = false;
+                isAudioTrackReady = false;
                 break;
             case VIDEO:
-                isSeekTrackReady = false;
+                isVideoTrackReady = false;
                 break;
         }
         source.releaseTrack(type);
@@ -164,8 +146,8 @@ public class TrimDataSource implements DataSource {
 
     @Override
     public void rewind() {
-        hasSelectedVideoTrack = false;
-        isSeekTrackReady = false;
+        isAudioTrackReady = false;
+        isVideoTrackReady = false;
         source.rewind();
     }
 }
