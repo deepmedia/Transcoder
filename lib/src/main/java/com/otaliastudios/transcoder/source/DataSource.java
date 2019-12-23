@@ -55,6 +55,14 @@ public interface DataSource {
     void selectTrack(@NonNull TrackType type);
 
     /**
+     * Moves all selected tracks near the specified time position.
+     *
+     * @param timestampUs requested time
+     * @return the new presentation time in microseconds
+     */
+    long seekTo(long timestampUs);
+
+    /**
      * Returns true if we can read the given track at this point.
      * If true if returned, source should expect a {@link #readTrack(Chunk)} call.
      *

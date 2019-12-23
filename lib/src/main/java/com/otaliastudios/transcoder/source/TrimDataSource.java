@@ -1,7 +1,6 @@
 package com.otaliastudios.transcoder.source;
 
 
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
@@ -19,13 +18,13 @@ public class TrimDataSource implements DataSource {
     private static final String TAG = "TrimDataSource";
     private static final Logger LOG = new Logger(TAG);
     @NonNull
-    private MediaExtractorDataSource source;
+    private DataSource source;
     private long trimStartUs;
     private long trimDurationUs;
     private boolean isAudioTrackReady;
     private boolean isVideoTrackReady;
 
-    public TrimDataSource(@NonNull MediaExtractorDataSource source, long trimStartUs, long trimEndUs) throws IllegalArgumentException {
+    public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) throws IllegalArgumentException {
         if (trimStartUs < 0 || trimEndUs < 0) {
             throw new IllegalArgumentException("Trim values cannot be negative.");
         }
@@ -80,28 +79,32 @@ public class TrimDataSource implements DataSource {
     }
 
     @Override
+    public long seekTo(long timestampUs) {
+        return source.seekTo(timestampUs);
+    }
+
+    @Override
     public boolean canReadTrack(@NonNull TrackType type) {
         if (source.canReadTrack(type)) {
             if (isAudioTrackReady && isVideoTrackReady) {
                 return true;
             }
-            final MediaExtractor extractor = source.requireExtractor();
             switch (type) {
                 case AUDIO:
                     if (!isAudioTrackReady) {
-                        extractor.seekTo(trimStartUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                        updateTrimValues(extractor.getSampleTime());
+                        final long sampleTimeUs = seekTo(trimStartUs);
+                        updateTrimValues(sampleTimeUs);
                         isAudioTrackReady = true;
                     }
                     return isVideoTrackReady;
                 case VIDEO:
                     if (!isVideoTrackReady) {
-                        extractor.seekTo(trimStartUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                        updateTrimValues(extractor.getSampleTime());
+                        final long sampleTimeUs = seekTo(trimStartUs);
+                        updateTrimValues(sampleTimeUs);
                         isVideoTrackReady = true;
                         if (isAudioTrackReady) {
                             // Seeking a second time helps the extractor with Audio sampleTime issues
-                            extractor.seekTo(trimStartUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+                            seekTo(trimStartUs);
                         }
                     }
                     return isAudioTrackReady;
