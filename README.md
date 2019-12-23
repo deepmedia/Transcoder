@@ -89,4 +89,4 @@ Transcoder.into(filePath)
         }).transcode()
 ```
 
-Take a look at the demo app for a real example or keep reading below for documentation.
+Take a look at the demo app for a complete example.
