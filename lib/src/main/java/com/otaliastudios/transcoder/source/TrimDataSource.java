@@ -62,11 +62,7 @@ public class TrimDataSource implements DataSource {
     @Nullable
     @Override
     public MediaFormat getTrackFormat(@NonNull TrackType type) {
-        final MediaFormat trackFormat = source.getTrackFormat(type);
-        if (trackFormat != null) {
-            trackFormat.setLong(MediaFormat.KEY_DURATION, trimDurationUs);
-        }
-        return trackFormat;
+        return source.getTrackFormat(type);
     }
 
     private boolean hasTrack(@NonNull TrackType type) {
@@ -130,7 +126,7 @@ public class TrimDataSource implements DataSource {
 
     @Override
     public boolean isDrained() {
-        return source.isDrained();
+        return source.isDrained() || getReadUs() >= getDurationUs();
     }
 
     @Override
