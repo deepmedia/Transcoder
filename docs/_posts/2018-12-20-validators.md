@@ -1,7 +1,6 @@
 ---
 layout: page
 title: "Validators"
-subtitle: "Validate or abort the transcoding process"
 description: "Validate or abort the transcoding process"
 category: docs
 date: 2018-12-20 20:02:08
@@ -38,17 +37,17 @@ The TrackStatus enum contains the following values:
 The `TrackStatus` value depends on the [track strategy](track-strategies) that was used.
 We provide a few validators that can be injected for typical usage.
 
-#### DefaultValidator
+##### DefaultValidator
 
 This is the default validator and it returns true when any of the track is `COMPRESSING` or `REMOVING`.
 In the other cases, transcoding is typically not needed so we abort the operation.
 
-#### WriteAlwaysValidator
+##### WriteAlwaysValidator
 
 This validator always returns true and as such will always write to target file, no matter the track status,
 presence of tracks and so on. For instance, the output container file might have no tracks.
 
-#### WriteVideoValidator
+##### WriteVideoValidator
 
 A Validator that gives priority to the video track. Transcoding will not happen if the video track does not need it,
 even if the audio track might need it. If reducing file size is your only concern, this can avoid compressing

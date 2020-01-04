@@ -1,7 +1,6 @@
 ---
 layout: page
 title: "Getting Started"
-subtitle: "Simple guide to transcode your first video"
 description: "Simple guide to transcode your first video"
 category: about
 date: 2018-12-20 17:48:58
