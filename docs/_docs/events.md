@@ -2,8 +2,6 @@
 layout: page
 title: "Transcoding Events"
 description: "Listening to transcoding events"
-category: docs
-date: 2018-12-20 20:02:08
 order: 3
 disqus: 1
 ---

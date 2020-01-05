@@ -2,8 +2,6 @@
 layout: page
 title: "Data Sources"
 description: "Sources of media data"
-category: docs
-date: 2018-12-20 20:02:08
 order: 1
 disqus: 1
 ---
