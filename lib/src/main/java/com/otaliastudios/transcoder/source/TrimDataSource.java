@@ -8,9 +8,10 @@ import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.TrackTypeMap;
 
 import org.jetbrains.annotations.Contract;
+
+import java.util.HashSet;
 
 /**
  * A {@link DataSource} wrapper that trims source at both ends.
@@ -18,11 +19,12 @@ import org.jetbrains.annotations.Contract;
 public class TrimDataSource implements DataSource {
     private static final String TAG = "TrimDataSource";
     private static final Logger LOG = new Logger(TAG);
+    private final HashSet<TrackType> selectedTracks = new HashSet<>();
     @NonNull
     private DataSource source;
     private long trimStartUs;
     private long trimDurationUs;
-    private TrackTypeMap<Boolean> readyTracks;
+    private boolean didSeekTracks = false;
 
     public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) throws IllegalArgumentException {
         if (trimStartUs < 0 || trimEndUs < 0) {
@@ -31,8 +33,6 @@ public class TrimDataSource implements DataSource {
         this.source = source;
         this.trimStartUs = trimStartUs;
         this.trimDurationUs = computeTrimDuration(source.getDurationUs(), trimStartUs, trimEndUs);
-        this.readyTracks = new TrackTypeMap<>(!hasTrack(TrackType.VIDEO) || trimStartUs == 0,
-                !hasTrack(TrackType.AUDIO) || trimStartUs == 0);
     }
 
     @Contract(pure = true)
@@ -72,6 +72,7 @@ public class TrimDataSource implements DataSource {
     @Override
     public void selectTrack(@NonNull TrackType type) {
         source.selectTrack(type);
+        selectedTracks.add(type);
     }
 
     @Override
@@ -81,27 +82,13 @@ public class TrimDataSource implements DataSource {
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
-        if (!readyTracks.requireAudio() || !readyTracks.requireVideo()) {
-            switch (type) {
-                case AUDIO:
-                    if (!readyTracks.requireAudio()) {
-                        final long sampleTimeUs = seekTo(trimStartUs);
-                        updateTrimValues(sampleTimeUs);
-                        readyTracks.setAudio(true);
-                    }
-                    return readyTracks.requireVideo();
-                case VIDEO:
-                    if (!readyTracks.requireVideo()) {
-                        final long sampleTimeUs = seekTo(trimStartUs);
-                        updateTrimValues(sampleTimeUs);
-                        readyTracks.setVideo(true);
-                        if (readyTracks.requireAudio()) {
-                            // Seeking a second time helps the extractor with Audio sampleTime issues
-                            seekTo(trimStartUs);
-                        }
-                    }
-                    return readyTracks.requireAudio();
+        if (!didSeekTracks) {
+            // Seeking once per selected track helps the extractor with Audio sampleTime issues
+            for (TrackType t : selectedTracks) {
+                final long sampleTimeUs = seekTo(trimStartUs);
+                updateTrimValues(sampleTimeUs);
             }
+            didSeekTracks = true;
         }
         return source.canReadTrack(type);
     }
@@ -128,21 +115,14 @@ public class TrimDataSource implements DataSource {
 
     @Override
     public void releaseTrack(@NonNull TrackType type) {
-        switch (type) {
-            case AUDIO:
-                readyTracks.setAudio(false);
-                break;
-            case VIDEO:
-                readyTracks.setVideo(false);
-                break;
-        }
+        selectedTracks.remove(type);
         source.releaseTrack(type);
     }
 
     @Override
     public void rewind() {
-        readyTracks.setAudio(false);
-        readyTracks.setVideo(false);
+        selectedTracks.clear();
+        didSeekTracks = false;
         source.rewind();
     }
 }
