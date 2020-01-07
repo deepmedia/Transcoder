@@ -64,10 +64,19 @@ public abstract class DefaultDataSource implements DataSource {
     }
 
     @Override
-    public long seekTo(long timestampUs) {
+    public long seekBy(long durationUs) {
         ensureExtractor();
-        mExtractor.seekTo(timestampUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-        return mExtractor.getSampleTime();
+        final int trackCount = mExtractor.getTrackCount();
+        for (int i = 0; i < trackCount; i++) {
+            mExtractor.selectTrack(i);
+        }
+        long timestampUs = mExtractor.getSampleTime() + durationUs;
+        // Seeking once per track helps the extractor with Audio sampleTime issues
+        for (int i = 0; i < trackCount; i++) {
+            mExtractor.seekTo(timestampUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+            timestampUs = mExtractor.getSampleTime();
+        }
+        return timestampUs;
     }
 
     @Override

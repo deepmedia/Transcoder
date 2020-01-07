@@ -11,15 +11,12 @@ import com.otaliastudios.transcoder.internal.Logger;
 
 import org.jetbrains.annotations.Contract;
 
-import java.util.HashSet;
-
 /**
  * A {@link DataSource} wrapper that trims source at both ends.
  */
 public class TrimDataSource implements DataSource {
     private static final String TAG = "TrimDataSource";
     private static final Logger LOG = new Logger(TAG);
-    private final HashSet<TrackType> selectedTracks = new HashSet<>();
     @NonNull
     private DataSource source;
     private long trimStartUs;
@@ -65,29 +62,21 @@ public class TrimDataSource implements DataSource {
         return source.getTrackFormat(type);
     }
 
-    private boolean hasTrack(@NonNull TrackType type) {
-        return source.getTrackFormat(type) != null;
-    }
-
     @Override
     public void selectTrack(@NonNull TrackType type) {
         source.selectTrack(type);
-        selectedTracks.add(type);
     }
 
     @Override
-    public long seekTo(long timestampUs) {
-        return source.seekTo(timestampUs);
+    public long seekBy(long durationUs) {
+        return source.seekBy(durationUs);
     }
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
         if (!didSeekTracks) {
-            // Seeking once per selected track helps the extractor with Audio sampleTime issues
-            for (TrackType t : selectedTracks) {
-                final long sampleTimeUs = seekTo(trimStartUs);
-                updateTrimValues(sampleTimeUs);
-            }
+            final long sampleTimeUs = seekBy(trimStartUs);
+            updateTrimValues(sampleTimeUs);
             didSeekTracks = true;
         }
         return source.canReadTrack(type);
@@ -115,13 +104,11 @@ public class TrimDataSource implements DataSource {
 
     @Override
     public void releaseTrack(@NonNull TrackType type) {
-        selectedTracks.remove(type);
         source.releaseTrack(type);
     }
 
     @Override
     public void rewind() {
-        selectedTracks.clear();
         didSeekTracks = false;
         source.rewind();
     }

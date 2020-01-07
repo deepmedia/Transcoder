@@ -364,13 +364,10 @@ public class Engine {
                 // Now step for transcoders that are not completed.
                 audioCompleted = isCompleted(TrackType.AUDIO);
                 videoCompleted = isCompleted(TrackType.VIDEO);
-                if (!audioCompleted && !videoCompleted) {
-                    final TrackTranscoder videoTranscoder = getCurrentTrackTranscoder(TrackType.VIDEO, options);
-                    final TrackTranscoder audioTranscoder = getCurrentTrackTranscoder(TrackType.AUDIO, options);
-                    stepped |= videoTranscoder.transcode(forceVideoEos) | audioTranscoder.transcode(forceAudioEos);
-                } else if (!audioCompleted) {
+                if (!audioCompleted) {
                     stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode(forceAudioEos);
-                } else if (!videoCompleted) {
+                }
+                if (!videoCompleted) {
                     stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode(forceVideoEos);
                 }
                 if (++loopCount % PROGRESS_INTERVAL_STEPS == 0) {
