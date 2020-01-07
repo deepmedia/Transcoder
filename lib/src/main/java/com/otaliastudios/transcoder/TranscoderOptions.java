@@ -13,6 +13,7 @@ import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource;
 import com.otaliastudios.transcoder.source.FilePathDataSource;
+import com.otaliastudios.transcoder.source.TrimDataSource;
 import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
@@ -176,8 +177,20 @@ public class TranscoderOptions {
 
         @NonNull
         @SuppressWarnings({"unused", "UnusedReturnValue"})
+        public Builder addDataSource(@NonNull Context context, @NonNull Uri uri, long trimStartUs, long trimEndUs) {
+            return addDataSource(new TrimDataSource(new UriDataSource(context, uri), trimStartUs, trimEndUs));
+        }
+
+        @NonNull
+        @SuppressWarnings({"unused", "UnusedReturnValue"})
         public Builder addDataSource(@NonNull TrackType type, @NonNull Context context, @NonNull Uri uri) {
             return addDataSource(type, new UriDataSource(context, uri));
+        }
+
+        @NonNull
+        @SuppressWarnings({"unused", "UnusedReturnValue"})
+        public Builder addDataSource(@NonNull TrackType type, @NonNull Context context, @NonNull Uri uri, long trimStartUs, long trimEndUs) {
+            return addDataSource(type, new TrimDataSource(new UriDataSource(context, uri), trimStartUs, trimEndUs));
         }
 
         /**
