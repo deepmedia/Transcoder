@@ -1,10 +1,7 @@
 ---
 layout: page
 title: "Data Sources"
-subtitle: "Sources of media data"
 description: "Sources of media data"
-category: docs
-date: 2018-12-20 20:02:08
 order: 1
 disqus: 1
 ---
@@ -19,17 +16,17 @@ Transcoder.into(filePath)
         .transcode()
 ```
 
-#### UriDataSource
+##### UriDataSource
 
 The Android friendly source can be created with `new UriDataSource(context, uri)` or simply
 using `addDataSource(context, uri)` in the transcoding builder.
 
-#### FileDescriptorDataSource
+##### FileDescriptorDataSource
 
 A data source backed by a file descriptor. Use `new FileDescriptorDataSource(descriptor)` or
 simply `addDataSource(descriptor)` in the transcoding builder.
 
-#### FilePathDataSource
+##### FilePathDataSource
 
 A data source backed by a file absolute path. Use `new FilePathDataSource(path)` or
 simply `addDataSource(path)` in the transcoding builder.

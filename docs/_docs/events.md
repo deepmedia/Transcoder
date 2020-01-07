@@ -1,10 +1,7 @@
 ---
 layout: page
 title: "Transcoding Events"
-subtitle: "Listening to transcoding events"
 description: "Listening to transcoding events"
-category: docs
-date: 2018-12-20 20:02:08
 order: 3
 disqus: 1
 ---
@@ -31,19 +28,19 @@ All of the listener callbacks are called:
 - If it has a handler, on the thread that started the `transcode()` call
 - As a last resort, on the UI thread
 
-#### onTranscodeProgress
+##### onTranscodeProgress
 
 This simply sends a double indicating the current progress. The value is typically between 0 and 1,
 but can be a negative value to indicate that we are not able to compute progress (yet?).
 
 This is the right place to update a ProgressBar, for example.
 
-#### onTranscodeCanceled
+##### onTranscodeCanceled
 
 The transcoding operation was canceled. This can happen when the `Future` returned by `transcode()`
 is cancelled by the user.
 
-#### onTranscodeFailed
+##### onTranscodeFailed
 
 This can happen in a number of cases and is typically out of our control. Input options might be
 wrong, write permissions might be missing, codec might be absent, input file might be not supported
@@ -51,7 +48,7 @@ or simply corrupted.
 
 You can take a look at the `Throwable` being passed to know more about the exception.
 
-#### onTranscodeCompleted
+##### onTranscodeCompleted
 
 Transcoding operation did succeed. The success code can be:
 

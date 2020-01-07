@@ -1,10 +1,7 @@
 ---
 layout: page
 title: "Track Strategies"
-subtitle: "Per-track transcoding options"
 description: "Per-track transcoding options"
-category: docs
-date: 2018-12-20 20:02:08
 order: 5
 disqus: 1
 ---
@@ -27,21 +24,21 @@ This library offers track specific strategies that help with audio and video opt
 [Audio Strategies](#audio-strategies) and [Video Strategies](#video-strategies)).
 In addition, we have a few built-in strategies that can work for both audio and video:
 
-#### PassThroughTrackStrategy
+##### PassThroughTrackStrategy
 
 A TrackStrategy that asks the encoder to keep this track as is, by returning the same input
 format. Note that this is risky, as the input track format might not be supported my the MP4 container.
 
 This will set the `TrackStatus` to `TrackStatus.PASS_THROUGH`.
 
-#### RemoveTrackStrategy
+##### RemoveTrackStrategy
 
 A TrackStrategy that asks the encoder to remove this track from the output container, by returning null.
 For instance, this can be used as an audio strategy to remove audio from video/audio streams.
 
 This will set the `TrackStatus` to `TrackStatus.REMOVING`.
 
-## Audio Strategies
+### Audio Strategies
 
 The default internal strategy for audio is a `DefaultAudioStrategy`, which converts the
 audio stream to AAC format with the specified number of channels and [sample rate](advanced-options).
@@ -65,14 +62,14 @@ Transcoder.into(filePath)
 
 Take a look at the source code to understand how to manage the `android.media.MediaFormat` object.
 
-## Video Strategies
+### Video Strategies
 
 The default internal strategy for video is a `DefaultVideoStrategy`, which converts the
 video stream to AVC format and is very configurable. The class helps in defining an output size.
 If the output size does not match the aspect ratio of the input stream size, `Transcoder` will
 crop part of the input so it matches the final ratio.
 
-### Video Size
+##### Video Size
 
 We provide helpers for common tasks:
 
@@ -127,7 +124,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .build();
 ```
 
-### Other options
+##### Other options
 
 You can configure the `DefaultVideoStrategy` with other options unrelated to the video size:
 
@@ -140,7 +137,7 @@ DefaultVideoStrategy strategy = new DefaultVideoStrategy.Builder()
         .build();
 ```
 
-## Compatibility
+### Compatibility
 
 As stated pretty much everywhere, **not all codecs/devices/manufacturers support all sizes/options**.
 This is a complex issue which is especially important for video strategies, as a wrong size can lead

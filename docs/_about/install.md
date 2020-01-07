@@ -1,11 +1,8 @@
 ---
 layout: page
 title: "Install"
-subtitle: "Integrate in your project"
 description: "Integrate in your project"
-category: about
 order: 1
-date: 2018-12-20 17:47:32
 ---
 
 The library works on API 18+, which is the only requirement and should be met by many projects nowadays.
@@ -24,7 +21,7 @@ allprojects {
 Then simply download the latest version:
 
 ```groovy
-api 'com.otaliastudios:transcoder:0.7.4'
+api 'com.otaliastudios:transcoder:{{ site.github_version }}'
 ```
 
 No other configuration steps are needed.

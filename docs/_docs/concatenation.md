@@ -1,10 +1,7 @@
 ---
 layout: page
 title: "Video Concatenation"
-subtitle: "How to concatenate video segments"
 description: "How to concatenate video segments"
-category: docs
-date: 2018-12-20 20:02:08
 order: 2
 disqus: 1
 ---
