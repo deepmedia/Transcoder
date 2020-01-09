@@ -54,8 +54,8 @@ public class DataSourceWrapper implements DataSource {
     }
 
     @Override
-    public long seekBy(long durationUs) {
-        return mSource.seekBy(durationUs);
+    public void seekTo(long timestampUs) {
+        mSource.seekTo(timestampUs);
     }
 
     @Override

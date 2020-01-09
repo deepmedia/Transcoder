@@ -3,6 +3,7 @@ package com.otaliastudios.transcoder.source;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -64,19 +65,13 @@ public abstract class DefaultDataSource implements DataSource {
     }
 
     @Override
-    public long seekBy(long durationUs) {
+    public void seekTo(long timestampUs) {
         ensureExtractor();
-        final int trackCount = mExtractor.getTrackCount();
-        for (int i = 0; i < trackCount; i++) {
-            mExtractor.selectTrack(i);
-        }
-        long timestampUs = mExtractor.getSampleTime() + durationUs;
-        // Seeking once per track helps the extractor with Audio sampleTime issues
-        for (int i = 0; i < trackCount; i++) {
-            mExtractor.seekTo(timestampUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-            timestampUs = mExtractor.getSampleTime();
-        }
-        return timestampUs;
+        long first = mFirstTimestampUs > 0 ? mFirstTimestampUs : mExtractor.getSampleTime();
+        Log.w("TRIMBUG", "seeking to: " + ((first + timestampUs) / 1000) + " first: " + (first / 1000)
+                + " hasVideo: " + mSelectedTracks.contains(TrackType.VIDEO)
+                + " hasAudio: " + mSelectedTracks.contains(TrackType.AUDIO));
+        mExtractor.seekTo(first + timestampUs, MediaExtractor.SEEK_TO_NEXT_SYNC);
     }
 
     @Override
@@ -107,6 +102,7 @@ public abstract class DefaultDataSource implements DataSource {
         if (type == null) {
             throw new RuntimeException("Unknown type: " + index);
         }
+        Log.d("TRIMBUG", "type: " + type + " timestamp: " + (chunk.timestampUs / 1000));
         mLastTimestampUs.set(type, chunk.timestampUs);
         mExtractor.advance();
     }

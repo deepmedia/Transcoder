@@ -316,8 +316,6 @@ public class Engine {
             }
         }
 
-        // TODO ClipDataSource or something like that
-
         // Compute the TrackStatus.
         int activeTracks = 0;
         computeTrackStatus(TrackType.AUDIO, options.getAudioTrackStrategy(), options.getAudioDataSources());
@@ -342,10 +340,11 @@ public class Engine {
         // Do the actual transcoding work.
         try {
             long loopCount = 0;
-            boolean stepped = false;
+            boolean stepped;
             boolean audioCompleted = false, videoCompleted = false;
-            boolean forceAudioEos = false, forceVideoEos = false;
-            double audioProgress = 0, videoProgress = 0;
+            boolean forceAudioEos, forceVideoEos;
+            double audioProgress, videoProgress;
+            TrackTranscoder audioTranscoder, videoTranscoder;
             while (!(audioCompleted && videoCompleted)) {
                 LOG.v("new step: " + loopCount);
 
@@ -364,11 +363,13 @@ public class Engine {
                 // Now step for transcoders that are not completed.
                 audioCompleted = isCompleted(TrackType.AUDIO);
                 videoCompleted = isCompleted(TrackType.VIDEO);
+                audioTranscoder = audioCompleted ? null : getCurrentTrackTranscoder(TrackType.AUDIO, options);
+                videoTranscoder = videoCompleted ? null : getCurrentTrackTranscoder(TrackType.VIDEO, options);
                 if (!audioCompleted) {
-                    stepped |= getCurrentTrackTranscoder(TrackType.AUDIO, options).transcode(forceAudioEos);
+                    stepped |= audioTranscoder.transcode(forceAudioEos);
                 }
                 if (!videoCompleted) {
-                    stepped |= getCurrentTrackTranscoder(TrackType.VIDEO, options).transcode(forceVideoEos);
+                    stepped |= videoTranscoder.transcode(forceVideoEos);
                 }
                 if (++loopCount % PROGRESS_INTERVAL_STEPS == 0) {
                     audioProgress = getTrackProgress(TrackType.AUDIO);

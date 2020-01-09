@@ -1,13 +1,11 @@
 package com.otaliastudios.transcoder.source;
 
 
-import android.media.MediaFormat;
-
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.TrackTypeMap;
 
 import org.jetbrains.annotations.Contract;
 
@@ -15,27 +13,28 @@ import org.jetbrains.annotations.Contract;
  * A {@link DataSourceWrapper} that trims source at both ends.
  */
 public class TrimDataSource extends DataSourceWrapper {
-    private static final String TAG = "TrimDataSource";
+    private static final String TAG = TrimDataSource.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
+
     private long trimStartUs;
     private long trimDurationUs;
-    private boolean didSeekTracks = false;
+    private final TrackTypeMap<Boolean> trimDone
+            = new TrackTypeMap<>(false, false);
+    private boolean a;
 
-    public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) throws IllegalArgumentException {
+
+    public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) {
         super(source);
         if (trimStartUs < 0 || trimEndUs < 0) {
             throw new IllegalArgumentException("Trim values cannot be negative.");
         }
-        this.trimStartUs = trimStartUs;
-        this.trimDurationUs = computeTrimDuration(source.getDurationUs(), trimStartUs, trimEndUs);
-    }
-
-    @Contract(pure = true)
-    private static long computeTrimDuration(long duration, long trimStart, long trimEnd) throws IllegalArgumentException {
-        if (trimStart + trimEnd > duration) {
-            throw new IllegalArgumentException("Trim values cannot be greater than media duration.");
+        long duration = source.getDurationUs();
+        if (trimStartUs + trimEndUs >= duration) {
+            throw new IllegalArgumentException(
+                    "Trim values cannot be greater than media duration.");
         }
-        return duration - trimStart - trimEnd;
+        this.trimStartUs = trimStartUs;
+        this.trimDurationUs = duration - trimStartUs - trimEndUs;
     }
 
     @Override
@@ -45,17 +44,17 @@ public class TrimDataSource extends DataSourceWrapper {
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
-        if (!didSeekTracks) {
-            final long sampleTimeUs = seekBy(trimStartUs);
-            updateTrimValues(sampleTimeUs);
-            didSeekTracks = true;
+        if (!a && trimStartUs > 0) {
+            // We must seek the inner source to the correct position. We do this
+            // once per track, for two reasons:
+            // 1. MediaExtractor is not really good at seeking with some files
+            // 2. MediaExtractor only seeks selected tracks, and we're not sure
+            // that all tracks are selected when this method is called.
+            seekTo(0);
+            trimDone.set(type, true);
+            a = true;
         }
         return super.canReadTrack(type);
-    }
-
-    private void updateTrimValues(long timestampUs) {
-        trimDurationUs += trimStartUs - timestampUs;
-        trimStartUs = timestampUs;
     }
 
     @Override
@@ -64,8 +63,15 @@ public class TrimDataSource extends DataSourceWrapper {
     }
 
     @Override
+    public void seekTo(long durationUs) {
+        // our 0 is the wrapped source's trimStartUs
+        super.seekTo(trimStartUs + durationUs);
+    }
+
+    @Override
     public void rewind() {
         super.rewind();
-        didSeekTracks = false;
+        trimDone.setVideo(false);
+        trimDone.setAudio(false);
     }
 }
