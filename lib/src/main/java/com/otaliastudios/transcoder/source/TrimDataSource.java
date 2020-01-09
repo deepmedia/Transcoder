@@ -5,9 +5,6 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.TrackTypeMap;
-
-import org.jetbrains.annotations.Contract;
 
 /**
  * A {@link DataSourceWrapper} that trims source at both ends.
@@ -18,9 +15,7 @@ public class TrimDataSource extends DataSourceWrapper {
 
     private long trimStartUs;
     private long trimDurationUs;
-    private final TrackTypeMap<Boolean> trimDone
-            = new TrackTypeMap<>(false, false);
-    private boolean a;
+    private boolean trimDone = false;
 
 
     public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) {
@@ -44,15 +39,9 @@ public class TrimDataSource extends DataSourceWrapper {
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
-        if (!a && trimStartUs > 0) {
-            // We must seek the inner source to the correct position. We do this
-            // once per track, for two reasons:
-            // 1. MediaExtractor is not really good at seeking with some files
-            // 2. MediaExtractor only seeks selected tracks, and we're not sure
-            // that all tracks are selected when this method is called.
-            seekTo(0);
-            trimDone.set(type, true);
-            a = true;
+        if (!trimDone && trimStartUs > 0) {
+            trimStartUs = getSource().seekTo(trimStartUs);
+            trimDone = true;
         }
         return super.canReadTrack(type);
     }
@@ -63,15 +52,15 @@ public class TrimDataSource extends DataSourceWrapper {
     }
 
     @Override
-    public void seekTo(long durationUs) {
+    public long seekTo(long durationUs) {
         // our 0 is the wrapped source's trimStartUs
-        super.seekTo(trimStartUs + durationUs);
+        long result = super.seekTo(trimStartUs + durationUs);
+        return result - trimStartUs;
     }
 
     @Override
     public void rewind() {
         super.rewind();
-        trimDone.setVideo(false);
-        trimDone.setAudio(false);
+        trimDone = false;
     }
 }

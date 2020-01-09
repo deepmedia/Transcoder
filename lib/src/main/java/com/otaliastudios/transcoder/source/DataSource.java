@@ -57,10 +57,13 @@ public interface DataSource {
     /**
      * Moves all selected tracks to the specified presentation time.
      * The timestamp should be between 0 and {@link #getDurationUs()}.
+     * The actual timestamp might differ from the desired one because of
+     * seeking constraints (e.g. seek to sync frames).
      *
-     * @param timestampUs requested timestamp
+     * @param desiredTimestampUs requested timestamp
+     * @return actual timestamp
      */
-    void seekTo(long timestampUs);
+    long seekTo(long desiredTimestampUs);
 
     /**
      * Returns true if we can read the given track at this point.
