@@ -7,7 +7,7 @@ import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 
 /**
- * A {@link DataSourceWrapper} that trims source at both ends.
+ * A {@link DataSource} that trims the inner source at both ends.
  */
 public class TrimDataSource extends DataSourceWrapper {
     private static final String TAG = TrimDataSource.class.getSimpleName();
@@ -17,7 +17,12 @@ public class TrimDataSource extends DataSourceWrapper {
     private long trimDurationUs;
     private boolean trimDone = false;
 
+    @SuppressWarnings("WeakerAccess")
+    public TrimDataSource(@NonNull DataSource source, long trimStartUs) {
+        this(source, trimStartUs, 0);
+    }
 
+    @SuppressWarnings("WeakerAccess")
     public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) {
         super(source);
         if (trimStartUs < 0 || trimEndUs < 0) {
