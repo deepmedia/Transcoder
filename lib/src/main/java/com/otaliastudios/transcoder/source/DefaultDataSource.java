@@ -115,7 +115,6 @@ public abstract class DefaultDataSource implements DataSource {
         if (type == null) {
             throw new RuntimeException("Unknown type: " + index);
         }
-        Log.d("TRIMBUG", "type: " + type + " timestamp: " + (chunk.timestampUs / 1000));
         mLastTimestampUs.set(type, chunk.timestampUs);
         mExtractor.advance();
     }
