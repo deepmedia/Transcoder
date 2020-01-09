@@ -2,7 +2,7 @@
 layout: page
 title: "Video Concatenation"
 description: "How to concatenate video segments"
-order: 2
+order: 3
 disqus: 1
 ---
 

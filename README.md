@@ -28,6 +28,7 @@ implementation 'com.otaliastudios:transcoder:0.7.4'
 - Multithreaded
 - Convenient, fluent API
 - Concatenate multiple video and audio tracks [[docs]](https://natario1.github.io/Transcoder/docs/concatenation)
+- Clip or trim video segments [[docs]](https://natario1.github.io/Transcoder/docs/clipping)
 - Choose output size, with automatic cropping [[docs]](https://natario1.github.io/Transcoder/docs/track-strategies#video-size)
 - Choose output rotation [[docs]](https://natario1.github.io/Transcoder/docs/advanced-options#video-rotation) 
 - Choose output speed [[docs]](https://natario1.github.io/Transcoder/docs/advanced-options#video-speed)

@@ -17,6 +17,7 @@ using MediaCodec APIs instead of native code (no FFMPEG patent issues).
 - Multithreaded
 - Convenient, fluent API
 - Concatenate multiple video and audio tracks [[docs]](docs/concatenation)
+- Clip or trim video segments [[docs]](docs/clipping)
 - Choose output size, with automatic cropping [[docs]](docs/track-strategies#video-size)
 - Choose output rotation [[docs]](docs/advanced-options#video-rotation) 
 - Choose output speed [[docs]](docs/advanced-options#video-speed)
