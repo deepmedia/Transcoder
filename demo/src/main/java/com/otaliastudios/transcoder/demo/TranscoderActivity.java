@@ -22,6 +22,9 @@ import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.DefaultDataSink;
+import com.otaliastudios.transcoder.source.DataSource;
+import com.otaliastudios.transcoder.source.TrimDataSource;
+import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
@@ -299,11 +302,17 @@ public class TranscoderActivity extends AppCompatActivity implements
         DataSink sink = new DefaultDataSink(mTranscodeOutputFile.getAbsolutePath());
         TranscoderOptions.Builder builder = Transcoder.into(sink);
         if (mAudioReplacementUri == null) {
-            if (mTranscodeInputUri1 != null) builder.addDataSource(this, mTranscodeInputUri1, mTrimStartUs, mTrimEndUs);
+            if (mTranscodeInputUri1 != null) {
+                DataSource source = new UriDataSource(this, mTranscodeInputUri1);
+                builder.addDataSource(new TrimDataSource(source, mTrimStartUs, mTrimEndUs));
+            }
             if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2);
             if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3);
         } else {
-            if (mTranscodeInputUri1 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri1, mTrimStartUs, mTrimEndUs);
+            if (mTranscodeInputUri1 != null) {
+                DataSource source = new UriDataSource(this, mTranscodeInputUri1);
+                builder.addDataSource(TrackType.VIDEO, new TrimDataSource(source, mTrimStartUs, mTrimEndUs));
+            }
             if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri2);
             if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3);
             builder.addDataSource(TrackType.AUDIO, this, mAudioReplacementUri);
