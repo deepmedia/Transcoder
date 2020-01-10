@@ -1,54 +1,40 @@
 package com.otaliastudios.transcoder.source;
 
 
-import android.media.MediaFormat;
-
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 
-import org.jetbrains.annotations.Contract;
-
 /**
- * A {@link DataSource} wrapper that trims source at both ends.
+ * A {@link DataSource} that trims the inner source at both ends.
  */
-public class TrimDataSource implements DataSource {
-    private static final String TAG = "TrimDataSource";
+public class TrimDataSource extends DataSourceWrapper {
+    private static final String TAG = TrimDataSource.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
-    @NonNull
-    private DataSource source;
+
     private long trimStartUs;
     private long trimDurationUs;
-    private boolean didSeekTracks = false;
+    private boolean trimDone = false;
 
-    public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) throws IllegalArgumentException {
+    @SuppressWarnings("WeakerAccess")
+    public TrimDataSource(@NonNull DataSource source, long trimStartUs) {
+        this(source, trimStartUs, 0);
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public TrimDataSource(@NonNull DataSource source, long trimStartUs, long trimEndUs) {
+        super(source);
         if (trimStartUs < 0 || trimEndUs < 0) {
             throw new IllegalArgumentException("Trim values cannot be negative.");
         }
-        this.source = source;
-        this.trimStartUs = trimStartUs;
-        this.trimDurationUs = computeTrimDuration(source.getDurationUs(), trimStartUs, trimEndUs);
-    }
-
-    @Contract(pure = true)
-    private static long computeTrimDuration(long duration, long trimStart, long trimEnd) throws IllegalArgumentException {
-        if (trimStart + trimEnd > duration) {
-            throw new IllegalArgumentException("Trim values cannot be greater than media duration.");
+        long duration = source.getDurationUs();
+        if (trimStartUs + trimEndUs >= duration) {
+            throw new IllegalArgumentException(
+                    "Trim values cannot be greater than media duration.");
         }
-        return duration - trimStart - trimEnd;
-    }
-
-    @Override
-    public int getOrientation() {
-        return source.getOrientation();
-    }
-
-    @Nullable
-    @Override
-    public double[] getLocation() {
-        return source.getLocation();
+        this.trimStartUs = trimStartUs;
+        this.trimDurationUs = duration - trimStartUs - trimEndUs;
     }
 
     @Override
@@ -56,60 +42,30 @@ public class TrimDataSource implements DataSource {
         return trimDurationUs;
     }
 
-    @Nullable
-    @Override
-    public MediaFormat getTrackFormat(@NonNull TrackType type) {
-        return source.getTrackFormat(type);
-    }
-
-    @Override
-    public void selectTrack(@NonNull TrackType type) {
-        source.selectTrack(type);
-    }
-
-    @Override
-    public long seekBy(long durationUs) {
-        return source.seekBy(durationUs);
-    }
-
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
-        if (!didSeekTracks) {
-            final long sampleTimeUs = seekBy(trimStartUs);
-            updateTrimValues(sampleTimeUs);
-            didSeekTracks = true;
+        if (!trimDone && trimStartUs > 0) {
+            trimStartUs = getSource().seekTo(trimStartUs);
+            trimDone = true;
         }
-        return source.canReadTrack(type);
-    }
-
-    private void updateTrimValues(long timestampUs) {
-        trimDurationUs += trimStartUs - timestampUs;
-        trimStartUs = timestampUs;
-    }
-
-    @Override
-    public void readTrack(@NonNull Chunk chunk) {
-        source.readTrack(chunk);
-    }
-
-    @Override
-    public long getReadUs() {
-        return source.getReadUs();
+        return super.canReadTrack(type);
     }
 
     @Override
     public boolean isDrained() {
-        return source.isDrained() || getReadUs() >= getDurationUs();
+        return super.isDrained() || getReadUs() >= getDurationUs();
     }
 
     @Override
-    public void releaseTrack(@NonNull TrackType type) {
-        source.releaseTrack(type);
+    public long seekTo(long durationUs) {
+        // our 0 is the wrapped source's trimStartUs
+        long result = super.seekTo(trimStartUs + durationUs);
+        return result - trimStartUs;
     }
 
     @Override
     public void rewind() {
-        didSeekTracks = false;
-        source.rewind();
+        super.rewind();
+        trimDone = false;
     }
 }

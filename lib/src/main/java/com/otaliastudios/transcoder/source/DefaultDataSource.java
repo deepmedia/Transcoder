@@ -3,6 +3,7 @@ package com.otaliastudios.transcoder.source;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -64,19 +65,26 @@ public abstract class DefaultDataSource implements DataSource {
     }
 
     @Override
-    public long seekBy(long durationUs) {
+    public long seekTo(long desiredTimestampUs) {
         ensureExtractor();
-        final int trackCount = mExtractor.getTrackCount();
-        for (int i = 0; i < trackCount; i++) {
-            mExtractor.selectTrack(i);
+        long base = mFirstTimestampUs > 0 ? mFirstTimestampUs : mExtractor.getSampleTime();
+        boolean hasVideo = mSelectedTracks.contains(TrackType.VIDEO);
+        boolean hasAudio = mSelectedTracks.contains(TrackType.AUDIO);
+        LOG.i("Seeking to: " + ((base + desiredTimestampUs) / 1000) + " first: " + (base / 1000)
+                + " hasVideo: " + hasVideo
+                + " hasAudio: " + hasAudio);
+        mExtractor.seekTo(base + desiredTimestampUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        if (hasVideo && hasAudio) {
+            // Special case: audio can be moved to any timestamp, but video will only stop in
+            // sync frames. MediaExtractor is not smart enough to sync the two tracks at the
+            // video sync frame, so we must do it by seeking AGAIN at the next video position.
+            while (mExtractor.getSampleTrackIndex() != mIndex.requireVideo()) {
+                mExtractor.advance();
+            }
+            LOG.i("Second seek to " + (mExtractor.getSampleTime() / 1000));
+            mExtractor.seekTo(mExtractor.getSampleTime(), MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         }
-        long timestampUs = mExtractor.getSampleTime() + durationUs;
-        // Seeking once per track helps the extractor with Audio sampleTime issues
-        for (int i = 0; i < trackCount; i++) {
-            mExtractor.seekTo(timestampUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-            timestampUs = mExtractor.getSampleTime();
-        }
-        return timestampUs;
+        return mExtractor.getSampleTime() - base;
     }
 
     @Override

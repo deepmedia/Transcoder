@@ -2,7 +2,7 @@
 layout: page
 title: "Track Strategies"
 description: "Per-track transcoding options"
-order: 5
+order: 6
 disqus: 1
 ---
 

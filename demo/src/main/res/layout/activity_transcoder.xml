@@ -290,7 +290,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="16dp"
-                android:text="Trim (seconds)" />
+                android:text="Trim" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -302,7 +302,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
-                    android:text="Start:" />
+                    android:text="Start (s):" />
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/trim_start"
@@ -320,7 +320,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="32dp"
                     android:layout_marginEnd="8dp"
-                    android:text="End:" />
+                    android:text="End (s):" />
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/trim_end"

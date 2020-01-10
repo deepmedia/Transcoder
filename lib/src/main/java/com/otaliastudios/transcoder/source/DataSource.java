@@ -55,12 +55,15 @@ public interface DataSource {
     void selectTrack(@NonNull TrackType type);
 
     /**
-     * Moves all selected tracks forward by the specified duration.
+     * Moves all selected tracks to the specified presentation time.
+     * The timestamp should be between 0 and {@link #getDurationUs()}.
+     * The actual timestamp might differ from the desired one because of
+     * seeking constraints (e.g. seek to sync frames).
      *
-     * @param durationUs requested duration
-     * @return the new presentation time in microseconds
+     * @param desiredTimestampUs requested timestamp
+     * @return actual timestamp
      */
-    long seekBy(long durationUs);
+    long seekTo(long desiredTimestampUs);
 
     /**
      * Returns true if we can read the given track at this point.
@@ -69,7 +72,6 @@ public interface DataSource {
      * @param type track type
      * @return true if we can read this track now
      */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean canReadTrack(@NonNull TrackType type);
 
     /**
