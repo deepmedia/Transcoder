@@ -6,10 +6,20 @@ order: 3
 
 New versions are released through GitHub, so the reference page is the [GitHub Releases](https://github.com/natario1/Transcoder/releases) page.
 
-Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
+> Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
 Companies can share a tiny part of their revenue and get private support hours in return. Thanks!
 
-#### v0.7.4
+### v0.8.0
+
+- New: `TrimDataSource` to trim segments. Use it to wrap your original source. Thanks to [@mudar][mudar] ([#50][50])
+- New: `ClipDataSource`, just likes `TrimDataSource` but selects trim values with respect to video start ([#54][54])
+
+> Transcoder will trim video segments only at the closest video sync frame. If your video has few sync
+frames, the trim timestamp might be different than what was selected.
+
+<https://github.com/natario1/Transcoder/compare/v0.7.4...v0.8.0>
+
+##### v0.7.4
 
 - Fix: fixed Xamarin incompatibility, thanks to [@aweck][aweck] ([#41][41])
 - Fix: fixed small bugs with specific API versions / media files ([#47][47])
@@ -17,27 +27,27 @@ Companies can share a tiny part of their revenue and get private support hours i
 
 <https://github.com/natario1/Transcoder/compare/v0.7.3...v0.7.4>
 
-#### v0.7.3
+##### v0.7.3
 
 - Fix: fixed bug with files that do not have an audio track, thanks to [@pawegio][pawegio] ([#31][31])
 - Fix: fixed possible issues with FilePathDataSource ([#32][32])
 
 <https://github.com/natario1/Transcoder/compare/v0.7.2...v0.7.3>
 
-#### v0.7.2
+##### v0.7.2
 
 - Improvement: better input format detection. Fixes bugs with certain files ([#29][29])
 - Improvement: added `DefaultAudioStrategy.Builder.bitRate()` option ([#29][29])
 
 <https://github.com/natario1/Transcoder/compare/v0.7.1...v0.7.2>
 
-#### v0.7.1
+##### v0.7.1
 
 - Improvement: update the underlying OpenGL library ([#20][20])
 
 <https://github.com/natario1/Transcoder/compare/v0.7.0...v0.7.1>
 
-## v0.7.0
+### v0.7.0
 
 - New: video concatenation to stitch together multiple media ([#14][14])
 - New: select a specific track type (`VIDEO` or `AUDIO`) for sources ([#14][14])
@@ -53,7 +63,7 @@ Companies can share a tiny part of their revenue and get private support hours i
 
 <https://github.com/natario1/Transcoder/compare/v0.6.0...v0.7.0>
 
-## v0.6.0
+### v0.6.0
 
 - New: ability to change video/audio speed and change each frame timestamp ([#10][10])
 - New: ability to set the video output rotation ([#8][8])
@@ -62,7 +72,7 @@ Companies can share a tiny part of their revenue and get private support hours i
 
 <https://github.com/natario1/Transcoder/compare/v0.5.0...v0.6.0>
 
-## v0.5.0
+### v0.5.0
 
 - New: video cropping to any dimension. Encoder will crop the exceeding size. ([#6][6])
 - New: `AspectRatioResizer` to crop to a given aspect ratio. ([#6][6])
@@ -75,6 +85,7 @@ Companies can share a tiny part of their revenue and get private support hours i
 [Saqrag]: https://github.com/Saqrag
 [pawegio]: https://github.com/pawegio
 [aweck]: https://github.com/aweck
+[mudar]: https://github.com/mudar
 
 [4]: https://github.com/natario1/Transcoder/pull/4
 [5]: https://github.com/natario1/Transcoder/pull/5
@@ -93,3 +104,5 @@ Companies can share a tiny part of their revenue and get private support hours i
 [41]: https://github.com/natario1/Transcoder/pull/41
 [47]: https://github.com/natario1/Transcoder/pull/47
 [48]: https://github.com/natario1/Transcoder/pull/48
+[50]: https://github.com/natario1/Transcoder/pull/50
+[54]: https://github.com/natario1/Transcoder/pull/54
