@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Video Concatenation"
+title: "Concatenation"
 description: "How to concatenate video segments"
 order: 3
 disqus: 1
