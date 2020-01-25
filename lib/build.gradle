@@ -33,7 +33,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'org.mockito:mockito-android:2.28.2'
 
-    api 'com.otaliastudios.opengl:egloo:0.2.3'
+    api 'com.otaliastudios.opengl:egloo:0.4.0'
     api "androidx.annotation:annotation:1.1.0"
 }
 
