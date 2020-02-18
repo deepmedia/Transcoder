@@ -119,12 +119,16 @@ public class Engine {
                 MediaFormat inputFormat = source.getTrackFormat(type);
                 if (inputFormat != null) {
                     inputFormats.add(provider.provideMediaFormat(source, type, inputFormat));
-                } else if (sources.size() > 1) {
-                    throw new IllegalArgumentException("More than one source selected for type " + type
-                            + ", but getTrackFormat returned null.");
                 }
             }
-            status = strategy.createOutputFormat(inputFormats, outputFormat);
+
+            if (inputFormats.size() == sources.size()) {
+                status = strategy.createOutputFormat(inputFormats, outputFormat);
+            } else if (!inputFormats.isEmpty()) {
+                throw new IllegalArgumentException("getTrackFormat returned null for " +
+                        (sources.size()-inputFormats.size()) + "/"  + sources.size() +
+                        " sources off " + type);
+            }
         }
         mOutputFormats.set(type, outputFormat);
         mDataSink.setTrackStatus(type, status);
