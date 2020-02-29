@@ -53,6 +53,7 @@ public class MediaFormatConstants {
     // Audio formats
     // from MediaFormat of API level >= 21
     public static final String MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
+    public static final String MIMETYPE_AUDIO_RAW = "audio/raw";
 
     private MediaFormatConstants() { }
 }
