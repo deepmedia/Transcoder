@@ -13,7 +13,7 @@ import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource;
 import com.otaliastudios.transcoder.source.FilePathDataSource;
-import com.otaliastudios.transcoder.source.TrimDataSource;
+import com.otaliastudios.transcoder.source.MutedAudioDataSource;
 import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
@@ -129,7 +129,11 @@ public class TranscoderOptions {
         @NonNull
         @SuppressWarnings("WeakerAccess")
         public Builder addDataSource(@NonNull DataSource dataSource) {
-            audioDataSources.add(dataSource);
+            if (dataSource.getTrackFormat(TrackType.AUDIO) == null && dataSource.getTrackFormat(TrackType.VIDEO) != null) {
+                audioDataSources.add(new MutedAudioDataSource(dataSource.getDurationUs()));
+            } else {
+                audioDataSources.add(dataSource);
+            }
             videoDataSources.add(dataSource);
             return this;
         }
