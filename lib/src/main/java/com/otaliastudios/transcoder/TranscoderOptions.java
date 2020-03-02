@@ -326,21 +326,21 @@ public class TranscoderOptions {
         {
             // Check if we have a mix of empty and non-empty data sources
             // This would cause an error in Engine::computeTrackStatus
-            boolean hasEmptyAudioDataSources = false;
-            int i;
-            for (i = 0; i < audioDataSources.size(); i++) {
-                DataSource dataSource = audioDataSources.get(i);
+            boolean hasMissingAudioDataSources = false;
+            boolean hasAudioDataSources = false;
+            boolean hasValidAudioDataSources = true;
+            for (DataSource dataSource : audioDataSources) {
                 if (dataSource.getTrackFormat(TrackType.AUDIO) == null) {
-                    if (i == 0 || hasEmptyAudioDataSources) {
-                        hasEmptyAudioDataSources = true;
-                    } else {
-                        break;
-                    }
-                } else if (hasEmptyAudioDataSources) {
+                    hasMissingAudioDataSources = true;
+                } else {
+                    hasAudioDataSources = true;
+                }
+                if (hasAudioDataSources && hasMissingAudioDataSources) {
+                    hasValidAudioDataSources = false;
                     break;
                 }
             }
-            if (i == audioDataSources.size()) {
+            if (hasValidAudioDataSources) {
                 return audioDataSources;
             }
             // Fix the audioDataSources by replacing the empty data source by muted data source
