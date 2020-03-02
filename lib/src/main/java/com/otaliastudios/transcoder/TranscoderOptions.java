@@ -129,11 +129,7 @@ public class TranscoderOptions {
         @NonNull
         @SuppressWarnings("WeakerAccess")
         public Builder addDataSource(@NonNull DataSource dataSource) {
-            if (dataSource.getTrackFormat(TrackType.AUDIO) == null && dataSource.getTrackFormat(TrackType.VIDEO) != null) {
-                audioDataSources.add(new MutedAudioDataSource(dataSource.getDurationUs()));
-            } else {
-                audioDataSources.add(dataSource);
-            }
+            audioDataSources.add(dataSource);
             videoDataSources.add(dataSource);
             return this;
         }
@@ -322,6 +318,43 @@ public class TranscoderOptions {
             return this;
         }
 
+        /**
+         * Generates muted audio data sources if needed
+         * @return The list of audio data sources including the muted sources
+         */
+        private List<DataSource> buildAudioDataSources()
+        {
+            // Check if we have a mix of empty and non-empty data sources
+            // This would cause an error in Engine::computeTrackStatus
+            boolean hasMissingAudioDataSources = false;
+            boolean hasAudioDataSources = false;
+            boolean hasValidAudioDataSources = true;
+            for (DataSource dataSource : audioDataSources) {
+                if (dataSource.getTrackFormat(TrackType.AUDIO) == null) {
+                    hasMissingAudioDataSources = true;
+                } else {
+                    hasAudioDataSources = true;
+                }
+                if (hasAudioDataSources && hasMissingAudioDataSources) {
+                    hasValidAudioDataSources = false;
+                    break;
+                }
+            }
+            if (hasValidAudioDataSources) {
+                return audioDataSources;
+            }
+            // Fix the audioDataSources by replacing the empty data source by muted data source
+            List<DataSource> result = new ArrayList<>();
+            for (DataSource dataSource : audioDataSources) {
+                if (dataSource.getTrackFormat(TrackType.AUDIO) != null) {
+                    result.add(dataSource);
+                } else {
+                    result.add(new MutedAudioDataSource(dataSource.getDurationUs()));
+                }
+            }
+            return result;
+        }
+
         @NonNull
         public TranscoderOptions build() {
             if (listener == null) {
@@ -358,7 +391,7 @@ public class TranscoderOptions {
             }
             TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
-            options.audioDataSources = audioDataSources;
+            options.audioDataSources = buildAudioDataSources();
             options.videoDataSources = videoDataSources;
             options.dataSink = dataSink;
             options.listenerHandler = listenerHandler;
