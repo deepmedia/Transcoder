@@ -24,8 +24,8 @@ public class MutedAudioDataSource implements DataSource {
     private static final int SAMPLE_RATE = 44100;
     private static final int BITS_PER_SAMPLE = 16;
     private static final int BIT_RATE = CHANNEL_COUNT * SAMPLE_RATE * BITS_PER_SAMPLE;
-    private static final int SAMPLES_PER_PERIOD = 2048;
-    private static final double PERIOD_TIME_SECONDS = (double) SAMPLES_PER_PERIOD / SAMPLE_RATE;
+    private static final double SAMPLES_PER_PERIOD = 2048;
+    private static final double PERIOD_TIME_SECONDS = SAMPLES_PER_PERIOD / SAMPLE_RATE;
     private static final long PERIOD_TIME_US = (long) (1000000 * PERIOD_TIME_SECONDS);
     private static final int PERIOD_SIZE = (int) (PERIOD_TIME_SECONDS * BIT_RATE / 8);
 
@@ -35,7 +35,7 @@ public class MutedAudioDataSource implements DataSource {
 
     private long currentTimestampUs = 0L;
 
-    public MutedAudioDataSource(Long durationUs) {
+    public MutedAudioDataSource(long durationUs) {
         this.durationUs = durationUs;
         this.byteBuffer = ByteBuffer.allocateDirect(PERIOD_SIZE).order(ByteOrder.nativeOrder());
         this.audioFormat = new MediaFormat();
@@ -75,7 +75,8 @@ public class MutedAudioDataSource implements DataSource {
 
     @Override
     public long seekTo(long desiredTimestampUs) {
-        return (desiredTimestampUs <= durationUs) ? desiredTimestampUs : -1;
+        currentTimestampUs = desiredTimestampUs;
+        return desiredTimestampUs;
     }
 
     @Override
@@ -88,13 +89,8 @@ public class MutedAudioDataSource implements DataSource {
         byteBuffer.clear();
         chunk.buffer = byteBuffer;
         chunk.isKeyFrame = true;
-        if (isDrained()) {
-            chunk.timestampUs = 0;
-            chunk.bytes = -1;
-        } else {
-            chunk.timestampUs = currentTimestampUs;
-            chunk.bytes = PERIOD_SIZE;
-        }
+        chunk.timestampUs = currentTimestampUs;
+        chunk.bytes = PERIOD_SIZE;
 
         currentTimestampUs += PERIOD_TIME_US;
     }
