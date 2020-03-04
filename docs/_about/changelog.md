@@ -9,6 +9,14 @@ New versions are released through GitHub, so the reference page is the [GitHub R
 > Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
 Companies can share a tiny part of their revenue and get private support hours in return. Thanks!
 
+### v0.9.0
+
+- New: `BlankAudioDataSource` can be used to add muted audio to a video-only track, thanks to [@mudar][mudar] ([#64][64]) 
+- Enhancement: you can now concatenate multiple files even if some of them have no audio, thanks to [@mudar][mudar] ([#64][64]) 
+- Enhancement: you can now concatenate multiple files without audio track, thanks to [@cbernier2][cbernier2] ([#61][61])
+
+<https://github.com/natario1/Transcoder/compare/v0.8.0...v0.9.0>
+
 ### v0.8.0
 
 - New: `TrimDataSource` to trim segments. Use it to wrap your original source. Thanks to [@mudar][mudar] ([#50][50])
@@ -86,6 +94,7 @@ frames, the trim timestamp might be different than what was selected.
 [pawegio]: https://github.com/pawegio
 [aweck]: https://github.com/aweck
 [mudar]: https://github.com/mudar
+[cbernier2]: https://github.com/cbernier2
 
 [4]: https://github.com/natario1/Transcoder/pull/4
 [5]: https://github.com/natario1/Transcoder/pull/5
@@ -106,3 +115,5 @@ frames, the trim timestamp might be different than what was selected.
 [48]: https://github.com/natario1/Transcoder/pull/48
 [50]: https://github.com/natario1/Transcoder/pull/50
 [54]: https://github.com/natario1/Transcoder/pull/54
+[61]: https://github.com/natario1/Transcoder/pull/61
+[64]: https://github.com/natario1/Transcoder/pull/64
