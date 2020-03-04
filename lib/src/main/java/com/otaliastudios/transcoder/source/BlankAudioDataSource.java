@@ -17,8 +17,8 @@ import static com.otaliastudios.transcoder.internal.MediaFormatConstants.MIMETYP
  * This class can be used to concatenate a DataSources that has a video track only with another
  * that has both video and audio track.
  */
-public class MutedAudioDataSource implements DataSource {
-    private final static String TAG = MutedAudioDataSource.class.getSimpleName();
+public class BlankAudioDataSource implements DataSource {
+    private final static String TAG = BlankAudioDataSource.class.getSimpleName();
 
     private static final int CHANNEL_COUNT = 2;
     private static final int SAMPLE_RATE = 44100;
@@ -35,7 +35,7 @@ public class MutedAudioDataSource implements DataSource {
 
     private long currentTimestampUs = 0L;
 
-    public MutedAudioDataSource(long durationUs) {
+    public BlankAudioDataSource(long durationUs) {
         this.durationUs = durationUs;
         this.byteBuffer = ByteBuffer.allocateDirect(PERIOD_SIZE).order(ByteOrder.nativeOrder());
         this.audioFormat = new MediaFormat();
@@ -81,7 +81,7 @@ public class MutedAudioDataSource implements DataSource {
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
-        return (type == TrackType.AUDIO) && !isDrained();
+        return type == TrackType.AUDIO;
     }
 
     @Override

@@ -13,7 +13,7 @@ import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource;
 import com.otaliastudios.transcoder.source.FilePathDataSource;
-import com.otaliastudios.transcoder.source.MutedAudioDataSource;
+import com.otaliastudios.transcoder.source.BlankAudioDataSource;
 import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
@@ -349,7 +349,7 @@ public class TranscoderOptions {
                 if (dataSource.getTrackFormat(TrackType.AUDIO) != null) {
                     result.add(dataSource);
                 } else {
-                    result.add(new MutedAudioDataSource(dataSource.getDurationUs()));
+                    result.add(new BlankAudioDataSource(dataSource.getDurationUs()));
                 }
             }
             return result;
