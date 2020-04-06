@@ -6,6 +6,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.postprocessor.DefaultAudioPostProcessor;
+import com.otaliastudios.transcoder.postprocessor.PostProcessor;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -44,6 +46,18 @@ public class BlankAudioDataSource implements DataSource {
         audioFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, CHANNEL_COUNT);
         audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, PERIOD_SIZE);
         audioFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, SAMPLE_RATE);
+    }
+
+    private PostProcessor postProcessor = new DefaultAudioPostProcessor();
+
+    @Override
+    public void setPostProcessor(@NonNull PostProcessor postProcessor) {
+        this.postProcessor = postProcessor;
+    }
+
+    @Override
+    public PostProcessor getPostProcessor() {
+        return postProcessor;
     }
 
     @Override

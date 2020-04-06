@@ -349,7 +349,9 @@ public class TranscoderOptions {
                 if (dataSource.getTrackFormat(TrackType.AUDIO) != null) {
                     result.add(dataSource);
                 } else {
-                    result.add(new BlankAudioDataSource(dataSource.getDurationUs()));
+                    DataSource blankDataSource = new BlankAudioDataSource(dataSource.getDurationUs());
+                    blankDataSource.setPostProcessor(dataSource.getPostProcessor());
+                    result.add(blankDataSource);
                 }
             }
             return result;

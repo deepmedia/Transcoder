@@ -8,10 +8,12 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.postprocessor.AudioPostProcessor;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.stretch.AudioStretcher;
+import com.otaliastudios.transcoder.time.PresentationTime;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.AudioEngine;
 
@@ -20,8 +22,10 @@ import java.nio.ByteBuffer;
 public class AudioTrackTranscoder extends BaseTrackTranscoder {
 
     private TimeInterpolator mTimeInterpolator;
+    private PresentationTime mPresentationTime;
     private AudioStretcher mAudioStretcher;
     private AudioResampler mAudioResampler;
+    private AudioPostProcessor mAudioPostProcessor;
     private AudioEngine mAudioEngine;
     private MediaCodec mEncoder; // to create the channel
     private MediaFormat mEncoderOutputFormat; // to create the channel
@@ -30,11 +34,15 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
                                 @NonNull DataSink dataSink,
                                 @NonNull TimeInterpolator timeInterpolator,
                                 @NonNull AudioStretcher audioStretcher,
-                                @NonNull AudioResampler audioResampler) {
+                                @NonNull AudioResampler audioResampler,
+                                @NonNull AudioPostProcessor audioPostProcessor,
+                                @NonNull PresentationTime presentationTime) {
         super(dataSource, dataSink, TrackType.AUDIO);
         mTimeInterpolator = timeInterpolator;
         mAudioStretcher = audioStretcher;
         mAudioResampler = audioResampler;
+        mAudioPostProcessor = audioPostProcessor;
+        mPresentationTime = presentationTime;
     }
 
     @Override
@@ -57,7 +65,9 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
                 mEncoder, mEncoderOutputFormat,
                 mTimeInterpolator,
                 mAudioStretcher,
-                mAudioResampler);
+                mAudioResampler,
+                mAudioPostProcessor,
+                mPresentationTime);
         mEncoder = null;
         mEncoderOutputFormat = null;
         mTimeInterpolator = null;
