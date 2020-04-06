@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.postprocessor.PostProcessor;
 
 import java.nio.ByteBuffer;
 
@@ -13,6 +14,22 @@ import java.nio.ByteBuffer;
  * Represents the source of input data.
  */
 public interface DataSource {
+
+    /**
+     * Returns an handler that need to be executed with the raw data source data
+     * before that it gets encoded.
+     *
+     * @return the PostProcessor object
+     */
+    PostProcessor getPostProcessor();
+
+    /**
+     * Sets the handler that needs to be called before that the raw data source data
+     * gets sent to the encoder.
+     *
+     * @param postProcessor the PostProcessor object
+     */
+    void setPostProcessor(PostProcessor postProcessor);
 
     /**
      * Metadata information. Returns the video orientation, or 0.

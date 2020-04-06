@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.postprocessor.PostProcessor;
 
 /**
  * A {@link DataSource} wrapper that simply delegates all methods to the
@@ -24,6 +25,18 @@ public class DataSourceWrapper implements DataSource {
     @NonNull
     protected DataSource getSource() {
         return mSource;
+    }
+
+    private PostProcessor postProcessor = null;
+
+    @Override
+    public void setPostProcessor(PostProcessor postProcessor) {
+        this.postProcessor = postProcessor;
+    }
+
+    @Override
+    public PostProcessor getPostProcessor() {
+        return postProcessor;
     }
 
     @Override

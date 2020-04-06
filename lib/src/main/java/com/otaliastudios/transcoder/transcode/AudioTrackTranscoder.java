@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.postprocessor.AudioPostProcessor;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
@@ -22,6 +23,7 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
     private TimeInterpolator mTimeInterpolator;
     private AudioStretcher mAudioStretcher;
     private AudioResampler mAudioResampler;
+    private AudioPostProcessor mAudioPostProcessor;
     private AudioEngine mAudioEngine;
     private MediaCodec mEncoder; // to create the channel
     private MediaFormat mEncoderOutputFormat; // to create the channel
@@ -30,11 +32,13 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
                                 @NonNull DataSink dataSink,
                                 @NonNull TimeInterpolator timeInterpolator,
                                 @NonNull AudioStretcher audioStretcher,
-                                @NonNull AudioResampler audioResampler) {
+                                @NonNull AudioResampler audioResampler,
+                                @NonNull AudioPostProcessor audioPostProcessor) {
         super(dataSource, dataSink, TrackType.AUDIO);
         mTimeInterpolator = timeInterpolator;
         mAudioStretcher = audioStretcher;
         mAudioResampler = audioResampler;
+        mAudioPostProcessor = audioPostProcessor;
     }
 
     @Override
@@ -57,7 +61,8 @@ public class AudioTrackTranscoder extends BaseTrackTranscoder {
                 mEncoder, mEncoderOutputFormat,
                 mTimeInterpolator,
                 mAudioStretcher,
-                mAudioResampler);
+                mAudioResampler,
+                mAudioPostProcessor);
         mEncoder = null;
         mEncoderOutputFormat = null;
         mTimeInterpolator = null;

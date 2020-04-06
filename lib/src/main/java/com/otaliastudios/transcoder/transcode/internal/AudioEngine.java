@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.postprocessor.AudioPostProcessor;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.resample.DefaultAudioResampler;
@@ -20,6 +21,7 @@ import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.Random;
 
 /**
  * Channel of raw audio from decoder to encoder.
@@ -45,10 +47,12 @@ public class AudioEngine {
     @SuppressWarnings("FieldCanBeLocal") private final int mEncoderChannels;
     private final AudioRemixer mRemixer;
     private final AudioResampler mResampler;
+    private final AudioPostProcessor mPostProcessor;
     private final AudioStretcher mStretcher;
     private final TimeInterpolator mTimeInterpolator;
     private long mLastDecoderUs = Long.MIN_VALUE;
     private long mLastEncoderUs = Long.MIN_VALUE;
+    private long mNextpresentationTimeUs = 0;
     private ShortBuffer mTempBuffer1;
     private ShortBuffer mTempBuffer2;
 
@@ -67,7 +71,8 @@ public class AudioEngine {
                        @NonNull MediaFormat encoderOutputFormat,
                        @NonNull TimeInterpolator timeInterpolator,
                        @NonNull AudioStretcher audioStretcher,
-                       @NonNull AudioResampler audioResampler) {
+                       @NonNull AudioResampler audioResampler,
+                       @NonNull AudioPostProcessor audioPostProcessor) {
         mDecoder = decoder;
         mEncoder = encoder;
         mTimeInterpolator = timeInterpolator;
@@ -96,6 +101,7 @@ public class AudioEngine {
         }
         mStretcher = audioStretcher;
         mResampler = audioResampler;
+        mPostProcessor = audioPostProcessor;
     }
 
     /**
@@ -265,8 +271,18 @@ public class AudioEngine {
         mTempBuffer2.rewind();
 
         // 7. Do the actual resampling.
-        mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate,
+        ensureTempBuffer1(outputSize);
+        mResampler.resample(mTempBuffer2, mDecoderSampleRate, mTempBuffer1, mEncoderSampleRate,
                 mDecoderChannels);
+        mTempBuffer1.limit(mTempBuffer1.position());
+        mTempBuffer1.rewind();
+
+        //8. Do the post processing
+        if (mPostProcessor != null) {
+            mPostProcessor.postProcess(mTempBuffer1, encoderBuffer);
+        } else {
+            encoderBuffer.put(mTempBuffer2);
+        }
 
         // 8. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
         // We need an updated timestamp for the next cycle, since we will cycle on the same input

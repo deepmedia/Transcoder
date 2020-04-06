@@ -12,6 +12,7 @@ import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.TrackTypeMap;
+import com.otaliastudios.transcoder.postprocessor.PostProcessor;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -57,6 +58,18 @@ public abstract class DefaultDataSource implements DataSource {
     protected abstract void applyExtractor(@NonNull MediaExtractor extractor) throws IOException;
 
     protected abstract void applyRetriever(@NonNull MediaMetadataRetriever retriever);
+
+    private PostProcessor postProcessor = null;
+
+    @Override
+    public void setPostProcessor(PostProcessor postProcessor) {
+        this.postProcessor = postProcessor;
+    }
+
+    @Override
+    public PostProcessor getPostProcessor() {
+        return postProcessor;
+    }
 
     @Override
     public void selectTrack(@NonNull TrackType type) {

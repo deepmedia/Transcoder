@@ -20,6 +20,7 @@ import android.media.MediaFormat;
 import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.ValidatorException;
+import com.otaliastudios.transcoder.postprocessor.AudioPostProcessor;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.InvalidOutputFormatException;
 import com.otaliastudios.transcoder.source.DataSource;
@@ -177,7 +178,8 @@ public class Engine {
                         transcoder = new AudioTrackTranscoder(dataSource, mDataSink,
                                 interpolator,
                                 options.getAudioStretcher(),
-                                options.getAudioResampler());
+                                options.getAudioResampler(),
+                                (AudioPostProcessor)dataSource.getPostProcessor());
                         break;
                     default:
                         throw new RuntimeException("Unknown type: " + type);
