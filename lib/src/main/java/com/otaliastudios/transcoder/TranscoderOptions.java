@@ -18,6 +18,7 @@ import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
+import com.otaliastudios.transcoder.strategy.VideoTrackStrategy;
 import com.otaliastudios.transcoder.stretch.AudioStretcher;
 import com.otaliastudios.transcoder.stretch.DefaultAudioStretcher;
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator;
@@ -45,7 +46,7 @@ public class TranscoderOptions {
     private List<DataSource> videoDataSources;
     private List<DataSource> audioDataSources;
     private TrackStrategy audioTrackStrategy;
-    private TrackStrategy videoTrackStrategy;
+    private VideoTrackStrategy videoTrackStrategy;
     private Validator validator;
     private int rotation;
     private TimeInterpolator timeInterpolator;
@@ -76,7 +77,7 @@ public class TranscoderOptions {
     }
 
     @NonNull
-    public TrackStrategy getVideoTrackStrategy() {
+    public VideoTrackStrategy getVideoTrackStrategy() {
         return videoTrackStrategy;
     }
 
@@ -111,7 +112,7 @@ public class TranscoderOptions {
         private TranscoderListener listener;
         private Handler listenerHandler;
         private TrackStrategy audioTrackStrategy;
-        private TrackStrategy videoTrackStrategy;
+        private VideoTrackStrategy videoTrackStrategy;
         private Validator validator;
         private int rotation;
         private TimeInterpolator timeInterpolator;
@@ -199,13 +200,13 @@ public class TranscoderOptions {
          * Sets the video output strategy. If absent, this defaults to the 16:9
          * strategy returned by {@link DefaultVideoStrategies#for720x1280()}.
          *
-         * @param trackStrategy the desired strategy
+         * @param videoTrackStrategy the desired strategy
          * @return this for chaining
          */
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setVideoTrackStrategy(@Nullable TrackStrategy trackStrategy) {
-            this.videoTrackStrategy = trackStrategy;
+        public Builder setVideoTrackStrategy(@Nullable VideoTrackStrategy videoTrackStrategy) {
+            this.videoTrackStrategy = videoTrackStrategy;
             return this;
         }
 
