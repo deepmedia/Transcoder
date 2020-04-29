@@ -88,6 +88,21 @@ public class VideoDecoderOutput {
     }
 
     /**
+     * Scale the canvas along the two axes.
+     * @param scaleX x scale
+     * @param scaleY y scale
+     */
+    @SuppressWarnings("unused")
+    public void setDrawableScale(float scaleX, float scaleY) {
+        mDrawable.setRect(
+                -1.0F  * scaleX,
+                -1.0F * scaleY,
+                1.0F * scaleX,
+                1.0F * scaleY
+        );
+    }
+
+    /**
      * Sets the desired frame rotation with respect
      * to its natural orientation.
      * @param rotation rotation

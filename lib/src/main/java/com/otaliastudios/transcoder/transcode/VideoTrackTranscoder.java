@@ -16,20 +16,20 @@
 package com.otaliastudios.transcoder.transcode;
 
 import android.media.MediaCodec;
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
+import com.otaliastudios.transcoder.strategy.VideoTrackStrategy;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
-import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 import com.otaliastudios.transcoder.transcode.internal.VideoFrameDropper;
 
 import java.nio.ByteBuffer;
@@ -46,6 +46,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     private MediaCodec mEncoder; // Keep this since we want to signal EOS on it.
     private VideoFrameDropper mFrameDropper;
     private final TimeInterpolator mTimeInterpolator;
+    private final VideoTrackStrategy mStrategy;
     private final int mSourceRotation;
     private final int mExtraRotation;
 
@@ -53,9 +54,11 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
             @NonNull DataSource dataSource,
             @NonNull DataSink dataSink,
             @NonNull TimeInterpolator timeInterpolator,
+            @NonNull VideoTrackStrategy strategy,
             int rotation) {
         super(dataSource, dataSink, TrackType.VIDEO);
         mTimeInterpolator = timeInterpolator;
+        mStrategy = strategy;
         mSourceRotation = dataSource.getOrientation();
         mExtraRotation = rotation;
     }
@@ -130,7 +133,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         } else if (inputRatio < outputRatio) { // Input taller. We have a scaleY.
             scaleY = outputRatio / inputRatio;
         }
-        mDecoderOutputSurface.setScale(scaleX, scaleY);
+        mStrategy.scaleOutput(mDecoderOutputSurface, scaleX, scaleY);
     }
 
     @Override

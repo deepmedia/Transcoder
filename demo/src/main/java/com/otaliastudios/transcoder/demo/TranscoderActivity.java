@@ -29,6 +29,7 @@ import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
+import com.otaliastudios.transcoder.strategy.VideoTrackStrategy;
 import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.FractionResizer;
 import com.otaliastudios.transcoder.strategy.size.PassThroughResizer;
@@ -78,7 +79,7 @@ public class TranscoderActivity extends AppCompatActivity implements
     private Uri mAudioReplacementUri;
     private File mTranscodeOutputFile;
     private long mTranscodeStartTime;
-    private TrackStrategy mTranscodeVideoStrategy;
+    private VideoTrackStrategy mTranscodeVideoStrategy;
     private TrackStrategy mTranscodeAudioStrategy;
     private long mTrimStartUs = 0;
     private long mTrimEndUs = 0;
