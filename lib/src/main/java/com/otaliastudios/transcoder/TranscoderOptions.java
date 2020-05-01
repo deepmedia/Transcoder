@@ -8,6 +8,8 @@ import android.os.Looper;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.resample.DefaultAudioResampler;
+import com.otaliastudios.transcoder.scale.UpVideoScaler;
+import com.otaliastudios.transcoder.scale.VideoScaler;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
@@ -18,7 +20,6 @@ import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
-import com.otaliastudios.transcoder.strategy.VideoTrackStrategy;
 import com.otaliastudios.transcoder.stretch.AudioStretcher;
 import com.otaliastudios.transcoder.stretch.DefaultAudioStretcher;
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator;
@@ -46,12 +47,13 @@ public class TranscoderOptions {
     private List<DataSource> videoDataSources;
     private List<DataSource> audioDataSources;
     private TrackStrategy audioTrackStrategy;
-    private VideoTrackStrategy videoTrackStrategy;
+    private TrackStrategy videoTrackStrategy;
     private Validator validator;
     private int rotation;
     private TimeInterpolator timeInterpolator;
     private AudioStretcher audioStretcher;
     private AudioResampler audioResampler;
+    private VideoScaler videoScaler;
 
     TranscoderListener listener;
     Handler listenerHandler;
@@ -77,7 +79,7 @@ public class TranscoderOptions {
     }
 
     @NonNull
-    public VideoTrackStrategy getVideoTrackStrategy() {
+    public TrackStrategy getVideoTrackStrategy() {
         return videoTrackStrategy;
     }
 
@@ -105,6 +107,11 @@ public class TranscoderOptions {
         return audioResampler;
     }
 
+    @NonNull
+    public VideoScaler getVideoScaler() {
+        return videoScaler;
+    }
+
     public static class Builder {
         private DataSink dataSink;
         private final List<DataSource> audioDataSources = new ArrayList<>();
@@ -112,12 +119,13 @@ public class TranscoderOptions {
         private TranscoderListener listener;
         private Handler listenerHandler;
         private TrackStrategy audioTrackStrategy;
-        private VideoTrackStrategy videoTrackStrategy;
+        private TrackStrategy videoTrackStrategy;
         private Validator validator;
         private int rotation;
         private TimeInterpolator timeInterpolator;
         private AudioStretcher audioStretcher;
         private AudioResampler audioResampler;
+        private VideoScaler videoScaler;
 
         Builder(@NonNull String outPath) {
             this.dataSink = new DefaultDataSink(outPath);
@@ -205,7 +213,7 @@ public class TranscoderOptions {
          */
         @NonNull
         @SuppressWarnings("unused")
-        public Builder setVideoTrackStrategy(@Nullable VideoTrackStrategy videoTrackStrategy) {
+        public Builder setVideoTrackStrategy(@Nullable TrackStrategy videoTrackStrategy) {
             this.videoTrackStrategy = videoTrackStrategy;
             return this;
         }
@@ -320,6 +328,18 @@ public class TranscoderOptions {
         }
 
         /**
+         * Set an {@link VideoScaler} to change the resolution of the video frames
+         * so that they fit the new resolution
+         *
+         */
+        @NonNull
+        @SuppressWarnings("unused")
+        public Builder setVideoScaler(@NonNull VideoScaler videoScaler) {
+            this.videoScaler = videoScaler;
+            return this;
+        }
+
+        /**
          * Generates muted audio data sources if needed
          * @return The list of audio data sources including the muted sources
          */
@@ -390,6 +410,9 @@ public class TranscoderOptions {
             if (audioResampler == null) {
                 audioResampler = new DefaultAudioResampler();
             }
+            if (videoScaler == null) {
+                videoScaler = new UpVideoScaler();
+            }
             TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
             options.audioDataSources = buildAudioDataSources();
@@ -403,6 +426,7 @@ public class TranscoderOptions {
             options.timeInterpolator = timeInterpolator;
             options.audioStretcher = audioStretcher;
             options.audioResampler = audioResampler;
+            options.videoScaler = videoScaler;
             return options;
         }
 

@@ -171,7 +171,7 @@ public class Engine {
                     case VIDEO:
                         transcoder = new VideoTrackTranscoder(dataSource, mDataSink,
                                 interpolator,
-                                options.getVideoTrackStrategy(),
+                                options.getVideoScaler(),
                                 options.getVideoRotation());
                         break;
                     case AUDIO:

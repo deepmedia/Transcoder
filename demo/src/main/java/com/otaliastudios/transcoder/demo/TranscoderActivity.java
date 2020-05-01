@@ -20,6 +20,10 @@ import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.scale.DownVideoScaler;
+import com.otaliastudios.transcoder.scale.StretchVideoScaler;
+import com.otaliastudios.transcoder.scale.UpVideoScaler;
+import com.otaliastudios.transcoder.scale.VideoScaler;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
@@ -29,7 +33,6 @@ import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
-import com.otaliastudios.transcoder.strategy.VideoTrackStrategy;
 import com.otaliastudios.transcoder.strategy.size.AspectRatioResizer;
 import com.otaliastudios.transcoder.strategy.size.FractionResizer;
 import com.otaliastudios.transcoder.strategy.size.PassThroughResizer;
@@ -60,6 +63,7 @@ public class TranscoderActivity extends AppCompatActivity implements
     private RadioGroup mVideoFramesGroup;
     private RadioGroup mVideoResolutionGroup;
     private RadioGroup mVideoAspectGroup;
+    private RadioGroup mVideoScalingGroup;
     private RadioGroup mVideoRotationGroup;
     private RadioGroup mSpeedGroup;
     private RadioGroup mAudioReplaceGroup;
@@ -79,7 +83,7 @@ public class TranscoderActivity extends AppCompatActivity implements
     private Uri mAudioReplacementUri;
     private File mTranscodeOutputFile;
     private long mTranscodeStartTime;
-    private VideoTrackStrategy mTranscodeVideoStrategy;
+    private TrackStrategy mTranscodeVideoStrategy;
     private TrackStrategy mTranscodeAudioStrategy;
     private long mTrimStartUs = 0;
     private long mTrimEndUs = 0;
@@ -135,6 +139,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         mVideoFramesGroup = findViewById(R.id.frames);
         mVideoResolutionGroup = findViewById(R.id.resolution);
         mVideoAspectGroup = findViewById(R.id.aspect);
+        mVideoScalingGroup = findViewById(R.id.scale);
         mVideoRotationGroup = findViewById(R.id.rotation);
         mSpeedGroup = findViewById(R.id.speed);
         mAudioSampleRateGroup = findViewById(R.id.sampleRate);
@@ -144,6 +149,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         mVideoFramesGroup.setOnCheckedChangeListener(mRadioGroupListener);
         mVideoResolutionGroup.setOnCheckedChangeListener(mRadioGroupListener);
         mVideoAspectGroup.setOnCheckedChangeListener(mRadioGroupListener);
+        mVideoScalingGroup.setOnCheckedChangeListener(mRadioGroupListener);
         mAudioSampleRateGroup.setOnCheckedChangeListener(mRadioGroupListener);
         mTrimStartView.addTextChangedListener(mTextListener);
         mTrimEndView.addTextChangedListener(mTextListener);
@@ -297,11 +303,18 @@ public class TranscoderActivity extends AppCompatActivity implements
             default: speed = 1F;
         }
 
+        VideoScaler videoScaler;
+        switch (mVideoScalingGroup.getCheckedRadioButtonId()) {
+            case R.id.scale_down: videoScaler = new DownVideoScaler(); break;
+            case R.id.scale_stretch: videoScaler = new StretchVideoScaler(); break;
+            default: videoScaler = new UpVideoScaler(); break;
+        }
+
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
         DataSink sink = new DefaultDataSink(mTranscodeOutputFile.getAbsolutePath());
-        TranscoderOptions.Builder builder = Transcoder.into(sink);
+        TranscoderOptions.Builder builder = Transcoder.into(sink).setVideoScaler(videoScaler);
         if (mAudioReplacementUri == null) {
             if (mTranscodeInputUri1 != null) {
                 DataSource source = new UriDataSource(this, mTranscodeInputUri1);

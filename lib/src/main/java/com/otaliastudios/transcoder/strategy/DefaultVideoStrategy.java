@@ -26,7 +26,7 @@ import java.util.List;
  * An {@link TrackStrategy} for video that converts it AVC with the given size.
  * The input and output aspect ratio must match.
  */
-public class DefaultVideoStrategy implements VideoTrackStrategy {
+public class DefaultVideoStrategy implements TrackStrategy {
     private final static String TAG = DefaultVideoStrategy.class.getSimpleName();
     private final static Logger LOG = new Logger(TAG);
 
@@ -289,11 +289,6 @@ public class DefaultVideoStrategy implements VideoTrackStrategy {
                 : options.targetBitRate);
         outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, outBitRate);
         return TrackStatus.COMPRESSING;
-    }
-
-    @Override
-    public void scaleOutput(@NonNull VideoDecoderOutput videoDecoderOutput, float scaleX, float scaleY) {
-        videoDecoderOutput.setScale(scaleX, scaleY);
     }
 
     private boolean checkMimeType(@NonNull List<MediaFormat> formats) {

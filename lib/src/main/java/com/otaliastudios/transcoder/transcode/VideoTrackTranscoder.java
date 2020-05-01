@@ -24,9 +24,9 @@ import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
+import com.otaliastudios.transcoder.scale.VideoScaler;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
-import com.otaliastudios.transcoder.strategy.VideoTrackStrategy;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
@@ -46,7 +46,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     private MediaCodec mEncoder; // Keep this since we want to signal EOS on it.
     private VideoFrameDropper mFrameDropper;
     private final TimeInterpolator mTimeInterpolator;
-    private final VideoTrackStrategy mStrategy;
+    private final VideoScaler mVideoScaler;
     private final int mSourceRotation;
     private final int mExtraRotation;
 
@@ -54,11 +54,11 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
             @NonNull DataSource dataSource,
             @NonNull DataSink dataSink,
             @NonNull TimeInterpolator timeInterpolator,
-            @NonNull VideoTrackStrategy strategy,
+            @NonNull VideoScaler videoScaler,
             int rotation) {
         super(dataSource, dataSink, TrackType.VIDEO);
         mTimeInterpolator = timeInterpolator;
-        mStrategy = strategy;
+        mVideoScaler = videoScaler;
         mSourceRotation = dataSource.getOrientation();
         mExtraRotation = rotation;
     }
@@ -133,7 +133,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         } else if (inputRatio < outputRatio) { // Input taller. We have a scaleY.
             scaleY = outputRatio / inputRatio;
         }
-        mStrategy.scaleOutput(mDecoderOutputSurface, scaleX, scaleY);
+        mVideoScaler.scaleOutput(mDecoderOutputSurface, scaleX, scaleY, flip);
     }
 
     @Override
