@@ -2,6 +2,7 @@ package com.otaliastudios.transcoder;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -33,6 +34,7 @@ import java.util.concurrent.Future;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 /**
  * Collects transcoding options consumed by {@link Transcoder}.
@@ -120,6 +122,11 @@ public class TranscoderOptions {
 
         Builder(@NonNull String outPath) {
             this.dataSink = new DefaultDataSink(outPath);
+        }
+
+        @RequiresApi(api = Build.VERSION_CODES.O)
+        Builder(@NonNull FileDescriptor fileDescriptor) {
+            this.dataSink = new DefaultDataSink(fileDescriptor);
         }
 
         Builder(@NonNull DataSink dataSink) {
