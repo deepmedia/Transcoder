@@ -15,6 +15,7 @@
  */
 package com.otaliastudios.transcoder;
 
+import android.os.Build;
 import android.os.Handler;
 
 import com.otaliastudios.transcoder.engine.Engine;
@@ -24,6 +25,7 @@ import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
 import com.otaliastudios.transcoder.internal.ValidatorException;
 
+import java.io.FileDescriptor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 public class Transcoder {
     private static final String TAG = Transcoder.class.getSimpleName();
@@ -97,6 +100,19 @@ public class Transcoder {
     @NonNull
     public static TranscoderOptions.Builder into(@NonNull String outPath) {
         return new TranscoderOptions.Builder(outPath);
+    }
+
+    /**
+     * Starts building transcoder options.
+     * Requires a non null fileDescriptor to the output file or stream
+     *
+     * @param fileDescriptor descriptor of the output file or stream
+     * @return an options builder
+     */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @NonNull
+    public static TranscoderOptions.Builder into(@NonNull FileDescriptor fileDescriptor) {
+        return new TranscoderOptions.Builder(fileDescriptor);
     }
 
     /**

@@ -6,12 +6,14 @@ import android.media.MediaMuxer;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import com.otaliastudios.transcoder.engine.TrackStatus;
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.TrackTypeMap;
 import com.otaliastudios.transcoder.internal.Logger;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -69,6 +71,21 @@ public class DefaultDataSink implements DataSink {
     public DefaultDataSink(@NonNull String outputFilePath, int format) {
         try {
             mMuxer = new MediaMuxer(outputFilePath, format);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public DefaultDataSink(@NonNull FileDescriptor fileDescriptor) {
+        this(fileDescriptor, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @SuppressWarnings("WeakerAccess")
+    public DefaultDataSink(@NonNull FileDescriptor fileDescriptor, int format) {
+        try {
+            mMuxer = new MediaMuxer(fileDescriptor, format);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
