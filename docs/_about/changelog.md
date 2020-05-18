@@ -9,6 +9,12 @@ New versions are released through GitHub, so the reference page is the [GitHub R
 > Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
 Companies can share a tiny part of their revenue and get private support hours in return. Thanks!
 
+### v0.9.1
+
+- Improvement: `DefaultDataSink` new constructor with support for FileDescriptor. ([#87][87])
+
+<https://github.com/natario1/Transcoder/compare/v0.9.0...v0.9.1>
+
 ### v0.9.0
 
 - New: `BlankAudioDataSource` can be used to add muted audio to a video-only track, thanks to [@mudar][mudar] ([#64][64]) 
