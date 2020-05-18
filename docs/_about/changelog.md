@@ -123,3 +123,4 @@ frames, the trim timestamp might be different than what was selected.
 [54]: https://github.com/natario1/Transcoder/pull/54
 [61]: https://github.com/natario1/Transcoder/pull/61
 [64]: https://github.com/natario1/Transcoder/pull/64
+[87]: https://github.com/natario1/Transcoder/pull/87
