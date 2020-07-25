@@ -7,6 +7,8 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.io_factory.DecoderIOFactory;
+import com.otaliastudios.transcoder.io_factory.DefaultDecoderIOFactory;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.resample.DefaultAudioResampler;
 import com.otaliastudios.transcoder.sink.DataSink;
@@ -44,6 +46,7 @@ public class TranscoderOptions {
     private TranscoderOptions() {}
 
     private DataSink dataSink;
+    private DecoderIOFactory decoderIOFactory;
     private List<DataSource> videoDataSources;
     private List<DataSource> audioDataSources;
     private TrackStrategy audioTrackStrategy;
@@ -60,6 +63,11 @@ public class TranscoderOptions {
     @NonNull
     public DataSink getDataSink() {
         return dataSink;
+    }
+
+    @NonNull
+    public DecoderIOFactory getDecoderIOFactory() {
+        return decoderIOFactory;
     }
 
     @NonNull
@@ -108,6 +116,7 @@ public class TranscoderOptions {
 
     public static class Builder {
         private DataSink dataSink;
+        private DecoderIOFactory decoderIOFactory;
         private final List<DataSource> audioDataSources = new ArrayList<>();
         private final List<DataSource> videoDataSources = new ArrayList<>();
         private TranscoderListener listener;
@@ -396,11 +405,16 @@ public class TranscoderOptions {
             if (audioResampler == null) {
                 audioResampler = new DefaultAudioResampler();
             }
+            if (decoderIOFactory == null) {
+                decoderIOFactory = new DefaultDecoderIOFactory();
+            }
+
             TranscoderOptions options = new TranscoderOptions();
             options.listener = listener;
             options.audioDataSources = buildAudioDataSources();
             options.videoDataSources = videoDataSources;
             options.dataSink = dataSink;
+            options.decoderIOFactory = decoderIOFactory;
             options.listenerHandler = listenerHandler;
             options.audioTrackStrategy = audioTrackStrategy;
             options.videoTrackStrategy = videoTrackStrategy;
