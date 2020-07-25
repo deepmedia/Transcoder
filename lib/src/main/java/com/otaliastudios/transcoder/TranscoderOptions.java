@@ -335,6 +335,19 @@ public class TranscoderOptions {
         }
 
         /**
+         * Sets an {@link DecoderIOFactory} to provide decoder input and output.
+         * Can be use to implement custom video postprocessing
+         * Defaults to {@link DefaultAudioResampler}.
+         *
+         * @param decoderIOFactory a decoder io factory
+         * @return this for chaining
+         */
+        public Builder setDecoderIOFactory(DecoderIOFactory decoderIOFactory) {
+            this.decoderIOFactory = decoderIOFactory;
+            return this;
+        }
+
+        /**
          * Generates muted audio data sources if needed
          * @return The list of audio data sources including the muted sources
          */
