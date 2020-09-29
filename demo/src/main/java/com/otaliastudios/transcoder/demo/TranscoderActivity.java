@@ -108,14 +108,14 @@ public class TranscoderActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Logger.setLogLevel(Logger.LEVEL_VERBOSE);
+        Logger.setLogLevel(Logger.LEVEL_ERROR);
         setContentView(R.layout.activity_transcoder);
 
         mButtonView = findViewById(R.id.button);
         mButtonView.setOnClickListener(v -> {
             if (!mIsTranscoding) {
                 startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT)
-                        .setType("video/*")
+                        .setType("audio/*,video/*")
                         .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true), REQUEST_CODE_PICK);
             } else {
                 mTranscodeFuture.cancel(true);
