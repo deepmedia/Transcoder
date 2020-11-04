@@ -278,7 +278,8 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
 
         if ((mBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mIsEncoderEOS = true;
-            mBufferInfo.set(0, 0, 0, mBufferInfo.flags);
+            mEncoder.releaseOutputBuffer(result, false);
+            return DRAIN_STATE_NONE;
         }
         if ((mBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
             // SPS or PPS, which should be passed by MediaFormat.

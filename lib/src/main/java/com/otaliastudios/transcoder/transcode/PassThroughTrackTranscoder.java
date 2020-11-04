@@ -69,8 +69,6 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         }
         if (mDataSource.isDrained() || forceInputEos) {
             mDataChunk.buffer.clear();
-            mBufferInfo.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-            mDataSink.writeTrack(mTrackType, mDataChunk.buffer, mBufferInfo);
             mIsEOS = true;
             return true;
         }
