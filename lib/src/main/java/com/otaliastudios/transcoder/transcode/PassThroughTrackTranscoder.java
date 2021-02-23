@@ -39,6 +39,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     private final MediaFormat mOutputFormat;
     private boolean mOutputFormatSet = false;
     private TimeInterpolator mTimeInterpolator;
+    protected boolean isLastPart;
 
     public PassThroughTrackTranscoder(@NonNull DataSource dataSource,
                                       @NonNull DataSink dataSink,
@@ -69,8 +70,10 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
         }
         if (mDataSource.isDrained() || forceInputEos) {
             mDataChunk.buffer.clear();
-            mBufferInfo.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-            mDataSink.writeTrack(mTrackType, mDataChunk.buffer, mBufferInfo);
+            if (isLastPart) {
+                mBufferInfo.set(0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                mDataSink.writeTrack(mTrackType, mDataChunk.buffer, mBufferInfo);
+            }
             mIsEOS = true;
             return true;
         }
@@ -94,5 +97,10 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
 
     @Override
     public void release() {
+    }
+
+    @Override
+    public void setIsLastPart(boolean isLastPart) {
+        this.isLastPart = isLastPart;
     }
 }

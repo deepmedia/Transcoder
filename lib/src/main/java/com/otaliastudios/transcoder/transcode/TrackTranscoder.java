@@ -37,4 +37,6 @@ public interface TrackTranscoder {
     boolean isFinished();
 
     void release();
+
+    void setIsLastPart(boolean isLastPart);
 }

@@ -143,6 +143,13 @@ public class Engine {
                 && mTranscoders.require(type).get(current).isFinished();
     }
 
+    private boolean isLastPart(@NonNull TrackType type) {
+        if (mDataSources.require(type).isEmpty()) return true;
+        int current = mCurrentStep.require(type);
+        return current == mDataSources.require(type).size() - 1
+                && current == mTranscoders.require(type).size() - 1;
+    }
+
     private void openCurrentStep(@NonNull TrackType type, @NonNull TranscoderOptions options) {
         int current = mCurrentStep.require(type);
         TrackStatus status = mStatuses.require(type);
@@ -369,6 +376,12 @@ public class Engine {
                 videoCompleted = isCompleted(TrackType.VIDEO);
                 audioTranscoder = audioCompleted ? null : getCurrentTrackTranscoder(TrackType.AUDIO, options);
                 videoTranscoder = videoCompleted ? null : getCurrentTrackTranscoder(TrackType.VIDEO, options);
+                if (audioTranscoder != null) {
+                    audioTranscoder.setIsLastPart(isLastPart(TrackType.AUDIO));
+                }
+                if (videoTranscoder != null) {
+                    videoTranscoder.setIsLastPart(isLastPart(TrackType.VIDEO));
+                }
                 if (!audioCompleted) {
                     stepped |= audioTranscoder.transcode(forceAudioEos);
                 }

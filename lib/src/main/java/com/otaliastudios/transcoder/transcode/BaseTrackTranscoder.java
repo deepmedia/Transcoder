@@ -3,6 +3,7 @@ package com.otaliastudios.transcoder.transcode;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.os.Build;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
@@ -42,6 +43,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     private boolean mIsDecoderEOS;
     private boolean mIsEncoderEOS;
     private boolean mIsExtractorEOS;
+    protected boolean isLastPart;
 
     @SuppressWarnings("WeakerAccess")
     protected BaseTrackTranscoder(@NonNull DataSource dataSource,
@@ -134,6 +136,11 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     @Override
     public final boolean isFinished() {
         return mIsEncoderEOS;
+    }
+
+    @Override
+    public void setIsLastPart(boolean isLastPart) {
+        this.isLastPart = isLastPart;
     }
 
     @Override
@@ -278,7 +285,12 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
 
         if ((mBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mIsEncoderEOS = true;
-            mBufferInfo.set(0, 0, 0, mBufferInfo.flags);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                mEncoder.releaseOutputBuffer(result, false);
+                return DRAIN_STATE_NONE;
+            } else {
+                mBufferInfo.set(0, 0, 0, mBufferInfo.flags);
+            }
         }
         if ((mBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
             // SPS or PPS, which should be passed by MediaFormat.

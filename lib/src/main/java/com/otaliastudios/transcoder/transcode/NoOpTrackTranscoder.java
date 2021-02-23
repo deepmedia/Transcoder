@@ -41,4 +41,9 @@ public class NoOpTrackTranscoder implements TrackTranscoder {
     @Override
     public void release() {
     }
+
+    @Override
+    public void setIsLastPart(boolean isLastPart) {
+
+    }
 }
