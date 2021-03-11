@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.common;
 
 /**
  * Represent the types of a track (either video or audio).

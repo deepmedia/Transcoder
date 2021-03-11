@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.common;
 
 /**
  * Represents the status of a given track inside the transcoding operation.
@@ -34,10 +34,12 @@ public enum TrackStatus {
      */
     public boolean isTranscoding() {
         switch (this) {
-            case PASS_THROUGH: return true;
-            case COMPRESSING: return true;
-            case REMOVING: return false;
-            case ABSENT: return false;
+            case PASS_THROUGH:
+            case COMPRESSING:
+                return true;
+            case REMOVING:
+            case ABSENT:
+                return false;
         }
         throw new RuntimeException("Unexpected track status: " + this);
     }

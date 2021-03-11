@@ -3,15 +3,14 @@ package com.otaliastudios.transcoder.source;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.TrackTypeMap;
+import com.otaliastudios.transcoder.internal.TrackMap;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -28,11 +27,11 @@ public abstract class DefaultDataSource implements DataSource {
     private MediaExtractor mExtractor = new MediaExtractor();
     private boolean mMetadataApplied;
     private boolean mExtractorApplied;
-    private final TrackTypeMap<MediaFormat> mFormats = new TrackTypeMap<>();
-    private final TrackTypeMap<Integer> mIndex = new TrackTypeMap<>();
+    private final TrackMap<MediaFormat> mFormats = new TrackMap<>();
+    private final TrackMap<Integer> mIndex = new TrackMap<>();
     private final HashSet<TrackType> mSelectedTracks = new HashSet<>();
-    private final TrackTypeMap<Long> mLastTimestampUs
-            = new TrackTypeMap<>(0L, 0L);
+    private final TrackMap<Long> mLastTimestampUs
+            = new TrackMap<>(0L, 0L);
     private long mFirstTimestampUs = Long.MIN_VALUE;
 
     private void ensureMetadata() {

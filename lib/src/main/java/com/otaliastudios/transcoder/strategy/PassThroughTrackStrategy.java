@@ -3,9 +3,8 @@ package com.otaliastudios.transcoder.strategy;
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
-import com.otaliastudios.transcoder.engine.TrackStatus;
+import com.otaliastudios.transcoder.common.TrackStatus;
 
 import java.util.List;
 

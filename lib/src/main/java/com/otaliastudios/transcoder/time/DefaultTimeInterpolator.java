@@ -2,7 +2,7 @@ package com.otaliastudios.transcoder.time;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.common.TrackType;
 
 /**
  * A {@link TimeInterpolator} that does no time interpolation or correction -

@@ -5,8 +5,8 @@ import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.engine.TrackStatus;
-import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.common.TrackStatus;
+import com.otaliastudios.transcoder.common.TrackType;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

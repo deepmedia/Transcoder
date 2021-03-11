@@ -1,6 +1,9 @@
-package com.otaliastudios.transcoder.strategy.size;
+package com.otaliastudios.transcoder.resize;
 
 import androidx.annotation.NonNull;
+
+import com.otaliastudios.transcoder.common.Size;
+import com.otaliastudios.transcoder.resize.Resizer;
 
 /**
  * A {@link Resizer} that scales down the input size so that its dimension

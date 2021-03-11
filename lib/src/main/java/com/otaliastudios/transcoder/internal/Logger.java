@@ -35,7 +35,7 @@ public class Logger {
     @Retention(RetentionPolicy.SOURCE)
     public @interface LogLevel {}
 
-    private String mTag;
+    private final String mTag;
 
     public Logger(@NonNull String tag) {
         mTag = tag;
