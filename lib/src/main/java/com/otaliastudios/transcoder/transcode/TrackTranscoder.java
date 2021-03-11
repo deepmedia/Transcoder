@@ -18,9 +18,6 @@ package com.otaliastudios.transcoder.transcode;
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
-import com.otaliastudios.transcoder.engine.TrackType;
 
 public interface TrackTranscoder {
 

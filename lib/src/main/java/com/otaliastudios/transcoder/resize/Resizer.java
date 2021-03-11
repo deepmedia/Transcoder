@@ -1,6 +1,9 @@
-package com.otaliastudios.transcoder.strategy.size;
+package com.otaliastudios.transcoder.resize;
 
 import androidx.annotation.NonNull;
+
+import com.otaliastudios.transcoder.common.ExactSize;
+import com.otaliastudios.transcoder.common.Size;
 
 /**
  * A general purpose interface that can be used (accepted as a parameter)

@@ -2,8 +2,8 @@ package com.otaliastudios.transcoder.time;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.internal.TrackTypeMap;
+import com.otaliastudios.transcoder.common.TrackType;
+import com.otaliastudios.transcoder.internal.TrackMap;
 import com.otaliastudios.transcoder.internal.Logger;
 
 
@@ -18,7 +18,7 @@ public class SpeedTimeInterpolator implements TimeInterpolator {
     private final static Logger LOG = new Logger(TAG);
 
     private double mFactor;
-    private final TrackTypeMap<TrackData> mTrackData = new TrackTypeMap<>();
+    private final TrackMap<TrackData> mTrackData = new TrackMap<>();
 
     /**
      * Creates a new speed interpolator for the given factor.

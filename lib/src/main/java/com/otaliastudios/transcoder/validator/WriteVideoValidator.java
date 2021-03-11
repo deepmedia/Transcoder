@@ -2,7 +2,7 @@ package com.otaliastudios.transcoder.validator;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.engine.TrackStatus;
+import com.otaliastudios.transcoder.common.TrackStatus;
 
 /**
  * A {@link Validator} that gives priority to the video track.

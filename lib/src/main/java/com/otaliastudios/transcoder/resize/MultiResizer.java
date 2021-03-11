@@ -1,9 +1,12 @@
-package com.otaliastudios.transcoder.strategy.size;
+package com.otaliastudios.transcoder.resize;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
+
+import com.otaliastudios.transcoder.common.Size;
+import com.otaliastudios.transcoder.resize.Resizer;
 
 /**
  * A {@link Resizer} that applies a chain of multiple resizers.

@@ -16,14 +16,10 @@
 package com.otaliastudios.transcoder;
 
 import android.os.Build;
-import android.os.Handler;
 
-import com.otaliastudios.transcoder.engine.Engine;
+import com.otaliastudios.transcoder.engine.DefaultEngine;
 import com.otaliastudios.transcoder.sink.DataSink;
-import com.otaliastudios.transcoder.source.DataSource;
-import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.validator.Validator;
-import com.otaliastudios.transcoder.internal.ValidatorException;
 
 import java.io.FileDescriptor;
 import java.util.concurrent.Callable;
@@ -38,9 +34,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
 public class Transcoder {
-    private static final String TAG = Transcoder.class.getSimpleName();
-    private static final Logger LOG = new Logger(TAG);
-
     /**
      * Constant for {@link TranscoderListener#onTranscodeCompleted(int)}.
      * Transcoding was executed successfully.
@@ -56,27 +49,6 @@ public class Transcoder {
 
     private static volatile Transcoder sTranscoder;
 
-    private class Factory implements ThreadFactory {
-        private AtomicInteger count = new AtomicInteger(1);
-
-        @Override
-        public Thread newThread(@NonNull Runnable runnable) {
-            return new Thread(runnable, TAG + " Thread #" + count.getAndIncrement());
-        }
-    }
-
-    private ThreadPoolExecutor mExecutor;
-
-    private Transcoder() {
-        // This executor will execute at most 'pool' tasks concurrently,
-        // then queue all the others. CPU + 1 is used by AsyncTask.
-        int pool = Runtime.getRuntime().availableProcessors() + 1;
-        mExecutor = new ThreadPoolExecutor(pool, pool,
-                60, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<Runnable>(),
-                new Factory());
-    }
-
     @SuppressWarnings("WeakerAccess")
     @NonNull
     public static Transcoder getInstance() {
@@ -89,6 +61,8 @@ public class Transcoder {
         }
         return sTranscoder;
     }
+
+    private Transcoder() { /* private */ }
 
     /**
      * Starts building transcoder options.
@@ -128,6 +102,25 @@ public class Transcoder {
     }
 
     /**
+     * NOTE: A better maximum pool size (instead of CPU+1) would be the number of MediaCodec
+     * instances that the device can handle at the same time. Hard to tell though as that
+     * also depends on the codec type / on input data.
+     */
+    private final ThreadPoolExecutor mExecutor = new ThreadPoolExecutor(
+            Runtime.getRuntime().availableProcessors() + 1,
+            Runtime.getRuntime().availableProcessors() + 1,
+            60,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<Runnable>(),
+            new ThreadFactory() {
+                private final AtomicInteger count = new AtomicInteger(1);
+                @Override
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, "TranscoderThread #" + count.getAndIncrement());
+                }
+            });
+
+    /**
      * Transcodes video file asynchronously.
      *
      * @param options The transcoder options.
@@ -135,106 +128,13 @@ public class Transcoder {
      */
     @NonNull
     public Future<Void> transcode(@NonNull final TranscoderOptions options) {
-        final TranscoderListener listenerWrapper = new ListenerWrapper(options.listenerHandler,
-                options.listener);
         return mExecutor.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                try {
-                    Engine engine = new Engine(new Engine.ProgressCallback() {
-                        @Override
-                        public void onProgress(final double progress) {
-                            listenerWrapper.onTranscodeProgress(progress);
-                        }
-                    });
-                    engine.transcode(options);
-                    listenerWrapper.onTranscodeCompleted(SUCCESS_TRANSCODED);
-
-                } catch (ValidatorException e) {
-                    LOG.i("Validator has decided that the input is fine and transcoding is not necessary.");
-                    listenerWrapper.onTranscodeCompleted(SUCCESS_NOT_NEEDED);
-
-                } catch (Throwable e) {
-                    // Check InterruptedException in e and in its causes.
-                    Throwable current = e;
-                    boolean isInterrupted = e instanceof InterruptedException;
-                    while (!isInterrupted && current.getCause() != null && !current.getCause().equals(current)) {
-                        current = current.getCause();
-                        if (current instanceof InterruptedException) isInterrupted = true;
-                    }
-                    if (isInterrupted) {
-                        LOG.i("Transcode canceled.", current);
-                        listenerWrapper.onTranscodeCanceled();
-
-                    } else if (e instanceof RuntimeException) {
-                        LOG.e("Fatal error while transcoding, this might be invalid format or bug in engine or Android.", e);
-                        listenerWrapper.onTranscodeFailed(e);
-                        throw e;
-
-                    } else {
-                        LOG.e("Unexpected error while transcoding", e);
-                        listenerWrapper.onTranscodeFailed(e);
-                        throw e;
-                    }
-                }
+                new DefaultEngine().transcode(options);
                 return null;
             }
         });
     }
 
-    /**
-     * Wraps a TranscoderListener and posts events on the given handler.
-     */
-    private static class ListenerWrapper implements TranscoderListener {
-
-        private Handler mHandler;
-        private TranscoderListener mListener;
-
-        private ListenerWrapper(@NonNull Handler handler, @NonNull TranscoderListener listener) {
-            mHandler = handler;
-            mListener = listener;
-        }
-
-        @Override
-        public void onTranscodeCanceled() {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mListener.onTranscodeCanceled();
-                }
-            });
-        }
-
-        @Override
-        public void onTranscodeCompleted(final int successCode) {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mListener.onTranscodeCompleted(successCode);
-                }
-            });
-        }
-
-        @Override
-        public void onTranscodeFailed(@NonNull final Throwable exception) {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mListener.onTranscodeFailed(exception);
-                }
-            });
-        }
-
-        @Override
-        public void onTranscodeProgress(final double progress) {
-            // Don't think there's a safe way to avoid this allocation?
-            // Other than creating a pool of runnables.
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mListener.onTranscodeProgress(progress);
-                }
-            });
-        }
-    }
 }

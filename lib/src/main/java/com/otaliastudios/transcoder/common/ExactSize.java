@@ -1,4 +1,6 @@
-package com.otaliastudios.transcoder.strategy.size;
+package com.otaliastudios.transcoder.common;
+
+import com.otaliastudios.transcoder.resize.Resizer;
 
 /**
  * A special {@link Size} that knows about which dimension is width
@@ -8,8 +10,8 @@ package com.otaliastudios.transcoder.strategy.size;
  */
 public class ExactSize extends Size {
 
-    private int mWidth;
-    private int mHeight;
+    private final int mWidth;
+    private final int mHeight;
 
     public ExactSize(int width, int height) {
         super(width, height);

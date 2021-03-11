@@ -2,11 +2,10 @@ package com.otaliastudios.transcoder.strategy;
 
 import android.media.MediaFormat;
 
-import com.otaliastudios.transcoder.engine.TrackStatus;
-import com.otaliastudios.transcoder.strategy.size.Resizer;
+import com.otaliastudios.transcoder.common.TrackStatus;
+import com.otaliastudios.transcoder.resize.Resizer;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import java.util.List;
 

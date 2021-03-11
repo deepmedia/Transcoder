@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.strategy.size;
+package com.otaliastudios.transcoder.common;
 
 /**
  * Represents a video size in pixels,
@@ -7,8 +7,8 @@ package com.otaliastudios.transcoder.strategy.size;
  */
 public class Size {
 
-    private int mMajor;
-    private int mMinor;
+    private final int mMajor;
+    private final int mMinor;
 
     /**
      * The order does not matter.

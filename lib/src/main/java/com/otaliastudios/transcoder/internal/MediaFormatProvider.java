@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.internal;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
@@ -6,6 +6,7 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.source.DataSource;
 
@@ -20,7 +21,7 @@ import java.io.IOException;
  * This class will check the completeness of the input format and if needed, provide a more
  * complete format by decoding the input file until MediaCodec computes all values.
  */
-class MediaFormatProvider {
+public class MediaFormatProvider {
 
     /**
      * Inspects the given format - coming from {@link DataSource#getTrackFormat(TrackType)},
@@ -32,7 +33,7 @@ class MediaFormatProvider {
      * @return a complete format
      */
     @NonNull
-    MediaFormat provideMediaFormat(@NonNull DataSource source,
+    public MediaFormat provideMediaFormat(@NonNull DataSource source,
                                    @NonNull TrackType type,
                                    @NonNull MediaFormat format) {
         // If this format is already complete, there's nothing we should do.

@@ -3,7 +3,7 @@ package com.otaliastudios.transcoder.internal;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.common.TrackType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,20 +14,19 @@ import java.util.Map;
  *
  * @param <T> the map type
  */
-public class TrackTypeMap<T> {
+public class TrackMap<T> {
 
-    public TrackTypeMap() {
+    public TrackMap() {
     }
 
-    public TrackTypeMap(@NonNull T videoValue, @NonNull T audioValue) {
+    public TrackMap(@NonNull T videoValue, @NonNull T audioValue) {
         set(TrackType.AUDIO, audioValue);
         set(TrackType.VIDEO, videoValue);
     }
 
-    private Map<TrackType, T> map = new HashMap<>();
+    private final Map<TrackType, T> map = new HashMap<>();
 
     public void set(@NonNull TrackType type, @Nullable T value) {
-        //noinspection ConstantConditions
         map.put(type, value);
     }
 

@@ -3,7 +3,7 @@ package com.otaliastudios.transcoder.source;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.Logger;
 
 /**
@@ -14,7 +14,7 @@ public class TrimDataSource extends DataSourceWrapper {
     private static final Logger LOG = new Logger(TAG);
 
     private long trimStartUs;
-    private long trimDurationUs;
+    private final long trimDurationUs;
     private boolean trimDone = false;
 
     @SuppressWarnings("WeakerAccess")

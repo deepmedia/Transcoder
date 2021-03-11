@@ -6,7 +6,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
-import com.otaliastudios.transcoder.engine.TrackType;
+import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.resample.DefaultAudioResampler;
 import com.otaliastudios.transcoder.sink.DataSink;
@@ -49,13 +49,22 @@ public class TranscoderOptions {
     private TrackStrategy audioTrackStrategy;
     private TrackStrategy videoTrackStrategy;
     private Validator validator;
-    private int rotation;
+    private int videoRotation;
     private TimeInterpolator timeInterpolator;
     private AudioStretcher audioStretcher;
     private AudioResampler audioResampler;
+    private TranscoderListener listener;
+    private Handler listenerHandler;
 
-    TranscoderListener listener;
-    Handler listenerHandler;
+    @NonNull
+    public TranscoderListener getListener() {
+        return listener;
+    }
+
+    @NonNull
+    public Handler getListenerHandler() {
+        return listenerHandler;
+    }
 
     @NonNull
     public DataSink getDataSink() {
@@ -88,7 +97,7 @@ public class TranscoderOptions {
     }
 
     public int getVideoRotation() {
-        return rotation;
+        return videoRotation;
     }
 
     @NonNull
@@ -107,7 +116,7 @@ public class TranscoderOptions {
     }
 
     public static class Builder {
-        private DataSink dataSink;
+        private final DataSink dataSink;
         private final List<DataSource> audioDataSources = new ArrayList<>();
         private final List<DataSource> videoDataSources = new ArrayList<>();
         private TranscoderListener listener;
@@ -115,7 +124,7 @@ public class TranscoderOptions {
         private TrackStrategy audioTrackStrategy;
         private TrackStrategy videoTrackStrategy;
         private Validator validator;
-        private int rotation;
+        private int videoRotation;
         private TimeInterpolator timeInterpolator;
         private AudioStretcher audioStretcher;
         private AudioResampler audioResampler;
@@ -262,7 +271,7 @@ public class TranscoderOptions {
         @NonNull
         @SuppressWarnings("unused")
         public Builder setVideoRotation(int rotation) {
-            this.rotation = rotation;
+            this.videoRotation = rotation;
             return this;
         }
 
@@ -370,7 +379,7 @@ public class TranscoderOptions {
             if (audioDataSources.isEmpty() && videoDataSources.isEmpty()) {
                 throw new IllegalStateException("we need at least one data source");
             }
-            if (rotation != 0 && rotation != 90 && rotation != 180 && rotation != 270) {
+            if (videoRotation != 0 && videoRotation != 90 && videoRotation != 180 && videoRotation != 270) {
                 throw new IllegalArgumentException("Accepted values for rotation are 0, 90, 180, 270");
             }
             if (listenerHandler == null) {
@@ -405,7 +414,7 @@ public class TranscoderOptions {
             options.audioTrackStrategy = audioTrackStrategy;
             options.videoTrackStrategy = videoTrackStrategy;
             options.validator = validator;
-            options.rotation = rotation;
+            options.videoRotation = videoRotation;
             options.timeInterpolator = timeInterpolator;
             options.audioStretcher = audioStretcher;
             options.audioResampler = audioResampler;

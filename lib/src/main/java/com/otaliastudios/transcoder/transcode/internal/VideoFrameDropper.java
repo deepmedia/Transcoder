@@ -27,8 +27,8 @@ public abstract class VideoFrameDropper {
      */
     private static class Dropper1 extends VideoFrameDropper {
 
-        private double mInFrameRateReciprocal;
-        private double mOutFrameRateReciprocal;
+        private final double mInFrameRateReciprocal;
+        private final double mOutFrameRateReciprocal;
         private double mFrameRateReciprocalSum;
         private int mFrameCount;
 

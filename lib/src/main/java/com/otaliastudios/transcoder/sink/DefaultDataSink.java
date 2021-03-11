@@ -8,9 +8,9 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-import com.otaliastudios.transcoder.engine.TrackStatus;
-import com.otaliastudios.transcoder.engine.TrackType;
-import com.otaliastudios.transcoder.internal.TrackTypeMap;
+import com.otaliastudios.transcoder.common.TrackStatus;
+import com.otaliastudios.transcoder.common.TrackType;
+import com.otaliastudios.transcoder.internal.TrackMap;
 import com.otaliastudios.transcoder.internal.Logger;
 
 import java.io.FileDescriptor;
@@ -58,9 +58,9 @@ public class DefaultDataSink implements DataSink {
     private final MediaMuxer mMuxer;
     private final List<QueuedSample> mQueue = new ArrayList<>();
     private ByteBuffer mQueueBuffer;
-    private TrackTypeMap<TrackStatus> mStatus = new TrackTypeMap<>();
-    private TrackTypeMap<MediaFormat> mLastFormat = new TrackTypeMap<>();
-    private TrackTypeMap<Integer> mMuxerIndex = new TrackTypeMap<>();
+    private TrackMap<TrackStatus> mStatus = new TrackMap<>();
+    private TrackMap<MediaFormat> mLastFormat = new TrackMap<>();
+    private TrackMap<Integer> mMuxerIndex = new TrackMap<>();
     private final DefaultDataSinkChecks mMuxerChecks = new DefaultDataSinkChecks();
 
     public DefaultDataSink(@NonNull String outputFilePath) {

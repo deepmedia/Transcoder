@@ -3,7 +3,7 @@ package com.otaliastudios.transcoder.strategy;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
-import com.otaliastudios.transcoder.engine.TrackStatus;
+import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.internal.BitRates;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
