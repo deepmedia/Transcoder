@@ -13,7 +13,7 @@ google_site_verification: '4x49i17ABIrSvUl52SeL0-t0341aTnWWaC62-FYCRT4'
 github: [metadata] # TODO What's this?
 github_repo: Transcoder
 github_version: 0.9.1
-github_branch: master
+github_branch: main
 baseurl: '/Transcoder' # Keep as an empty string if served up at the root
 collections:
   about:
