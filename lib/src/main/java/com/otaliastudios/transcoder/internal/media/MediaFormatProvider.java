@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.internal;
+package com.otaliastudios.transcoder.internal.media;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
 import com.otaliastudios.transcoder.source.DataSource;
 
 import java.io.IOException;

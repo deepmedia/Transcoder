@@ -5,7 +5,7 @@ import android.media.MediaFormat;
 import android.os.Build;
 
 import com.otaliastudios.transcoder.common.TrackStatus;
-import com.otaliastudios.transcoder.internal.BitRates;
+import com.otaliastudios.transcoder.internal.utils.BitRates;
 import com.otaliastudios.transcoder.resize.AspectRatioResizer;
 import com.otaliastudios.transcoder.resize.AtMostResizer;
 import com.otaliastudios.transcoder.resize.ExactResizer;
@@ -14,8 +14,8 @@ import com.otaliastudios.transcoder.resize.FractionResizer;
 import com.otaliastudios.transcoder.resize.MultiResizer;
 import com.otaliastudios.transcoder.common.Size;
 import com.otaliastudios.transcoder.resize.Resizer;
-import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.internal.media.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
 
@@ -26,8 +26,7 @@ import java.util.List;
  * The input and output aspect ratio must match.
  */
 public class DefaultVideoStrategy implements TrackStrategy {
-    private final static String TAG = DefaultVideoStrategy.class.getSimpleName();
-    private final static Logger LOG = new Logger(TAG);
+    private final static Logger LOG = new Logger("DefaultVideoStrategy");
 
     @SuppressWarnings("WeakerAccess")
     public final static long BITRATE_UNKNOWN = Long.MIN_VALUE;

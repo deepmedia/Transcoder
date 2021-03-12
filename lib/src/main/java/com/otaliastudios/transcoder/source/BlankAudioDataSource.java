@@ -10,7 +10,7 @@ import com.otaliastudios.transcoder.common.TrackType;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static com.otaliastudios.transcoder.internal.MediaFormatConstants.MIMETYPE_AUDIO_RAW;
+import static com.otaliastudios.transcoder.internal.media.MediaFormatConstants.MIMETYPE_AUDIO_RAW;
 
 /**
  * A {@link DataSource} that provides a silent audio track of the a specific duration.
@@ -18,7 +18,6 @@ import static com.otaliastudios.transcoder.internal.MediaFormatConstants.MIMETYP
  * that has both video and audio track.
  */
 public class BlankAudioDataSource implements DataSource {
-    private final static String TAG = BlankAudioDataSource.class.getSimpleName();
 
     private static final int CHANNEL_COUNT = 2;
     private static final int SAMPLE_RATE = 44100;

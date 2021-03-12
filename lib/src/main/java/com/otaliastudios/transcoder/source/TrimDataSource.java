@@ -4,14 +4,13 @@ package com.otaliastudios.transcoder.source;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.utils.Logger;
 
 /**
  * A {@link DataSource} that trims the inner source at both ends.
  */
 public class TrimDataSource extends DataSourceWrapper {
-    private static final String TAG = TrimDataSource.class.getSimpleName();
-    private static final Logger LOG = new Logger(TAG);
+    private static final Logger LOG = new Logger("TrimDataSource");
 
     private long trimStartUs;
     private final long trimDurationUs;

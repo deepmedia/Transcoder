@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.internal;
+package com.otaliastudios.transcoder.internal.utils;
 
 import android.media.MediaFormat;
 
@@ -14,6 +14,7 @@ public class BitRates {
     }
 
     // Wildly assuming a 0.75 compression rate for AAC.
+    @SuppressWarnings("UnnecessaryLocalVariable")
     public static long estimateAudioBitRate(int channels, int sampleRate) {
         int bitsPerSample = 16;
         long samplesPerSecondPerChannel = (long) sampleRate;

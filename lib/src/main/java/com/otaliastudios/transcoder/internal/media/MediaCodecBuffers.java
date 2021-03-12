@@ -1,10 +1,9 @@
-package com.otaliastudios.transcoder.internal;
+package com.otaliastudios.transcoder.internal.media;
 
 import android.media.MediaCodec;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import java.nio.ByteBuffer;
 
@@ -33,7 +32,6 @@ public class MediaCodecBuffers {
     public ByteBuffer getInputBuffer(final int index) {
         if (Build.VERSION.SDK_INT >= 21) {
             // This is nullable only for incorrect usage.
-            //noinspection ConstantConditions
             return mMediaCodec.getInputBuffer(index);
         }
         ByteBuffer result = mInputBuffers[index];
@@ -45,7 +43,6 @@ public class MediaCodecBuffers {
     public ByteBuffer getOutputBuffer(final int index) {
         if (Build.VERSION.SDK_INT >= 21) {
             // This is nullable only for incorrect usage.
-            //noinspection ConstantConditions
             return mMediaCodec.getOutputBuffer(index);
         }
         return mOutputBuffers[index];

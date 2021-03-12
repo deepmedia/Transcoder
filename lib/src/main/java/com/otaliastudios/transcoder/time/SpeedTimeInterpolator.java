@@ -3,8 +3,10 @@ package com.otaliastudios.transcoder.time;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.TrackMap;
-import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.utils.TrackMap;
+import com.otaliastudios.transcoder.internal.utils.Logger;
+
+import static com.otaliastudios.transcoder.internal.utils.TrackMapKt.trackMapOf;
 
 
 /**
@@ -14,11 +16,10 @@ import com.otaliastudios.transcoder.internal.Logger;
  */
 public class SpeedTimeInterpolator implements TimeInterpolator {
 
-    private final static String TAG = SpeedTimeInterpolator.class.getSimpleName();
-    private final static Logger LOG = new Logger(TAG);
+    private final static Logger LOG = new Logger("SpeedTimeInterpolator");
 
-    private double mFactor;
-    private final TrackMap<TrackData> mTrackData = new TrackMap<>();
+    private final double mFactor;
+    private final TrackMap<TrackData> mTrackData = trackMapOf(new TrackData(), new TrackData());
 
     /**
      * Creates a new speed interpolator for the given factor.
@@ -43,11 +44,7 @@ public class SpeedTimeInterpolator implements TimeInterpolator {
 
     @Override
     public long interpolate(@NonNull TrackType type, long time) {
-        if (!mTrackData.has(type)) {
-            mTrackData.set(type, new TrackData());
-        }
         TrackData data = mTrackData.get(type);
-        //noinspection ConstantConditions
         if (data.lastRealTime == Long.MIN_VALUE) {
             data.lastRealTime = time;
             data.lastCorrectedTime = time;

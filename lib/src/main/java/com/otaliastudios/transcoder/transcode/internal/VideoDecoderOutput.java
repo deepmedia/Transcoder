@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.opengl.draw.GlRect;
 import com.otaliastudios.opengl.program.GlTextureProgram;
 import com.otaliastudios.opengl.texture.GlTexture;
-import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.utils.Logger;
 
 /**
  * The purpose of this class is to create a {@link Surface} associated to a certain GL texture.
@@ -27,8 +27,7 @@ import com.otaliastudios.transcoder.internal.Logger;
  * can potentially drop frames.
  */
 public class VideoDecoderOutput {
-    private static final String TAG = VideoDecoderOutput.class.getSimpleName();
-    private static final Logger LOG = new Logger(TAG);
+    private static final Logger LOG = new Logger("VideoDecoderOutput");
 
     private static final long NEW_IMAGE_TIMEOUT_MILLIS = 10000;
 

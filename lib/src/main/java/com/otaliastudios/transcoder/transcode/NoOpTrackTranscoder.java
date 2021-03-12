@@ -39,6 +39,6 @@ public class NoOpTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public void release() {
+    public void tearDown() {
     }
 }

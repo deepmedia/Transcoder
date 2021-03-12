@@ -4,9 +4,9 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
 import com.otaliastudios.transcoder.common.TrackStatus;
-import com.otaliastudios.transcoder.internal.BitRates;
-import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.utils.BitRates;
+import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.internal.media.MediaFormatConstants;
 
 import androidx.annotation.NonNull;
 
@@ -17,9 +17,6 @@ import java.util.List;
  * of channels.
  */
 public class DefaultAudioStrategy implements TrackStrategy {
-
-    private final static String TAG = DefaultAudioStrategy.class.getSimpleName();
-    private final static Logger LOG = new Logger(TAG);
 
     public final static int CHANNELS_AS_INPUT = -1;
     public final static int SAMPLE_RATE_AS_INPUT = -1;
