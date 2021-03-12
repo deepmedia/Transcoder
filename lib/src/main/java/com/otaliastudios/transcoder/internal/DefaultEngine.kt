@@ -5,6 +5,7 @@ import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
+import com.otaliastudios.transcoder.internal.utils.ignoringEos
 import com.otaliastudios.transcoder.resample.AudioResampler
 import com.otaliastudios.transcoder.sink.DataSink
 import com.otaliastudios.transcoder.strategy.TrackStrategy
@@ -49,14 +50,19 @@ internal class DefaultEngine(
 
     private fun createTranscoder(type: TrackType, index: Int, status: TrackStatus): TrackTranscoder {
         val interpolator = timer.interpolator(type, index)
-        val source = dataSources[type][index]
+        val sources = dataSources[type]
+        val source = sources[index]
+        val sink = when {
+            index == sources.lastIndex -> dataSink
+            else -> dataSink.ignoringEos()
+        }
         return when (status) {
             TrackStatus.ABSENT -> NoOpTrackTranscoder()
             TrackStatus.REMOVING -> NoOpTrackTranscoder()
-            TrackStatus.PASS_THROUGH -> PassThroughTrackTranscoder(source, dataSink, type, interpolator)
+            TrackStatus.PASS_THROUGH -> PassThroughTrackTranscoder(source, sink, type, interpolator)
             TrackStatus.COMPRESSING -> when (type) {
-                TrackType.VIDEO -> VideoTrackTranscoder(source, dataSink, interpolator, videoRotation)
-                TrackType.AUDIO -> AudioTrackTranscoder(source, dataSink, interpolator, audioStretcher, audioResampler)
+                TrackType.VIDEO -> VideoTrackTranscoder(source, sink, interpolator, videoRotation)
+                TrackType.AUDIO -> AudioTrackTranscoder(source, sink, interpolator, audioStretcher, audioResampler)
             }
         }
     }
