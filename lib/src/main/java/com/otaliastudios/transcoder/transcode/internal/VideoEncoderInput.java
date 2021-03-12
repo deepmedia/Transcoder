@@ -20,11 +20,9 @@ import com.otaliastudios.opengl.surface.EglWindowSurface;
  * to the {@link android.media.MediaCodec} input.
  */
 public class VideoEncoderInput {
-    @SuppressWarnings("unused")
-    private static final String TAG = VideoEncoderInput.class.getSimpleName();
 
-    private EglCore mEglCore;
-    private EglWindowSurface mEglSurface;
+    private final EglCore mEglCore;
+    private final EglWindowSurface mEglSurface;
 
     /**
      * Creates an VideoEncoderInput from a Surface.

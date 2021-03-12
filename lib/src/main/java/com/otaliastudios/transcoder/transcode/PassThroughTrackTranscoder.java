@@ -38,7 +38,7 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     private boolean mIsEOS;
     private final MediaFormat mOutputFormat;
     private boolean mOutputFormatSet = false;
-    private TimeInterpolator mTimeInterpolator;
+    private final TimeInterpolator mTimeInterpolator;
 
     public PassThroughTrackTranscoder(@NonNull DataSource dataSource,
                                       @NonNull DataSink dataSink,
@@ -93,6 +93,6 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public void release() {
+    public void tearDown() {
     }
 }

@@ -18,18 +18,17 @@ package com.otaliastudios.transcoder.sink;
 import android.media.MediaFormat;
 
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.MediaFormatConstants;
-import com.otaliastudios.transcoder.internal.AvcCsdUtils;
-import com.otaliastudios.transcoder.internal.AvcSpsUtils;
+import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.internal.media.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.utils.AvcCsdUtils;
+import com.otaliastudios.transcoder.internal.utils.AvcSpsUtils;
 
 import java.nio.ByteBuffer;
 
 import androidx.annotation.NonNull;
 
 class DefaultDataSinkChecks {
-    private static final String TAG = DefaultDataSinkChecks.class.getSimpleName();
-    private static final Logger LOG = new Logger(TAG);
+    private static final Logger LOG = new Logger("DefaultDataSinkChecks");
 
     void checkOutputFormat(@NonNull TrackType type, @NonNull MediaFormat format) {
         if (type == TrackType.VIDEO) {

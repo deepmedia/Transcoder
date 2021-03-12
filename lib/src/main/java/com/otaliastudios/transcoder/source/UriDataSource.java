@@ -15,8 +15,8 @@ import androidx.annotation.NonNull;
  */
 public class UriDataSource extends DefaultDataSource {
 
-    @NonNull private Context context;
-    @NonNull private Uri uri;
+    @NonNull private final Context context;
+    @NonNull private final Uri uri;
 
     public UriDataSource(@NonNull Context context, @NonNull Uri uri) {
         this.context = context.getApplicationContext();

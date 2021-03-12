@@ -17,7 +17,7 @@ package com.otaliastudios.transcoder;
 
 import android.os.Build;
 
-import com.otaliastudios.transcoder.engine.DefaultEngine;
+import com.otaliastudios.transcoder.internal.Engine;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.validator.Validator;
 
@@ -131,7 +131,7 @@ public class Transcoder {
         return mExecutor.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                new DefaultEngine().transcode(options);
+                Engine.transcode(options);
                 return null;
             }
         });

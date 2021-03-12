@@ -6,8 +6,8 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers;
 import com.otaliastudios.transcoder.remix.AudioRemixer;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.stretch.AudioStretcher;
@@ -31,8 +31,7 @@ public class AudioEngine {
 
     private static final int BYTES_PER_SHORT = 2;
 
-    private static final String TAG = AudioEngine.class.getSimpleName();
-    private static final Logger LOG = new Logger(TAG);
+    private static final Logger LOG = new Logger("AudioEngine");
 
     private final Queue<AudioBuffer> mEmptyBuffers = new ArrayDeque<>();
     private final Queue<AudioBuffer> mPendingBuffers = new ArrayDeque<>();

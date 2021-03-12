@@ -14,7 +14,7 @@ import androidx.annotation.NonNull;
 public class FileDescriptorDataSource extends DefaultDataSource {
 
     @NonNull
-    private FileDescriptor descriptor;
+    private final FileDescriptor descriptor;
 
     public FileDescriptorDataSource(@NonNull FileDescriptor descriptor) {
         this.descriptor = descriptor;

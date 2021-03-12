@@ -19,7 +19,7 @@ import com.otaliastudios.transcoder.TranscoderListener;
 import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.utils.Logger;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
@@ -46,8 +46,7 @@ import androidx.core.content.FileProvider;
 public class TranscoderActivity extends AppCompatActivity implements
         TranscoderListener {
 
-    private static final String TAG = "DemoApp";
-    private static final Logger LOG = new Logger(TAG);
+    private static final Logger LOG = new Logger("DemoApp");
 
     private static final String FILE_PROVIDER_AUTHORITY = "com.otaliastudios.transcoder.demo.fileprovider";
     private static final int REQUEST_CODE_PICK = 1;
@@ -83,15 +82,10 @@ public class TranscoderActivity extends AppCompatActivity implements
     private long mTrimStartUs = 0;
     private long mTrimEndUs = 0;
 
-    private RadioGroup.OnCheckedChangeListener mRadioGroupListener
-            = new RadioGroup.OnCheckedChangeListener() {
-        @Override
-        public void onCheckedChanged(RadioGroup group, int checkedId) {
-            syncParameters();
-        }
-    };
+    private final RadioGroup.OnCheckedChangeListener mRadioGroupListener
+            = (group, checkedId) -> syncParameters();
 
-    private TextWatcher mTextListener = new TextWatcher() {
+    private final TextWatcher mTextListener = new TextWatcher() {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 

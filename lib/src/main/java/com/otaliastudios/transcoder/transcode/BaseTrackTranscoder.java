@@ -8,7 +8,7 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 
@@ -137,7 +137,7 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
     }
 
     @Override
-    public void release() {
+    public void tearDown() {
         if (mDecoder != null) {
             if (mDecoderStarted) {
                 mDecoder.stop();

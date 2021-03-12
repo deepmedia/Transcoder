@@ -2,15 +2,13 @@ package com.otaliastudios.transcoder.transcode.internal;
 
 import androidx.annotation.NonNull;
 
-import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.utils.Logger;
 
 /**
  * Drops input frames to respect the output frame rate.
  */
 public abstract class VideoFrameDropper {
-
-    private final static String TAG = VideoFrameDropper.class.getSimpleName();
-    private final static Logger LOG = new Logger(TAG);
+    private final static Logger LOG = new Logger("VideoFrameDropper");
 
     private VideoFrameDropper() {}
 

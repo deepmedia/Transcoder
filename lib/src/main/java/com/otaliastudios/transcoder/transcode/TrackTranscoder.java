@@ -33,5 +33,5 @@ public interface TrackTranscoder {
 
     boolean isFinished();
 
-    void release();
+    void tearDown();
 }

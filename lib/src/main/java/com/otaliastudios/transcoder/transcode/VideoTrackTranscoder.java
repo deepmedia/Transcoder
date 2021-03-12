@@ -21,24 +21,20 @@ import android.media.MediaFormat;
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
 import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
-import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.MediaFormatConstants;
+import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.internal.media.MediaFormatConstants;
 import com.otaliastudios.transcoder.transcode.internal.VideoFrameDropper;
 
 import java.nio.ByteBuffer;
 
 // Refer: https://android.googlesource.com/platform/cts/+/lollipop-release/tests/tests/media/src/android/media/cts/ExtractDecodeEditEncodeMuxTest.java
 public class VideoTrackTranscoder extends BaseTrackTranscoder {
-
-    private static final String TAG = VideoTrackTranscoder.class.getSimpleName();
-    @SuppressWarnings("unused")
-    private static final Logger LOG = new Logger(TAG);
 
     private VideoDecoderOutput mDecoderOutputSurface;
     private VideoEncoderInput mEncoderInputSurface;
@@ -133,7 +129,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     }
 
     @Override
-    public void release() {
+    public void tearDown() {
         if (mDecoderOutputSurface != null) {
             mDecoderOutputSurface.release();
             mDecoderOutputSurface = null;
@@ -142,7 +138,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
             mEncoderInputSurface.release();
             mEncoderInputSurface = null;
         }
-        super.release();
+        super.tearDown();
         mEncoder = null;
     }
 

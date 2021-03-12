@@ -1,26 +1,26 @@
-package com.otaliastudios.transcoder.engine;
+package com.otaliastudios.transcoder.internal;
 
 import android.os.Handler;
 
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.TranscoderListener;
+import com.otaliastudios.transcoder.TranscoderOptions;
 
 /**
  * Wraps a TranscoderListener and posts events on the given handler.
  */
-public class Dispatcher implements TranscoderListener {
+class Dispatcher {
 
     private final Handler mHandler;
     private final TranscoderListener mListener;
 
-    Dispatcher(@NonNull Handler handler, @NonNull TranscoderListener listener) {
-        mHandler = handler;
-        mListener = listener;
+    Dispatcher(@NonNull TranscoderOptions options) {
+        mHandler = options.getListenerHandler();
+        mListener = options.getListener();
     }
 
-    @Override
-    public void onTranscodeCanceled() {
+    void dispatchCancel() {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -29,8 +29,7 @@ public class Dispatcher implements TranscoderListener {
         });
     }
 
-    @Override
-    public void onTranscodeCompleted(final int successCode) {
+    void dispatchSuccess(final int successCode) {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -39,8 +38,7 @@ public class Dispatcher implements TranscoderListener {
         });
     }
 
-    @Override
-    public void onTranscodeFailed(@NonNull final Throwable exception) {
+    void dispatchFailure(@NonNull final Throwable exception) {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -49,8 +47,7 @@ public class Dispatcher implements TranscoderListener {
         });
     }
 
-    @Override
-    public void onTranscodeProgress(final double progress) {
+    void dispatchProgress(final double progress) {
         mHandler.post(new Runnable() {
             @Override
             public void run() {

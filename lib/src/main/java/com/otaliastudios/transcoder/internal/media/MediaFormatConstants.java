@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.otaliastudios.transcoder.internal;
+package com.otaliastudios.transcoder.internal.media;
 
-@SuppressWarnings("unused")
 public class MediaFormatConstants {
 
     // from MediaFormat of API level >= 21, but might be usable in older APIs as native code implementation exists.

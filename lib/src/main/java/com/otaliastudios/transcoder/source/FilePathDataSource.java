@@ -3,7 +3,7 @@ package com.otaliastudios.transcoder.source;
 import android.media.MediaExtractor;
 import android.media.MediaMetadataRetriever;
 
-import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.internal.utils.Logger;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -20,8 +20,7 @@ import androidx.annotation.NonNull;
  * See {@link MediaExtractor#setDataSource(String)} documentation.
  */
 public class FilePathDataSource extends DefaultDataSource {
-    private static final String TAG = FilePathDataSource.class.getSimpleName();
-    private static final Logger LOG = new Logger(TAG);
+    private static final Logger LOG = new Logger("FilePathDataSource");
 
     private FileDescriptorDataSource mDescriptorSource;
     private FileInputStream mStream;

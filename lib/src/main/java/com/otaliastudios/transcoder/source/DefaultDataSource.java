@@ -8,30 +8,31 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.internal.ISO6709LocationParser;
-import com.otaliastudios.transcoder.internal.Logger;
-import com.otaliastudios.transcoder.internal.TrackMap;
+import com.otaliastudios.transcoder.internal.utils.ISO6709LocationParser;
+import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.internal.utils.MutableTrackMap;
+import com.otaliastudios.transcoder.internal.utils.TrackMap;
 
 import java.io.IOException;
 import java.util.HashSet;
+
+import static com.otaliastudios.transcoder.internal.utils.TrackMapKt.mutableTrackMapOf;
 
 /**
  * A DataSource implementation that uses Android's Media APIs.
  */
 public abstract class DefaultDataSource implements DataSource {
 
-    private final static String TAG = DefaultDataSource.class.getSimpleName();
-    private final static Logger LOG = new Logger(TAG);
+    private final static Logger LOG = new Logger("DefaultDataSource");
 
     private MediaMetadataRetriever mMetadata = new MediaMetadataRetriever();
     private MediaExtractor mExtractor = new MediaExtractor();
     private boolean mMetadataApplied;
     private boolean mExtractorApplied;
-    private final TrackMap<MediaFormat> mFormats = new TrackMap<>();
-    private final TrackMap<Integer> mIndex = new TrackMap<>();
+    private final MutableTrackMap<MediaFormat> mFormat = mutableTrackMapOf(null);
+    private final MutableTrackMap<Integer> mIndex = mutableTrackMapOf(null);
     private final HashSet<TrackType> mSelectedTracks = new HashSet<>();
-    private final TrackMap<Long> mLastTimestampUs
-            = new TrackMap<>(0L, 0L);
+    private final MutableTrackMap<Long> mLastTimestampUs = mutableTrackMapOf(0L, 0L);
     private long mFirstTimestampUs = Long.MIN_VALUE;
 
     private void ensureMetadata() {
@@ -60,7 +61,7 @@ public abstract class DefaultDataSource implements DataSource {
     @Override
     public void selectTrack(@NonNull TrackType type) {
         mSelectedTracks.add(type);
-        mExtractor.selectTrack(mIndex.require(type));
+        mExtractor.selectTrack(mIndex.get(type));
     }
 
     @Override
@@ -77,7 +78,7 @@ public abstract class DefaultDataSource implements DataSource {
             // Special case: audio can be moved to any timestamp, but video will only stop in
             // sync frames. MediaExtractor is not smart enough to sync the two tracks at the
             // video sync frame, so we must do it by seeking AGAIN at the next video position.
-            while (mExtractor.getSampleTrackIndex() != mIndex.requireVideo()) {
+            while (mExtractor.getSampleTrackIndex() != mIndex.getVideo()) {
                 mExtractor.advance();
             }
             LOG.i("Second seek to " + (mExtractor.getSampleTime() / 1000));
@@ -95,7 +96,7 @@ public abstract class DefaultDataSource implements DataSource {
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
         ensureExtractor();
-        return mExtractor.getSampleTrackIndex() == mIndex.require(type);
+        return mExtractor.getSampleTrackIndex() == mIndex.get(type);
     }
 
     @Override
@@ -108,8 +109,8 @@ public abstract class DefaultDataSource implements DataSource {
         if (mFirstTimestampUs == Long.MIN_VALUE) {
             mFirstTimestampUs = chunk.timestampUs;
         }
-        TrackType type = (mIndex.hasAudio() && mIndex.requireAudio() == index) ? TrackType.AUDIO
-                : (mIndex.hasVideo() && mIndex.requireVideo() == index) ? TrackType.VIDEO
+        TrackType type = (mIndex.getHasAudio() && mIndex.getAudio() == index) ? TrackType.AUDIO
+                : (mIndex.getHasVideo() && mIndex.getVideo() == index) ? TrackType.VIDEO
                 : null;
         if (type == null) {
             throw new RuntimeException("Unknown type: " + index);
@@ -127,7 +128,7 @@ public abstract class DefaultDataSource implements DataSource {
         // This ensures linear behavior over time: if a track is behind the other,
         // this will not push down the readUs value, which might break some components
         // down the pipeline which expect a monotonically growing timestamp.
-        long last = Math.max(mLastTimestampUs.requireAudio(), mLastTimestampUs.requireVideo());
+        long last = Math.max(mLastTimestampUs.getAudio(), mLastTimestampUs.getVideo());
         return last - mFirstTimestampUs;
     }
 
@@ -173,7 +174,7 @@ public abstract class DefaultDataSource implements DataSource {
     @Nullable
     @Override
     public MediaFormat getTrackFormat(@NonNull TrackType type) {
-        if (mFormats.has(type)) return mFormats.get(type);
+        if (mFormat.has(type)) return mFormat.get(type);
         ensureExtractor();
         int trackCount = mExtractor.getTrackCount();
         MediaFormat format;
@@ -181,13 +182,13 @@ public abstract class DefaultDataSource implements DataSource {
             format = mExtractor.getTrackFormat(i);
             String mime = format.getString(MediaFormat.KEY_MIME);
             if (type == TrackType.VIDEO && mime.startsWith("video/")) {
-                mIndex.set(TrackType.VIDEO, i);
-                mFormats.set(TrackType.VIDEO, format);
+                mIndex.setVideo(i);
+                mFormat.setVideo(format);
                 return format;
             }
             if (type == TrackType.AUDIO && mime.startsWith("audio/")) {
-                mIndex.set(TrackType.AUDIO, i);
-                mFormats.set(TrackType.AUDIO, format);
+                mIndex.setAudio(i);
+                mFormat.setAudio(format);
                 return format;
             }
         }
