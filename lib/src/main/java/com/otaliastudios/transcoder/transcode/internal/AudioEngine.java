@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.utils.Logger;
 import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers;
-import com.otaliastudios.transcoder.remix.AudioRemixer;
+import com.otaliastudios.transcoder.internal.remix.AudioRemixer;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.stretch.AudioStretcher;
 import com.otaliastudios.transcoder.time.TimeInterpolator;

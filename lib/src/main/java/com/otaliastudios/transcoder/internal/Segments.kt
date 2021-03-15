@@ -1,7 +1,9 @@
 package com.otaliastudios.transcoder.internal
 
+import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.pipeline.Pipeline
 import com.otaliastudios.transcoder.internal.utils.TrackMap
 import com.otaliastudios.transcoder.internal.utils.mutableTrackMapOf
 import com.otaliastudios.transcoder.transcode.*
@@ -9,7 +11,7 @@ import com.otaliastudios.transcoder.transcode.*
 internal class Segments(
         private val sources: DataSources,
         private val tracks: Tracks,
-        private val factory: (TrackType, Int, TrackStatus) -> TrackTranscoder
+        private val factory: (TrackType, Int, TrackStatus, MediaFormat) -> Pipeline
 ) {
 
     private val current = mutableTrackMapOf<Segment>(null, null)
@@ -72,8 +74,12 @@ internal class Segments(
         return Segment(
                 type = type,
                 index = index,
-                transcoder = factory(type, index, tracks.all[type]),
-                outputFormat = tracks.outputFormats[type]
+                pipeline = factory(
+                        type,
+                        index,
+                        tracks.all[type],
+                        tracks.outputFormats[type]
+                ),
         )
     }
 

@@ -19,7 +19,7 @@ import com.otaliastudios.opengl.surface.EglWindowSurface;
  * Calls to {@link #onFrame(long)} cause a frame of data to be sent to the surface, thus
  * to the {@link android.media.MediaCodec} input.
  */
-public class VideoEncoderInput {
+public class FramePublisher {
 
     private final EglCore mEglCore;
     private final EglWindowSurface mEglSurface;
@@ -29,7 +29,7 @@ public class VideoEncoderInput {
      * Makes the EGL surface current immediately.
      * @param surface the surface
      */
-    public VideoEncoderInput(@NonNull Surface surface) {
+    public FramePublisher(@NonNull Surface surface) {
         mEglCore = new EglCore(EGL14.EGL_NO_CONTEXT, EglCore.FLAG_RECORDABLE);
         mEglSurface = new EglWindowSurface(mEglCore, surface, true);
         mEglSurface.makeCurrent();

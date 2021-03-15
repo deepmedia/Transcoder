@@ -1,10 +1,16 @@
 package com.otaliastudios.transcoder.internal
 
+import android.media.MediaFormat
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.pipeline.EmptyPipeline
+import com.otaliastudios.transcoder.internal.pipeline.PassThroughPipeline
+import com.otaliastudios.transcoder.internal.pipeline.Pipeline
+import com.otaliastudios.transcoder.internal.pipeline.RegularPipeline
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
+import com.otaliastudios.transcoder.internal.utils.forcingEos
 import com.otaliastudios.transcoder.internal.utils.ignoringEos
 import com.otaliastudios.transcoder.resample.AudioResampler
 import com.otaliastudios.transcoder.sink.DataSink
@@ -28,7 +34,7 @@ internal class DefaultEngine(
 
     private val tracks = Tracks(strategies, dataSources)
 
-    private val segments = Segments(dataSources, tracks, ::createTranscoder)
+    private val segments = Segments(dataSources, tracks, ::createPipeline)
 
     private val timer = Timer(interpolator, dataSources, tracks, segments.currentIndex)
 
@@ -48,22 +54,29 @@ internal class DefaultEngine(
         return this.cause?.isInterrupted() ?: false
     }
 
-    private fun createTranscoder(type: TrackType, index: Int, status: TrackStatus): TrackTranscoder {
+    private fun createPipeline(
+            type: TrackType,
+            index: Int,
+            status: TrackStatus,
+            outputFormat: MediaFormat
+    ): Pipeline {
         val interpolator = timer.interpolator(type, index)
         val sources = dataSources[type]
-        val source = sources[index]
+        val source = sources[index].forcingEos {
+            // Enforce EOS if we exceed duration of other tracks,
+            // with a little tolerance.
+            timer.readUs[type] > timer.durationUs + 100L
+        }
         val sink = when {
             index == sources.lastIndex -> dataSink
             else -> dataSink.ignoringEos()
         }
         return when (status) {
-            TrackStatus.ABSENT -> NoOpTrackTranscoder()
-            TrackStatus.REMOVING -> NoOpTrackTranscoder()
-            TrackStatus.PASS_THROUGH -> PassThroughTrackTranscoder(source, sink, type, interpolator)
-            TrackStatus.COMPRESSING -> when (type) {
-                TrackType.VIDEO -> VideoTrackTranscoder(source, sink, interpolator, videoRotation)
-                TrackType.AUDIO -> AudioTrackTranscoder(source, sink, interpolator, audioStretcher, audioResampler)
-            }
+            TrackStatus.ABSENT -> EmptyPipeline()
+            TrackStatus.REMOVING -> EmptyPipeline()
+            TrackStatus.PASS_THROUGH -> PassThroughPipeline(type, source, sink, interpolator)
+            TrackStatus.COMPRESSING -> RegularPipeline(type,
+                    source, sink, interpolator, outputFormat, videoRotation)
         }
     }
 
@@ -106,21 +119,14 @@ internal class DefaultEngine(
      * Retrieve next segment from [Segments] and call [Segment.advance] for each track.
      * We don't have to worry about which tracks are available and how. The [Segments] class
      * will simply return null if there's nothing to be done.
-     *
-     * Note that we need to check if we need to force the input EOS for some track.
-     * This can happen if the user adds e.g. 1 minute of audio with 20 seconds of video.
-     * In this case the video track must be stopped once the audio stops.
      */
     private fun execute(progress: (Double) -> Unit) {
         var loop = 0L
         while (true) {
             LOG.v("new step: $loop")
-            val totalUs = timer.durationUs + 100L // tolerance
-            val forceAudioEos = timer.readUs.audio > totalUs
-            val forceVideoEos = timer.readUs.video > totalUs
             val advanced =
-                    (segments.next(TrackType.AUDIO)?.advance(forceAudioEos) ?: false) or
-                    (segments.next(TrackType.VIDEO)?.advance(forceVideoEos) ?: false)
+                    (segments.next(TrackType.AUDIO)?.advance() ?: false) or
+                    (segments.next(TrackType.VIDEO)?.advance() ?: false)
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
 
             if (Thread.interrupted()) {

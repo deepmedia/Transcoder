@@ -25,21 +25,20 @@ import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
-import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
-import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
-import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.internal.video.FrameDrawer;
+import com.otaliastudios.transcoder.transcode.internal.FramePublisher;
 import com.otaliastudios.transcoder.internal.media.MediaFormatConstants;
-import com.otaliastudios.transcoder.transcode.internal.VideoFrameDropper;
+import com.otaliastudios.transcoder.transcode.internal.FrameDropper;
 
 import java.nio.ByteBuffer;
 
 // Refer: https://android.googlesource.com/platform/cts/+/lollipop-release/tests/tests/media/src/android/media/cts/ExtractDecodeEditEncodeMuxTest.java
 public class VideoTrackTranscoder extends BaseTrackTranscoder {
 
-    private VideoDecoderOutput mDecoderOutputSurface;
-    private VideoEncoderInput mEncoderInputSurface;
+    private FrameDrawer mDecoderOutputSurface;
+    private FramePublisher mEncoderInputSurface;
     private MediaCodec mEncoder; // Keep this since we want to signal EOS on it.
-    private VideoFrameDropper mFrameDropper;
+    private FrameDropper mFrameDropper;
     private final TimeInterpolator mTimeInterpolator;
     private final int mSourceRotation;
     private final int mExtraRotation;
@@ -71,7 +70,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
 
     @Override
     protected void onStartEncoder(@NonNull MediaFormat format, @NonNull MediaCodec encoder) {
-        mEncoderInputSurface = new VideoEncoderInput(encoder.createInputSurface());
+        mEncoderInputSurface = new FramePublisher(encoder.createInputSurface());
         super.onStartEncoder(format, encoder);
     }
 
@@ -95,7 +94,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
 
         // The rotation we should apply is the intrinsic source rotation, plus any extra
         // rotation that was set into the TranscoderOptions.
-        mDecoderOutputSurface = new VideoDecoderOutput();
+        mDecoderOutputSurface = new FrameDrawer();
         mDecoderOutputSurface.setRotation((mSourceRotation + mExtraRotation) % 360);
         decoder.configure(format, mDecoderOutputSurface.getSurface(), null, 0);
     }
@@ -103,7 +102,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     @Override
     protected void onCodecsStarted(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat, @NonNull MediaCodec decoder, @NonNull MediaCodec encoder) {
         super.onCodecsStarted(inputFormat, outputFormat, decoder, encoder);
-        mFrameDropper = VideoFrameDropper.newDropper(
+        mFrameDropper = FrameDropper.newDropper(
                 inputFormat.getInteger(MediaFormat.KEY_FRAME_RATE),
                 outputFormat.getInteger(MediaFormat.KEY_FRAME_RATE));
         mEncoder = encoder;
