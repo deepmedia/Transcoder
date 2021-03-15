@@ -7,15 +7,15 @@ import com.otaliastudios.transcoder.internal.utils.Logger;
 /**
  * Drops input frames to respect the output frame rate.
  */
-public abstract class VideoFrameDropper {
+public abstract class FrameDropper {
     private final static Logger LOG = new Logger("VideoFrameDropper");
 
-    private VideoFrameDropper() {}
+    private FrameDropper() {}
 
     public abstract boolean shouldRenderFrame(long presentationTimeUs);
 
     @NonNull
-    public static VideoFrameDropper newDropper(int inputFrameRate, int outputFrameRate) {
+    public static FrameDropper newDropper(int inputFrameRate, int outputFrameRate) {
         return new Dropper1(inputFrameRate, outputFrameRate);
     }
 
@@ -23,7 +23,7 @@ public abstract class VideoFrameDropper {
      * A simple and more elegant dropper.
      * Reference: https://stackoverflow.com/questions/4223766/dropping-video-frames
      */
-    private static class Dropper1 extends VideoFrameDropper {
+    private static class Dropper1 extends FrameDropper {
 
         private final double mInFrameRateReciprocal;
         private final double mOutFrameRateReciprocal;
@@ -58,7 +58,7 @@ public abstract class VideoFrameDropper {
      * Will test {@link Dropper1} and remove this soon.
      */
     @SuppressWarnings("unused")
-    private static class Dropper2 extends VideoFrameDropper {
+    private static class Dropper2 extends FrameDropper {
 
         // A step is defined as the microseconds between two frame.
         // The average step is basically 1 / frame rate.

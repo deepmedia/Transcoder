@@ -2,7 +2,8 @@ package com.otaliastudios.transcoder.internal.utils
 
 import com.otaliastudios.transcoder.common.TrackType
 
-interface TrackMap<T> {
+interface TrackMap<T> : Iterable<T> {
+
     operator fun get(type: TrackType): T
     val video get() = get(TrackType.VIDEO)
     val audio get() = get(TrackType.AUDIO)
@@ -16,6 +17,8 @@ interface TrackMap<T> {
     fun audioOrNull() = getOrNull(TrackType.AUDIO)
 
     val size get() = listOfNotNull(videoOrNull(), audioOrNull()).size
+
+    override fun iterator() = listOfNotNull(videoOrNull(), audioOrNull()).iterator()
 }
 
 interface MutableTrackMap<T> : TrackMap<T> {
@@ -31,9 +34,11 @@ interface MutableTrackMap<T> : TrackMap<T> {
 }
 
 fun <T> trackMapOf(default: T?) = trackMapOf(default, default)
+
 fun <T> trackMapOf(video: T?, audio: T?): TrackMap<T> = DefaultTrackMap(video, audio)
 
 fun <T> mutableTrackMapOf(default: T?) = mutableTrackMapOf(default, default)
+
 fun <T> mutableTrackMapOf(video: T? = null, audio: T? = null): MutableTrackMap<T> = DefaultTrackMap(video, audio)
 
 private class DefaultTrackMap<T>(video: T?, audio: T?) : MutableTrackMap<T> {

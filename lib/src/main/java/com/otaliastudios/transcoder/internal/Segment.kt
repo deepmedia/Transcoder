@@ -2,27 +2,28 @@ package com.otaliastudios.transcoder.internal
 
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.pipeline.Pipeline
+import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.transcode.TrackTranscoder
 
 internal class Segment(
         val type: TrackType,
         val index: Int,
-        private val transcoder: TrackTranscoder,
-        outputFormat: MediaFormat
+        private val pipeline: Pipeline,
 ) {
-    init {
-        transcoder.setUp(outputFormat)
-    }
 
-    fun advance(forceInputEos: Boolean): Boolean {
-        return transcoder.transcode(forceInputEos)
+    private var state: State<Unit>? = null
+
+    fun advance(): Boolean {
+        state = pipeline.execute()
+        return state is State.Ok
     }
 
     fun canAdvance(): Boolean {
-        return !transcoder.isFinished
+        return state == null || state !is State.Eos
     }
 
     fun release() {
-        transcoder.tearDown()
+        pipeline.release()
     }
 }

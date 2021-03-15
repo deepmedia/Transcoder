@@ -1,6 +1,8 @@
-package com.otaliastudios.transcoder.remix;
+package com.otaliastudios.transcoder.internal.remix;
 
 import androidx.annotation.NonNull;
+
+import com.otaliastudios.transcoder.internal.remix.AudioRemixer;
 
 import java.nio.ShortBuffer;
 
