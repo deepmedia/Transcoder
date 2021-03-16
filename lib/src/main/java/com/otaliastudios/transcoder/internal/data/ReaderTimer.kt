@@ -12,7 +12,7 @@ internal class ReaderTimer<Channel : com.otaliastudios.transcoder.internal.pipel
 
     override fun step(state: State.Ok<ReaderData>, fresh: Boolean): State<ReaderData> {
         if (state is State.Eos) return state
-        state.value.chunk.timestampUs = interpolator.interpolate(track, state.value.chunk.timestampUs)
+        state.value.chunk.timeUs = interpolator.interpolate(track, state.value.chunk.timeUs)
         return state
     }
 }

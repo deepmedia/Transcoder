@@ -159,7 +159,7 @@ public class MediaFormatProvider {
         decoder.queueInputBuffer(result,
                 0,
                 chunk.bytes,
-                chunk.timestampUs,
-                chunk.isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0);
+                chunk.timeUs,
+                chunk.keyframe ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0);
     }
 }

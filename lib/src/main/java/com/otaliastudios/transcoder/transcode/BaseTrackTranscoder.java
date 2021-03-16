@@ -219,8 +219,8 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         mDecoder.queueInputBuffer(result,
                 0,
                 mDataChunk.bytes,
-                mDataChunk.timestampUs,
-                mDataChunk.isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0);
+                mDataChunk.timeUs,
+                mDataChunk.keyframe ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0);
         return DRAIN_STATE_CONSUMED;
     }
 

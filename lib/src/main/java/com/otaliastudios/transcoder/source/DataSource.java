@@ -64,12 +64,14 @@ public interface DataSource {
      * Moves all selected tracks to the specified presentation time.
      * The timestamp should be between 0 and {@link #getDurationUs()}.
      * The actual timestamp might differ from the desired one because of
-     * seeking constraints (e.g. seek to sync frames).
+     * seeking constraints (e.g. seek to sync frames). It will typically be smaller
+     * because we use {@link android.media.MediaExtractor#SEEK_TO_PREVIOUS_SYNC} in
+     * the default source.
      *
-     * @param desiredTimestampUs requested timestamp
-     * @return actual timestamp
+     * @param desiredPositionUs requested timestamp
+     * @return actual timestamp, likely smaller or equal
      */
-    long seekTo(long desiredTimestampUs);
+    long seekTo(long desiredPositionUs);
 
     /**
      * Returns true if we can read the given track at this point.
@@ -126,8 +128,9 @@ public interface DataSource {
      */
     class Chunk {
         public ByteBuffer buffer;
-        public boolean isKeyFrame;
-        public long timestampUs;
+        public boolean keyframe;
+        public long timeUs;
         public int bytes;
+        public boolean render;
     }
 }
