@@ -94,7 +94,9 @@ internal class Segments(
     private fun destroySegment(segment: Segment) {
         segment.release()
         val source = sources[segment.type][segment.index]
-        source.releaseTrack(segment.type)
+        if (tracks.active.has(segment.type)) {
+            source.releaseTrack(segment.type)
+        }
         requestedIndex[segment.type] = segment.index + 1
     }
 }

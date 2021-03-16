@@ -85,6 +85,7 @@ internal class Decoder(
                     }
                     if (isEos) State.Eos(data) else State.Ok(data)
                 } else {
+                    codec.releaseOutputBuffer(result, false)
                     State.Wait
                 }
             }
