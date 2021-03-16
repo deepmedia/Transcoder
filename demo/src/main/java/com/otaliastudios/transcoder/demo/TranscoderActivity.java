@@ -209,6 +209,7 @@ public class TranscoderActivity extends AppCompatActivity implements
                 .addResizer(aspectRatio > 0 ? new AspectRatioResizer(aspectRatio) : new PassThroughResizer())
                 .addResizer(new FractionResizer(fraction))
                 .frameRate(frames)
+                // .keyFrameInterval(4F)
                 .build();
 
         try {

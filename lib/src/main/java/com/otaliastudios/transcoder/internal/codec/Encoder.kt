@@ -39,7 +39,6 @@ internal class Encoder(
     private var info = BufferInfo()
 
     init {
-        // TODO check if we should maybe start after [surface] has been configured
         codec.start()
     }
 
@@ -71,10 +70,8 @@ internal class Encoder(
                 State.Retry
             }
             else -> {
-                A++
                 val isConfig = info.flags and BUFFER_FLAG_CODEC_CONFIG != 0
                 if (isConfig) {
-                    B++
                     codec.releaseOutputBuffer(result, false)
                     State.Retry
                 } else {
@@ -83,20 +80,13 @@ internal class Encoder(
                     val buffer = buffers.getOutputBuffer(result)
                     val timeUs = info.presentationTimeUs
                     val data = WriterData(buffer, timeUs, flags) {
-                        B++
                         codec.releaseOutputBuffer(result, false)
-                        log.w("A=$A B=$B leaks=${A-B}")
                     }
                     if (isEos) State.Eos(data) else State.Ok(data)
                 }
             }
-        }.also {
-            log.w("A=$A B=$B leaks=${A-B}")
         }
     }
-
-    private var A = 0
-    private var B = 0
 
     override fun release() {
         codec.stop()

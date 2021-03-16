@@ -68,7 +68,7 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public void deinitialize() {
-        LOG.i("release(): releasing..." + stackTrace());
+        LOG.i("deinitialize(): releasing..." + stackTrace());
         try {
             mExtractor.release();
         } catch (Exception e) {
@@ -166,6 +166,7 @@ public abstract class DefaultDataSource implements DataSource {
         chunk.keyframe = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
         chunk.timeUs = mExtractor.getSampleTime();
         chunk.render = chunk.timeUs < mDontRenderRangeStart || chunk.timeUs >= mDontRenderRangeEnd;
+        LOG.v("dontRenderRange: time=" + chunk.timeUs + ", render=" + chunk.render);
         if (mFirstTimestampUs == Long.MIN_VALUE) {
             mFirstTimestampUs = chunk.timeUs;
         }
