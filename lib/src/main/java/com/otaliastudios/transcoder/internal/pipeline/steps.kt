@@ -4,13 +4,11 @@ internal sealed class State<out T> {
 
     // Running
     open class Ok<T>(val value: T) : State<T>() {
-        open fun <O> map(other: O) = Ok(other)
         override fun toString() = "State.Ok($value)"
     }
 
     // Run for the last time
     class Eos<T>(value: T) : Ok<T>(value) {
-        override fun <O> map(other: O) = Eos(other)
         override fun toString() = "State.Eos($value)"
     }
 

@@ -22,10 +22,11 @@ internal class ReaderWriterBridge(private val format: MediaFormat)
         next.handleFormat(format)
     }
 
+    // Can't do much about chunk.render, since we don't even decode.
     override fun step(state: State.Ok<ReaderData>, fresh: Boolean): State<WriterData> {
         val (chunk, _) = state.value
         val flags = if (chunk.keyframe) MediaCodec.BUFFER_FLAG_SYNC_FRAME else 0
         val result = WriterData(chunk.buffer, chunk.timeUs, flags) {}
-        return state.map(result)
+        return if (state is State.Eos) State.Eos(result) else State.Ok(result)
     }
 }

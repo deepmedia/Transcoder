@@ -33,6 +33,7 @@ internal class Decoder(
     private val codec = createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
     private val buffers by lazy { MediaCodecBuffers(codec) }
     private var info = BufferInfo()
+    private val dropper = DecoderDropper()
 
     override fun initialize(next: DecoderChannel) {
         super.initialize(next)
@@ -58,6 +59,7 @@ internal class Decoder(
                 log.v("feedDecoder(): id=$id isKeyFrame=${chunk.keyframe} bytes=${chunk.bytes} timeUs=${chunk.timeUs} buffer=${chunk.buffer}")
                 val flag = if (chunk.keyframe) BUFFER_FLAG_SYNC_FRAME else 0
                 codec.queueInputBuffer(id, 0, chunk.bytes, chunk.timeUs, flag)
+                dropper.input(chunk.timeUs, chunk.render)
             }
         }
 
@@ -75,10 +77,9 @@ internal class Decoder(
             }
             else -> {
                 val isEos = info.flags and BUFFER_FLAG_END_OF_STREAM != 0
-                val hasSize = info.size > 0
-                if (isEos || hasSize) {
+                val timeUs = if (isEos) info.presentationTimeUs else dropper.output(info.presentationTimeUs)
+                if (timeUs != null /* && (isEos || info.size > 0) */) {
                     val buffer = buffers.getOutputBuffer(result)
-                    val timeUs = info.presentationTimeUs
                     val data = DecoderData(buffer, timeUs) {
                         codec.releaseOutputBuffer(result, it)
                     }
