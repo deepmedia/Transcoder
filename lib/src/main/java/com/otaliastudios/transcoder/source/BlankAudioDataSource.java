@@ -29,20 +29,47 @@ public class BlankAudioDataSource implements DataSource {
     private static final int PERIOD_SIZE = (int) (PERIOD_TIME_SECONDS * BIT_RATE / 8);
 
     private final long durationUs;
-    private final ByteBuffer byteBuffer;
-    private final MediaFormat audioFormat;
 
+    private ByteBuffer byteBuffer;
+    private MediaFormat audioFormat;
     private long currentTimestampUs = 0L;
+    private boolean initialized = false;
 
     public BlankAudioDataSource(long durationUs) {
         this.durationUs = durationUs;
-        this.byteBuffer = ByteBuffer.allocateDirect(PERIOD_SIZE).order(ByteOrder.nativeOrder());
-        this.audioFormat = new MediaFormat();
+    }
+
+    @Override
+    public void initialize() {
+        byteBuffer = ByteBuffer.allocateDirect(PERIOD_SIZE).order(ByteOrder.nativeOrder());
+        audioFormat = new MediaFormat();
         audioFormat.setString(MediaFormat.KEY_MIME, MIMETYPE_AUDIO_RAW);
         audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE);
         audioFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, CHANNEL_COUNT);
         audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, PERIOD_SIZE);
         audioFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, SAMPLE_RATE);
+        initialized = true;
+    }
+
+    @Override
+    public void selectTrack(@NonNull TrackType type) {
+        // Nothing to do
+    }
+
+    @Override
+    public void releaseTrack(@NonNull TrackType type) {
+        // Nothing to do
+    }
+
+    @Override
+    public void deinitialize() {
+        currentTimestampUs = 0;
+        initialized = false;
+    }
+
+    @Override
+    public boolean isInitialized() {
+        return initialized;
     }
 
     @Override
@@ -61,21 +88,17 @@ public class BlankAudioDataSource implements DataSource {
         return durationUs;
     }
 
-    @Nullable
-    @Override
-    public MediaFormat getTrackFormat(@NonNull TrackType type) {
-        return (type == TrackType.AUDIO) ? audioFormat : null;
-    }
-
-    @Override
-    public void selectTrack(@NonNull TrackType type) {
-        // Nothing to do
-    }
 
     @Override
     public long seekTo(long desiredTimestampUs) {
         currentTimestampUs = desiredTimestampUs;
         return desiredTimestampUs;
+    }
+
+    @Nullable
+    @Override
+    public MediaFormat getTrackFormat(@NonNull TrackType type) {
+        return (type == TrackType.AUDIO) ? audioFormat : null;
     }
 
     @Override
@@ -102,15 +125,5 @@ public class BlankAudioDataSource implements DataSource {
     @Override
     public boolean isDrained() {
         return currentTimestampUs >= getDurationUs();
-    }
-
-    @Override
-    public void releaseTrack(@NonNull TrackType type) {
-        // Nothing to do
-    }
-
-    @Override
-    public void rewind() {
-        currentTimestampUs = 0;
     }
 }

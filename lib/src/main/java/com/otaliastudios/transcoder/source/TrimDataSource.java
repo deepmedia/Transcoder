@@ -13,7 +13,9 @@ public class TrimDataSource extends DataSourceWrapper {
     private static final Logger LOG = new Logger("TrimDataSource");
 
     private long trimStartUs;
-    private final long trimDurationUs;
+    private final long trimEndUs;
+
+    private long trimDurationUs;
     private boolean trimDone = false;
 
     @SuppressWarnings("WeakerAccess")
@@ -27,13 +29,22 @@ public class TrimDataSource extends DataSourceWrapper {
         if (trimStartUs < 0 || trimEndUs < 0) {
             throw new IllegalArgumentException("Trim values cannot be negative.");
         }
-        long duration = source.getDurationUs();
+        this.trimStartUs = trimStartUs;
+        this.trimEndUs = trimEndUs;
+    }
+
+    @Override
+    public void initialize() {
+        super.initialize();
+        long duration = getSource().getDurationUs();
         if (trimStartUs + trimEndUs >= duration) {
+            LOG.w("Trim values are too large! start=" +
+                    trimStartUs + ", end=" +
+                    trimEndUs + ", duration=" + duration);
             throw new IllegalArgumentException(
                     "Trim values cannot be greater than media duration.");
         }
-        this.trimStartUs = trimStartUs;
-        this.trimDurationUs = duration - trimStartUs - trimEndUs;
+        trimDurationUs = duration - trimStartUs - trimEndUs;
     }
 
     @Override
@@ -63,8 +74,8 @@ public class TrimDataSource extends DataSourceWrapper {
     }
 
     @Override
-    public void rewind() {
-        super.rewind();
+    public void deinitialize() {
+        super.deinitialize();
         trimDone = false;
     }
 }

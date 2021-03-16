@@ -22,7 +22,7 @@ internal class VideoPublisher: Step<Long, Channel, Unit, EncoderChannel> {
         surface.makeCurrent()
     }
 
-    override fun step(state: State.Ok<Long>): State<Unit> {
+    override fun step(state: State.Ok<Long>, fresh: Boolean): State<Unit> {
         if (state is State.Eos) {
             return State.Eos(Unit)
         } else {

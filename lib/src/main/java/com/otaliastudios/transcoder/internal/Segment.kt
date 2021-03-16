@@ -4,6 +4,7 @@ import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.pipeline.Pipeline
 import com.otaliastudios.transcoder.internal.pipeline.State
+import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.transcode.TrackTranscoder
 
 internal class Segment(
@@ -12,6 +13,7 @@ internal class Segment(
         private val pipeline: Pipeline,
 ) {
 
+    private val log = Logger("Segment($type,$index)")
     private var state: State<Unit>? = null
 
     fun advance(): Boolean {
@@ -20,6 +22,7 @@ internal class Segment(
     }
 
     fun canAdvance(): Boolean {
+        log.v("canAdvance(): state=$state")
         return state == null || state !is State.Eos
     }
 

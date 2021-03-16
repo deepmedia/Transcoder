@@ -4,6 +4,7 @@ import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.media.MediaFormatProvider
+import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
 import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.source.DataSource
@@ -14,6 +15,8 @@ internal class Tracks(
         sources: DataSources
 ) {
 
+    private val log = Logger("Tracks")
+
     val all: TrackMap<TrackStatus>
 
     val outputFormats: TrackMap<MediaFormat>
@@ -21,6 +24,8 @@ internal class Tracks(
     init {
         val (audioFormat, audioStatus) = resolveTrack(TrackType.AUDIO, strategies.audio, sources.audioOrNull())
         val (videoFormat, videoStatus) = resolveTrack(TrackType.VIDEO, strategies.video, sources.videoOrNull())
+        log.i("init: videoStatus=$videoStatus, videoFormat=$videoFormat")
+        log.i("init: audioStatus=$audioStatus, audioFormat=$audioFormat")
         all = trackMapOf(video = videoStatus, audio = audioStatus)
         outputFormats = trackMapOf(video = videoFormat, audio = audioFormat)
     }

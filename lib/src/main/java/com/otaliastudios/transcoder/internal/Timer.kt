@@ -1,6 +1,7 @@
 package com.otaliastudios.transcoder.internal
 
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
 import com.otaliastudios.transcoder.time.TimeInterpolator
 
@@ -10,6 +11,8 @@ internal class Timer(
         private val tracks: Tracks,
         private val current: TrackMap<Int>
 ) {
+
+    private val log = Logger("Timer")
 
     val readUs = object : TrackMap<Long> {
         override fun has(type: TrackType) = true
@@ -28,7 +31,7 @@ internal class Timer(
             return if (tracks.active.has(type)) {
                 sources[type].foldIndexed(0L) { index, acc, source ->
                     // If source has been drained, readUs can be more precise than durationUs
-                    if (index < current[type]) acc + source.readUs else source.durationUs
+                    acc + if (index < current[type]) source.readUs else source.durationUs
                 }
             } else 0L
         }

@@ -14,6 +14,12 @@ import java.nio.ByteBuffer;
  */
 public interface DataSource {
 
+    void initialize();
+
+    void deinitialize();
+
+    boolean isInitialized();
+
     /**
      * Metadata information. Returns the video orientation, or 0.
      *
@@ -112,7 +118,7 @@ public interface DataSource {
      * - {@link #isDrained()} should be false
      * - {@link #readTrack(Chunk)} should return the very first bytes
      */
-    void rewind();
+    // void rewind();
 
     /**
      * Represents a chunk of data.

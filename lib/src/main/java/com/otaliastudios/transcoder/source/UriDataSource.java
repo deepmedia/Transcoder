@@ -24,12 +24,12 @@ public class UriDataSource extends DefaultDataSource {
     }
 
     @Override
-    protected void applyExtractor(@NonNull MediaExtractor extractor) throws IOException  {
+    protected void initializeExtractor(@NonNull MediaExtractor extractor) throws IOException {
         extractor.setDataSource(context, uri, null);
     }
 
     @Override
-    protected void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
+    protected void initializeRetriever(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(context, uri);
     }
 }

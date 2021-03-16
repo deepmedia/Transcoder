@@ -9,6 +9,7 @@ import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers
 import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.State
+import com.otaliastudios.transcoder.internal.utils.Logger
 import java.nio.ByteBuffer
 
 
@@ -19,19 +20,19 @@ internal data class DecoderData(
 )
 
 internal interface DecoderChannel : Channel {
-    fun handleSourceFormat(format: MediaFormat): Surface?
-    fun handleTargetFormat(format: MediaFormat)
+    fun handleSourceFormat(sourceFormat: MediaFormat): Surface?
+    fun handleRawFormat(rawFormat: MediaFormat)
 }
 
 internal class Decoder(
         private val format: MediaFormat, // source.getTrackFormat(track)
 ) : BaseStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(), ReaderChannel {
 
+    private val log = Logger("Decoder")
     override val channel = this
     private val codec = createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
     private val buffers by lazy { MediaCodecBuffers(codec) }
     private var info = BufferInfo()
-    private var inputEosSent = false
 
     override fun initialize(next: DecoderChannel) {
         super.initialize(next)
@@ -42,21 +43,22 @@ internal class Decoder(
 
     override fun buffer(): Pair<ByteBuffer, Int>? {
         val id = codec.dequeueInputBuffer(0)
+        log.v("buffer(): id=$id")
         return if (id >= 0) buffers.getInputBuffer(id) to id else null
     }
 
-    override fun step(state: State.Ok<ReaderData>): State<DecoderData> {
+    override fun step(state: State.Ok<ReaderData>, fresh: Boolean): State<DecoderData> {
         // Input - feedDecoder
-        if (state is State.Eos) {
-            if (!inputEosSent) {
+        if (fresh) {
+            if (state is State.Eos) {
                 val flag = BUFFER_FLAG_END_OF_STREAM
                 codec.queueInputBuffer(state.value.id, 0, 0, 0, flag)
-                inputEosSent = true
+            } else {
+                val (chunk, id) = state.value
+                log.v("feedDecoder(): id=$id isKeyFrame=${chunk.isKeyFrame} bytes=${chunk.bytes} timeUs=${chunk.timestampUs} buffer=${chunk.buffer}")
+                val flag = if (chunk.isKeyFrame) BUFFER_FLAG_SYNC_FRAME else 0
+                codec.queueInputBuffer(id, 0, chunk.bytes, chunk.timestampUs, flag)
             }
-        } else {
-            val (chunk, id) = state.value
-            val flag = if (chunk.isKeyFrame) BUFFER_FLAG_SYNC_FRAME else 0
-            codec.queueInputBuffer(id, 0, chunk.bytes, chunk.timestampUs, flag)
         }
 
         // Output - drainDecoder
@@ -64,7 +66,7 @@ internal class Decoder(
         return when (result) {
             INFO_TRY_AGAIN_LATER -> State.Wait
             INFO_OUTPUT_FORMAT_CHANGED -> {
-                next.handleTargetFormat(codec.outputFormat)
+                next.handleRawFormat(codec.outputFormat)
                 State.Retry
             }
             INFO_OUTPUT_BUFFERS_CHANGED -> {
@@ -85,6 +87,8 @@ internal class Decoder(
                     State.Wait
                 }
             }
+        }.also {
+            log.v("Returning $it")
         }
     }
 
