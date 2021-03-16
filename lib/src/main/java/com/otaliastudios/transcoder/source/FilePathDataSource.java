@@ -30,59 +30,31 @@ public class FilePathDataSource extends DefaultDataSource {
         mPath = path;
     }
 
-    private void ensureDescriptorSource() {
-        if (mDescriptorSource == null) {
-            try {
-                mStream = new FileInputStream(mPath);
-                mDescriptorSource = new FileDescriptorDataSource(mStream.getFD());
-            } catch (IOException e) {
-                release();
-                throw new RuntimeException(e);
-            }
+    @Override
+    public void initialize() {
+        try {
+            mStream = new FileInputStream(mPath);
+            mDescriptorSource = new FileDescriptorDataSource(mStream.getFD());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    protected void applyExtractor(@NonNull MediaExtractor extractor) throws IOException {
-        ensureDescriptorSource();
-        mDescriptorSource.applyExtractor(extractor);
-    }
-
-    @Override
-    protected void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
-        ensureDescriptorSource();
-        mDescriptorSource.applyRetriever(retriever);
-    }
-
-    @Override
-    protected void release() {
-        super.release();
-        if (mDescriptorSource != null) {
-            mDescriptorSource.release();
-        }
-        if (mStream != null) {
-            try {
-                mStream.close();
-            } catch (IOException e) {
-                LOG.e("Can't close input stream: ", e);
-            }
-        }
-    }
-
-    @Override
-    public void rewind() {
-        super.rewind();
+    public void deinitialize() {
         // I think we must recreate the stream to restart reading from the very first bytes.
         // This means that we must also recreate the underlying source.
-        if (mDescriptorSource != null) {
-            mDescriptorSource.release();
-        }
-        if (mStream != null) {
-            try {
-                mStream.close();
-            } catch (IOException ignore) { }
-        }
-        mDescriptorSource = null;
-        mStream = null;
+        mDescriptorSource.deinitialize();
+        try { mStream.close(); } catch (IOException ignore) { }
+    }
+
+    @Override
+    protected void initializeExtractor(@NonNull MediaExtractor extractor) throws IOException {
+        mDescriptorSource.initializeExtractor(extractor);
+    }
+
+    @Override
+    protected void initializeRetriever(@NonNull MediaMetadataRetriever retriever) {
+        mDescriptorSource.initializeRetriever(retriever);
     }
 }

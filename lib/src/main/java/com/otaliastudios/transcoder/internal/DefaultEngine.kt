@@ -28,15 +28,20 @@ internal class DefaultEngine(
         private val videoRotation: Int,
         private val audioStretcher: AudioStretcher,
         private val audioResampler: AudioResampler,
-        interpolator: TimeInterpolator,
-        private val dispatcher: Dispatcher
+        interpolator: TimeInterpolator
 ) : Engine() {
+
+    private val log = Logger("DefaultEngine")
 
     private val tracks = Tracks(strategies, dataSources)
 
     private val segments = Segments(dataSources, tracks, ::createPipeline)
 
     private val timer = Timer(interpolator, dataSources, tracks, segments.currentIndex)
+
+    init {
+        log.i("Created Tracks, Segments, Timer...")
+    }
 
     init {
         dataSink.setOrientation(0) // Explicitly set 0 to output - we rotate the textures.
@@ -46,12 +51,7 @@ internal class DefaultEngine(
         }
         dataSink.setTrackStatus(TrackType.VIDEO, tracks.all.video)
         dataSink.setTrackStatus(TrackType.AUDIO, tracks.all.audio)
-    }
-
-    private fun Throwable.isInterrupted(): Boolean {
-        if (this is InterruptedException) return true
-        if (this == this.cause) return false
-        return this.cause?.isInterrupted() ?: false
+        log.i("Set up the DataSink...")
     }
 
     private fun createPipeline(
@@ -60,6 +60,7 @@ internal class DefaultEngine(
             status: TrackStatus,
             outputFormat: MediaFormat
     ): Pipeline {
+        LOG.e("createPipeline($type), index=$index status=$status format=$outputFormat")
         val interpolator = timer.interpolator(type, index)
         val sources = dataSources[type]
         val source = sources[index].forcingEos {
@@ -80,30 +81,8 @@ internal class DefaultEngine(
         }
     }
 
-    override fun transcode() {
-        if (!validate()) {
-            dispatcher.dispatchSuccess(Transcoder.SUCCESS_NOT_NEEDED)
-        } else try {
-            LOG.v("About to transcode. Duration (us): " + timer.durationUs)
-            execute {
-                dispatcher.dispatchProgress(it)
-            }
-            dispatcher.dispatchSuccess(Transcoder.SUCCESS_TRANSCODED)
-        } catch (e: Throwable) {
-            if (e.isInterrupted()) {
-                LOG.i("Transcode canceled.", e)
-                dispatcher.dispatchCancel()
-            } else {
-                LOG.e("Unexpected error while transcoding.", e)
-                dispatcher.dispatchFailure(e)
-                throw e
-            }
-        } finally {
-            cleanup()
-        }
-    }
 
-    private fun validate(): Boolean {
+    override fun validate(): Boolean {
         // If we have to apply some rotation, and the video should be transcoded,
         // ignore any Validator trying to abort the operation. The operation must happen
         // because we must apply the rotation.
@@ -120,15 +99,20 @@ internal class DefaultEngine(
      * We don't have to worry about which tracks are available and how. The [Segments] class
      * will simply return null if there's nothing to be done.
      */
-    private fun execute(progress: (Double) -> Unit) {
+    override fun transcode(progress: (Double) -> Unit) {
         var loop = 0L
+        LOG.i("transcode(): about to start, " +
+                "durationUs=${timer.durationUs}, " +
+                "audioUs=${timer.totalUs.audioOrNull()}, " +
+                "videoUs=${timer.totalUs.videoOrNull()}"
+        )
         while (true) {
-            LOG.v("new step: $loop")
             val advanced =
                     (segments.next(TrackType.AUDIO)?.advance() ?: false) or
                     (segments.next(TrackType.VIDEO)?.advance() ?: false)
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
 
+            LOG.v("transcode(): executed step=$loop advanced=$advanced completed=$completed")
             if (Thread.interrupted()) {
                 throw InterruptedException()
             } else if (completed) {
@@ -139,16 +123,17 @@ internal class DefaultEngine(
             } else if (++loop % PROGRESS_LOOPS == 0L) {
                 val audioProgress = timer.progress.audio
                 val videoProgress = timer.progress.video
-                LOG.v("progress - video:$videoProgress audio:$audioProgress")
+                LOG.v("transcode(): got progress, video=$videoProgress audio=$audioProgress")
                 progress((videoProgress + audioProgress) / tracks.active.size)
             }
         }
         dataSink.stop()
     }
 
-    private fun cleanup() {
+    override fun cleanup() {
         runCatching { segments.release() }
         runCatching { dataSink.release() }
+        runCatching { dataSources.release() }
     }
 
 

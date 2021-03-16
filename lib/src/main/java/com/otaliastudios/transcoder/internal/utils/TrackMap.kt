@@ -24,6 +24,11 @@ interface TrackMap<T> : Iterable<T> {
 interface MutableTrackMap<T> : TrackMap<T> {
     operator fun set(type: TrackType, value: T?)
 
+    fun reset(video: T?, audio: T?) {
+        set(TrackType.VIDEO, video)
+        set(TrackType.AUDIO, audio)
+    }
+
     override var audio: T
         get() = super.audio
         set(value) = set(TrackType.AUDIO, value)

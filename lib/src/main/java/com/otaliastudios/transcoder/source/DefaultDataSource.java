@@ -8,14 +8,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.common.TrackType;
+import com.otaliastudios.transcoder.common.TrackTypeKt;
 import com.otaliastudios.transcoder.internal.utils.ISO6709LocationParser;
 import com.otaliastudios.transcoder.internal.utils.Logger;
 import com.otaliastudios.transcoder.internal.utils.MutableTrackMap;
-import com.otaliastudios.transcoder.internal.utils.TrackMap;
 
 import java.io.IOException;
 import java.util.HashSet;
 
+import static android.media.MediaMetadataRetriever.METADATA_KEY_DURATION;
+import static android.media.MediaMetadataRetriever.METADATA_KEY_LOCATION;
+import static android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION;
+import static com.otaliastudios.transcoder.internal.utils.DebugKt.stackTrace;
 import static com.otaliastudios.transcoder.internal.utils.TrackMapKt.mutableTrackMapOf;
 
 /**
@@ -23,50 +27,90 @@ import static com.otaliastudios.transcoder.internal.utils.TrackMapKt.mutableTrac
  */
 public abstract class DefaultDataSource implements DataSource {
 
-    private final static Logger LOG = new Logger("DefaultDataSource");
+    private final Logger LOG = new Logger("DefaultDataSource(" + this.hashCode() + ")");
 
-    private MediaMetadataRetriever mMetadata = new MediaMetadataRetriever();
-    private MediaExtractor mExtractor = new MediaExtractor();
-    private boolean mMetadataApplied;
-    private boolean mExtractorApplied;
     private final MutableTrackMap<MediaFormat> mFormat = mutableTrackMapOf(null);
     private final MutableTrackMap<Integer> mIndex = mutableTrackMapOf(null);
     private final HashSet<TrackType> mSelectedTracks = new HashSet<>();
     private final MutableTrackMap<Long> mLastTimestampUs = mutableTrackMapOf(0L, 0L);
+
+    private MediaMetadataRetriever mMetadata = null;
+    private MediaExtractor mExtractor = null;
     private long mFirstTimestampUs = Long.MIN_VALUE;
+    private boolean mInitialized = false;
 
-    private void ensureMetadata() {
-        if (!mMetadataApplied) {
-            mMetadataApplied = true;
-            applyRetriever(mMetadata);
+    @Override
+    public void initialize() {
+        mExtractor = new MediaExtractor();
+        try {
+            initializeExtractor(mExtractor);
+        } catch (IOException e) {
+            LOG.e("Got IOException while trying to open MediaExtractor.", e);
+            throw new RuntimeException(e);
         }
-    }
+        mMetadata = new MediaMetadataRetriever();
+        initializeRetriever(mMetadata);
 
-    private void ensureExtractor() {
-        if (!mExtractorApplied) {
-            mExtractorApplied = true;
-            try {
-                applyExtractor(mExtractor);
-            } catch (IOException e) {
-                LOG.e("Got IOException while trying to open MediaExtractor.", e);
-                throw new RuntimeException(e);
+        int trackCount = mExtractor.getTrackCount();
+        for (int i = 0; i < trackCount; i++) {
+            MediaFormat format = mExtractor.getTrackFormat(i);
+            TrackType type = TrackTypeKt.getTrackTypeOrNull(format);
+            if (type != null && !mIndex.has(type)) {
+                mIndex.set(type, i);
+                mFormat.set(type, format);
             }
         }
+        mInitialized = true;
     }
 
-    protected abstract void applyExtractor(@NonNull MediaExtractor extractor) throws IOException;
+    @Override
+    public void deinitialize() {
+        LOG.i("release(): releasing..." + stackTrace());
+        try {
+            mExtractor.release();
+        } catch (Exception e) {
+            LOG.w("Could not release extractor:", e);
+        }
+        try {
+            mMetadata.release();
+        } catch (Exception e) {
+            LOG.w("Could not release metadata:", e);
+        }
 
-    protected abstract void applyRetriever(@NonNull MediaMetadataRetriever retriever);
+        mSelectedTracks.clear();
+        mFirstTimestampUs = Long.MIN_VALUE;
+        mLastTimestampUs.reset(0L, 0L);
+        mFormat.reset(null, null);
+        mIndex.reset(null, null);
+        mInitialized = false;
+    }
+
+    @Override
+    public boolean isInitialized() {
+        return mInitialized;
+    }
 
     @Override
     public void selectTrack(@NonNull TrackType type) {
+        LOG.i("selectTrack(" + type + ")");
         mSelectedTracks.add(type);
         mExtractor.selectTrack(mIndex.get(type));
     }
 
     @Override
+    public void releaseTrack(@NonNull TrackType type) {
+        LOG.i("releaseTrack(" + type + ")");
+        mSelectedTracks.remove(type);
+        mExtractor.unselectTrack(mIndex.get(type));
+    }
+
+    protected abstract void initializeExtractor(@NonNull MediaExtractor extractor) throws IOException;
+
+    protected abstract void initializeRetriever(@NonNull MediaMetadataRetriever retriever);
+
+    @Override
     public long seekTo(long desiredTimestampUs) {
-        ensureExtractor();
+        LOG.i("seekTo(" + desiredTimestampUs + ")");
         long base = mFirstTimestampUs > 0 ? mFirstTimestampUs : mExtractor.getSampleTime();
         boolean hasVideo = mSelectedTracks.contains(TrackType.VIDEO);
         boolean hasAudio = mSelectedTracks.contains(TrackType.AUDIO);
@@ -89,19 +133,16 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public boolean isDrained() {
-        ensureExtractor();
         return mExtractor.getSampleTrackIndex() < 0;
     }
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
-        ensureExtractor();
         return mExtractor.getSampleTrackIndex() == mIndex.get(type);
     }
 
     @Override
     public void readTrack(@NonNull Chunk chunk) {
-        ensureExtractor();
         int index = mExtractor.getSampleTrackIndex();
         chunk.bytes = mExtractor.readSampleData(chunk.buffer, 0);
         chunk.isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
@@ -135,8 +176,8 @@ public abstract class DefaultDataSource implements DataSource {
     @Nullable
     @Override
     public double[] getLocation() {
-        ensureMetadata();
-        String string = mMetadata.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LOCATION);
+        LOG.i("getLocation()");
+        String string = mMetadata.extractMetadata(METADATA_KEY_LOCATION);
         if (string != null) {
             float[] location = new ISO6709LocationParser().parse(string);
             if (location != null) {
@@ -151,10 +192,9 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public int getOrientation() {
-        ensureMetadata();
-        String string = mMetadata.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+        LOG.i("getOrientation()");
         try {
-            return Integer.parseInt(string);
+            return Integer.parseInt(mMetadata.extractMetadata(METADATA_KEY_VIDEO_ROTATION));
         } catch (NumberFormatException ignore) {
             return 0;
         }
@@ -162,10 +202,9 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public long getDurationUs() {
-        ensureMetadata();
+        LOG.i("getDurationUs()");
         try {
-            return Long.parseLong(mMetadata
-                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) * 1000;
+            return Long.parseLong(mMetadata.extractMetadata(METADATA_KEY_DURATION)) * 1000;
         } catch (NumberFormatException e) {
             return -1;
         }
@@ -174,68 +213,7 @@ public abstract class DefaultDataSource implements DataSource {
     @Nullable
     @Override
     public MediaFormat getTrackFormat(@NonNull TrackType type) {
-        if (mFormat.has(type)) return mFormat.get(type);
-        ensureExtractor();
-        int trackCount = mExtractor.getTrackCount();
-        MediaFormat format;
-        for (int i = 0; i < trackCount; i++) {
-            format = mExtractor.getTrackFormat(i);
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            if (type == TrackType.VIDEO && mime.startsWith("video/")) {
-                mIndex.setVideo(i);
-                mFormat.setVideo(format);
-                return format;
-            }
-            if (type == TrackType.AUDIO && mime.startsWith("audio/")) {
-                mIndex.setAudio(i);
-                mFormat.setAudio(format);
-                return format;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public void releaseTrack(@NonNull TrackType type) {
-        mSelectedTracks.remove(type);
-        if (mSelectedTracks.isEmpty()) {
-            release();
-        }
-    }
-
-    protected void release() {
-        try {
-            mExtractor.release();
-        } catch (Exception e) {
-            LOG.w("Could not release extractor:", e);
-        }
-        try {
-            mMetadata.release();
-        } catch (Exception e) {
-            LOG.w("Could not release metadata:", e);
-        }
-    }
-
-    @Override
-    public void rewind() {
-        mSelectedTracks.clear();
-        mFirstTimestampUs = Long.MIN_VALUE;
-        mLastTimestampUs.setAudio(0L);
-        mLastTimestampUs.setVideo(0L);
-        // Release the extractor and recreate.
-        try {
-            mExtractor.release();
-        } catch (Exception ignore) { }
-        mExtractor = new MediaExtractor();
-        mExtractorApplied = false;
-        // Release the metadata and recreate.
-        // This is not strictly needed but some subclasses could have
-        // to close the underlying resource during rewind() and this could
-        // make the metadata unusable as well.
-        try {
-            mMetadata.release();
-        } catch (Exception ignore) { }
-        mMetadata = new MediaMetadataRetriever();
-        mMetadataApplied = false;
+        LOG.i("getTrackFormat(" + type + ")");
+        return mFormat.getOrNull(type);
     }
 }

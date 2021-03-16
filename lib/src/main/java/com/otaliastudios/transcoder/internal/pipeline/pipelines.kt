@@ -16,20 +16,18 @@ import com.otaliastudios.transcoder.sink.DataSink
 import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.time.TimeInterpolator
 
-internal fun EmptyPipeline() = Pipeline.Builder().build()
+internal fun EmptyPipeline() = Pipeline.build("Empty")
 
 internal fun PassThroughPipeline(
         track: TrackType,
         source: DataSource,
         sink: DataSink,
         interpolator: TimeInterpolator
-) : Pipeline {
-    return Pipeline.Builder()
-            .then(Reader(source, track))
-            .then(ReaderTimer(track, interpolator))
-            .then(ReaderWriterBridge(source.getTrackFormat(track)!!))
-            .then(Writer(sink, track))
-            .build()
+) = Pipeline.build("PassThrough($track)") {
+    Reader(source, track) +
+            ReaderTimer(track, interpolator) +
+            ReaderWriterBridge(source.getTrackFormat(track)!!) +
+            Writer(sink, track)
 }
 
 internal fun RegularPipeline(
@@ -50,16 +48,14 @@ private fun VideoPipeline(
         interpolator: TimeInterpolator,
         format: MediaFormat,
         videoRotation: Int
-): Pipeline {
-    return Pipeline.Builder()
-            .then(Reader(source, TrackType.VIDEO))
-            .then(Decoder(source.getTrackFormat(TrackType.VIDEO)!!))
-            .then(DecoderTimer(TrackType.VIDEO, interpolator))
-            .then(VideoRenderer(source.orientation, videoRotation))
-            .then(VideoPublisher())
-            .then(Encoder(format, videoRotation))
-            .then(Writer(sink, TrackType.VIDEO))
-            .build()
+) = Pipeline.build("Video") {
+    Reader(source, TrackType.VIDEO) +
+            Decoder(source.getTrackFormat(TrackType.VIDEO)!!) +
+            DecoderTimer(TrackType.VIDEO, interpolator) +
+            VideoRenderer(source.orientation, videoRotation, format) +
+            VideoPublisher() +
+            Encoder(format) +
+            Writer(sink, TrackType.VIDEO)
 }
 
 private fun AudioPipeline(

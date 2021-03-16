@@ -21,12 +21,12 @@ public class FileDescriptorDataSource extends DefaultDataSource {
     }
 
     @Override
-    protected void applyExtractor(@NonNull MediaExtractor extractor) throws IOException  {
+    protected void initializeExtractor(@NonNull MediaExtractor extractor) throws IOException  {
         extractor.setDataSource(descriptor);
     }
 
     @Override
-    protected void applyRetriever(@NonNull MediaMetadataRetriever retriever) {
+    protected void initializeRetriever(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(descriptor);
     }
 }

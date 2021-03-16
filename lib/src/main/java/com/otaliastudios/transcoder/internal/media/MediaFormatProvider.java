@@ -106,7 +106,8 @@ public class MediaFormatProvider {
         while (result == null) {
             result = decodeOnce(type, source, chunk, decoder, buffers, info);
         }
-        source.rewind();
+        source.deinitialize();
+        source.initialize();
         return result;
     }
 

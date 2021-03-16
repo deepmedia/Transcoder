@@ -1,11 +1,15 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
+import com.otaliastudios.transcoder.internal.utils.Logger
+
 
 private typealias AnyStep = Step<Any, Channel, Any, Channel>
 
-internal class Pipeline(
-        private val chain: List<AnyStep>
-) {
+internal class Pipeline private constructor(name: String, private val chain: List<AnyStep>) {
+
+    private val log = Logger("Pipeline($name)")
+    private var headState: State.Ok<Any> = State.Ok(Unit)
+    private var headIndex = 0
 
     init {
         chain.zipWithNext().reversed().forEach { (first, next) ->
@@ -13,22 +17,26 @@ internal class Pipeline(
         }
     }
 
-    private var state: State.Ok<Any> = State.Ok(Unit)
-    private var index = 0
-
     fun execute(): State<Unit> {
-        val steps = chain.subList(index, chain.size)
-        var state = state
-        for (step in steps) {
-            state = executeStep(state, step) ?: return State.Wait
+        log.w("execute(): starting. head=$headIndex steps=${chain.size} remaining=${chain.size - headIndex}")
+        val head = headIndex
+        var state = headState
+        chain.forEachIndexed { index, step ->
+            if (index < head) return@forEachIndexed
+            val fresh = head == 0 || index != head
+            state = executeStep(state, step, fresh) ?: run {
+                log.v("execute(): step ${step.name} (#$index/${chain.size}) is waiting. headState=$headState headIndex=$headIndex")
+                return State.Wait
+            }
+            log.v("execute(): executed ${step.name} (#$index/${chain.size}). result=$state")
             if (state is State.Eos) {
-                this.state = state
-                this.index = steps.indexOf(step)
+                headState = state
+                headIndex = index + 1
             }
         }
-        // State is either Ok or Eos
         return when {
-            state is State.Eos || chain.isEmpty() -> State.Eos(Unit)
+            chain.isEmpty() -> State.Eos(Unit)
+            state is State.Eos -> State.Eos(Unit)
             else -> State.Ok(Unit)
         }
     }
@@ -37,30 +45,36 @@ internal class Pipeline(
         chain.forEach { it.release() }
     }
 
-    private fun executeStep(previous: State.Ok<Any>, step: AnyStep): State.Ok<Any>? {
-        val state = step.step(previous)
+    private fun executeStep(previous: State.Ok<Any>, step: AnyStep, fresh: Boolean): State.Ok<Any>? {
+        val state = step.step(previous, fresh)
         return when (state) {
             is State.Ok -> state
-            is State.Retry -> executeStep(previous, step)
+            is State.Retry -> executeStep(previous, step, fresh = false)
             is State.Wait -> null
         }
     }
 
-    class Builder<D: Any, C: Channel> private constructor(
+    companion object {
+        @Suppress("UNCHECKED_CAST")
+        internal fun build(name: String, builder: () -> Builder<Unit, Channel> = { Builder() }): Pipeline {
+            return Pipeline(name, builder().steps as List<AnyStep>)
+        }
+    }
+
+    class Builder<D: Any, C: Channel> internal constructor(
             internal val steps: List<Step<*, *, *, *>> = listOf()
     ) {
-
-        fun <NewData: Any, NewChannel: Channel> then(
+        operator fun <NewData: Any, NewChannel: Channel> plus(
                 step: Step<D, C, NewData, NewChannel>
         ): Builder<NewData, NewChannel>  = Builder(steps + step)
-
-        companion object {
-            operator fun invoke() = Builder<Unit, Channel>()
-        }
     }
 }
 
-internal fun Pipeline.Builder<Unit, Channel>.build(): Pipeline {
-    @Suppress("UNCHECKED_CAST")
-    return Pipeline(steps as List<AnyStep>)
+internal operator fun <
+        CurrData: Any, CurrChannel: Channel,
+        NewData: Any, NewChannel: Channel
+> Step<Unit, Channel, CurrData, CurrChannel>.plus(
+        other: Step<CurrData, CurrChannel, NewData, NewChannel>
+): Pipeline.Builder<NewData, NewChannel> {
+    return Pipeline.Builder<CurrData, CurrChannel>(listOf(this)) + other
 }

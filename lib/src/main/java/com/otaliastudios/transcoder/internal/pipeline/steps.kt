@@ -5,21 +5,27 @@ internal sealed class State<out T> {
     // Running
     open class Ok<T>(val value: T) : State<T>() {
         open fun <O> map(other: O) = Ok(other)
+        override fun toString() = "State.Ok($value)"
     }
 
     // Run for the last time
     class Eos<T>(value: T) : Ok<T>(value) {
         override fun <O> map(other: O) = Eos(other)
+        override fun toString() = "State.Eos($value)"
     }
 
     // couldn't run, but might in the future
-    object Wait : State<Nothing>()
+    object Wait : State<Nothing>() {
+        override fun toString() = "State.Wait"
+    }
 
     // call again as soon as possible
-    object Retry : State<Nothing>()
+    object Retry : State<Nothing>() {
+        override fun toString() = "State.Retry"
+    }
 }
 
-interface Channel {
+internal interface Channel {
     companion object : Channel
 }
 
@@ -33,10 +39,12 @@ internal interface Step<
 
     fun initialize(next: OutputChannel) = Unit
 
-    fun step(state: State.Ok<Input>): State<Output>
+    fun step(state: State.Ok<Input>, fresh: Boolean): State<Output>
 
     fun release() = Unit
 }
+
+internal val Step<*, *, *, *>.name get() = this::class.simpleName
 
 internal abstract class BaseStep<
         Input: Any,

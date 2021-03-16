@@ -9,8 +9,7 @@ import com.otaliastudios.transcoder.internal.pipeline.Step
 import com.otaliastudios.transcoder.sink.DataSink
 import java.nio.ByteBuffer
 
-// buffer, timestamp, flags
-internal typealias WriterData = Triple<ByteBuffer, Long, Int>
+internal data class WriterData(val buffer: ByteBuffer, val timeUs: Long, val flags: Int, val release: () -> Unit)
 
 internal interface WriterChannel : Channel {
     fun handleFormat(format: MediaFormat)
@@ -29,7 +28,7 @@ internal class Writer(
         sink.setTrackFormat(track, format)
     }
 
-    override fun step(state: State.Ok<WriterData>): State<Unit> {
+    override fun step(state: State.Ok<WriterData>, fresh: Boolean): State<Unit> {
         val (buffer, timestamp, flags) = state.value
         val eos = state is State.Eos
         info.set(
@@ -41,6 +40,7 @@ internal class Writer(
                 } else flags
         )
         sink.writeTrack(track, buffer, info)
+        state.value.release()
         return if (eos) State.Eos(Unit) else State.Ok(Unit)
     }
 }

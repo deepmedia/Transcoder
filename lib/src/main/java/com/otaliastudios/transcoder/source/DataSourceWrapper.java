@@ -84,7 +84,17 @@ public class DataSourceWrapper implements DataSource {
     }
 
     @Override
-    public void rewind() {
-        mSource.rewind();
+    public boolean isInitialized() {
+        return mSource.isInitialized();
+    }
+
+    @Override
+    public void initialize() {
+        mSource.initialize();
+    }
+
+    @Override
+    public void deinitialize() {
+        mSource.deinitialize();
     }
 }

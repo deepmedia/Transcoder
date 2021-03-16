@@ -215,13 +215,13 @@ public class TranscoderActivity extends AppCompatActivity implements
             mTrimStartUs = Long.valueOf(mTrimStartView.getText().toString()) * 1000000;
         } catch (NumberFormatException e) {
             mTrimStartUs = 0;
-            LOG.w("Failed to read trimStart value.");
+            LOG.w("Failed to read trimStart value.", e);
         }
         try {
             mTrimEndUs = Long.valueOf(mTrimEndView.getText().toString()) * 1000000;
         } catch (NumberFormatException e) {
             mTrimEndUs = 0;
-            LOG.w("Failed to read trimEnd value.");
+            LOG.w("Failed to read trimEnd value.", e);
         }
         if (mTrimStartUs < 0) mTrimStartUs = 0;
         if (mTrimEndUs < 0) mTrimEndUs = 0;
@@ -294,6 +294,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
         DataSink sink = new DefaultDataSink(mTranscodeOutputFile.getAbsolutePath());
+        LOG.e("Building transcoding options...");
         TranscoderOptions.Builder builder = Transcoder.into(sink);
         if (mAudioReplacementUri == null) {
             if (mTranscodeInputUri1 != null) {
@@ -311,6 +312,7 @@ public class TranscoderActivity extends AppCompatActivity implements
             if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3);
             builder.addDataSource(TrackType.AUDIO, this, mAudioReplacementUri);
         }
+        LOG.e("Starting transcoding!");
         mTranscodeFuture = builder.setListener(this)
                 .setAudioTrackStrategy(mTranscodeAudioStrategy)
                 .setVideoTrackStrategy(mTranscodeVideoStrategy)
