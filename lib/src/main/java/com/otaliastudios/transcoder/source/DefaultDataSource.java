@@ -39,6 +39,9 @@ public abstract class DefaultDataSource implements DataSource {
     private long mFirstTimestampUs = Long.MIN_VALUE;
     private boolean mInitialized = false;
 
+    private long mDontRenderRangeStart = -1L;
+    private long mDontRenderRangeEnd = -1L;
+
     @Override
     public void initialize() {
         mExtractor = new MediaExtractor();
@@ -82,6 +85,8 @@ public abstract class DefaultDataSource implements DataSource {
         mLastTimestampUs.reset(0L, 0L);
         mFormat.reset(null, null);
         mIndex.reset(null, null);
+        mDontRenderRangeStart = -1;
+        mDontRenderRangeEnd = -1;
         mInitialized = false;
     }
 
@@ -109,26 +114,39 @@ public abstract class DefaultDataSource implements DataSource {
     protected abstract void initializeRetriever(@NonNull MediaMetadataRetriever retriever);
 
     @Override
-    public long seekTo(long desiredTimestampUs) {
-        LOG.i("seekTo(" + desiredTimestampUs + ")");
-        long base = mFirstTimestampUs > 0 ? mFirstTimestampUs : mExtractor.getSampleTime();
+    public long seekTo(long desiredPositionUs) {
+        LOG.i("seekTo(" + desiredPositionUs + ")");
+        long originUs = mFirstTimestampUs > 0 ? mFirstTimestampUs : mExtractor.getSampleTime();
         boolean hasVideo = mSelectedTracks.contains(TrackType.VIDEO);
         boolean hasAudio = mSelectedTracks.contains(TrackType.AUDIO);
-        LOG.i("Seeking to: " + ((base + desiredTimestampUs) / 1000) + " first: " + (base / 1000)
+        LOG.i("Seeking to: " + ((originUs + desiredPositionUs) / 1000)
+                + " origin: " + (originUs / 1000)
                 + " hasVideo: " + hasVideo
                 + " hasAudio: " + hasAudio);
-        mExtractor.seekTo(base + desiredTimestampUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         if (hasVideo && hasAudio) {
             // Special case: audio can be moved to any timestamp, but video will only stop in
             // sync frames. MediaExtractor is not smart enough to sync the two tracks at the
-            // video sync frame, so we must do it by seeking AGAIN at the next video position.
-            while (mExtractor.getSampleTrackIndex() != mIndex.getVideo()) {
-                mExtractor.advance();
-            }
-            LOG.i("Second seek to " + (mExtractor.getSampleTime() / 1000));
+            // video sync frame, so we must take care of this with the following trick.
+            mExtractor.unselectTrack(mIndex.getAudio());
+            mExtractor.seekTo(originUs + desiredPositionUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            mExtractor.selectTrack(mIndex.getAudio()); // second seek might not be needed, but should not hurt.
             mExtractor.seekTo(mExtractor.getSampleTime(), MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        } else {
+            mExtractor.seekTo(originUs + desiredPositionUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
         }
-        return mExtractor.getSampleTime() - base;
+        mDontRenderRangeStart = mExtractor.getSampleTime();
+        mDontRenderRangeEnd = originUs + desiredPositionUs;
+        if (mDontRenderRangeStart > mDontRenderRangeEnd) {
+            throw new IllegalStateException("The dontRenderRange has unexpected values! " +
+                    "start=" + mDontRenderRangeStart + ", " +
+                    "end=" + mDontRenderRangeEnd);
+        } else {
+            LOG.i("seekTo(): dontRenderRange=" +
+                    mDontRenderRangeStart + ".." +
+                    mDontRenderRangeEnd + " (" +
+                    (mDontRenderRangeEnd - mDontRenderRangeStart) + "us)");
+        }
+        return mExtractor.getSampleTime() - originUs;
     }
 
     @Override
@@ -145,10 +163,11 @@ public abstract class DefaultDataSource implements DataSource {
     public void readTrack(@NonNull Chunk chunk) {
         int index = mExtractor.getSampleTrackIndex();
         chunk.bytes = mExtractor.readSampleData(chunk.buffer, 0);
-        chunk.isKeyFrame = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
-        chunk.timestampUs = mExtractor.getSampleTime();
+        chunk.keyframe = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
+        chunk.timeUs = mExtractor.getSampleTime();
+        chunk.render = chunk.timeUs < mDontRenderRangeStart || chunk.timeUs >= mDontRenderRangeEnd;
         if (mFirstTimestampUs == Long.MIN_VALUE) {
-            mFirstTimestampUs = chunk.timestampUs;
+            mFirstTimestampUs = chunk.timeUs;
         }
         TrackType type = (mIndex.getHasAudio() && mIndex.getAudio() == index) ? TrackType.AUDIO
                 : (mIndex.getHasVideo() && mIndex.getVideo() == index) ? TrackType.VIDEO
@@ -156,7 +175,7 @@ public abstract class DefaultDataSource implements DataSource {
         if (type == null) {
             throw new RuntimeException("Unknown type: " + index);
         }
-        mLastTimestampUs.set(type, chunk.timestampUs);
+        mLastTimestampUs.set(type, chunk.timeUs);
         mExtractor.advance();
     }
 

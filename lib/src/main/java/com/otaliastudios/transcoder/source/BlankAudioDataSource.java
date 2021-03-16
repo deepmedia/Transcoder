@@ -32,7 +32,7 @@ public class BlankAudioDataSource implements DataSource {
 
     private ByteBuffer byteBuffer;
     private MediaFormat audioFormat;
-    private long currentTimestampUs = 0L;
+    private long positionUs = 0L;
     private boolean initialized = false;
 
     public BlankAudioDataSource(long durationUs) {
@@ -63,7 +63,7 @@ public class BlankAudioDataSource implements DataSource {
 
     @Override
     public void deinitialize() {
-        currentTimestampUs = 0;
+        positionUs = 0;
         initialized = false;
     }
 
@@ -90,9 +90,9 @@ public class BlankAudioDataSource implements DataSource {
 
 
     @Override
-    public long seekTo(long desiredTimestampUs) {
-        currentTimestampUs = desiredTimestampUs;
-        return desiredTimestampUs;
+    public long seekTo(long desiredPositionUs) {
+        positionUs = desiredPositionUs;
+        return desiredPositionUs;
     }
 
     @Nullable
@@ -110,20 +110,21 @@ public class BlankAudioDataSource implements DataSource {
     public void readTrack(@NonNull Chunk chunk) {
         byteBuffer.clear();
         chunk.buffer = byteBuffer;
-        chunk.isKeyFrame = true;
-        chunk.timestampUs = currentTimestampUs;
+        chunk.keyframe = true;
+        chunk.timeUs = positionUs;
         chunk.bytes = PERIOD_SIZE;
+        chunk.render = true;
 
-        currentTimestampUs += PERIOD_TIME_US;
+        positionUs += PERIOD_TIME_US;
     }
 
     @Override
     public long getReadUs() {
-        return currentTimestampUs;
+        return positionUs;
     }
 
     @Override
     public boolean isDrained() {
-        return currentTimestampUs >= getDurationUs();
+        return positionUs >= getDurationUs();
     }
 }

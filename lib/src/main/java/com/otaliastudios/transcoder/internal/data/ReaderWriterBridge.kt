@@ -24,8 +24,8 @@ internal class ReaderWriterBridge(private val format: MediaFormat)
 
     override fun step(state: State.Ok<ReaderData>, fresh: Boolean): State<WriterData> {
         val (chunk, _) = state.value
-        val flags = if (chunk.isKeyFrame) MediaCodec.BUFFER_FLAG_SYNC_FRAME else 0
-        val result = WriterData(chunk.buffer, chunk.timestampUs, flags) {}
+        val flags = if (chunk.keyframe) MediaCodec.BUFFER_FLAG_SYNC_FRAME else 0
+        val result = WriterData(chunk.buffer, chunk.timeUs, flags) {}
         return state.map(result)
     }
 }

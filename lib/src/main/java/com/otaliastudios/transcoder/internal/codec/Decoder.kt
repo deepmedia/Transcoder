@@ -55,9 +55,9 @@ internal class Decoder(
                 codec.queueInputBuffer(state.value.id, 0, 0, 0, flag)
             } else {
                 val (chunk, id) = state.value
-                log.v("feedDecoder(): id=$id isKeyFrame=${chunk.isKeyFrame} bytes=${chunk.bytes} timeUs=${chunk.timestampUs} buffer=${chunk.buffer}")
-                val flag = if (chunk.isKeyFrame) BUFFER_FLAG_SYNC_FRAME else 0
-                codec.queueInputBuffer(id, 0, chunk.bytes, chunk.timestampUs, flag)
+                log.v("feedDecoder(): id=$id isKeyFrame=${chunk.keyframe} bytes=${chunk.bytes} timeUs=${chunk.timeUs} buffer=${chunk.buffer}")
+                val flag = if (chunk.keyframe) BUFFER_FLAG_SYNC_FRAME else 0
+                codec.queueInputBuffer(id, 0, chunk.bytes, chunk.timeUs, flag)
             }
         }
 

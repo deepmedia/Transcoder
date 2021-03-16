@@ -80,8 +80,8 @@ public class PassThroughTrackTranscoder implements TrackTranscoder {
 
         mDataChunk.buffer.clear();
         mDataSource.readTrack(mDataChunk);
-        long timestampUs = mTimeInterpolator.interpolate(mTrackType, mDataChunk.timestampUs);
-        int flags = mDataChunk.isKeyFrame ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0;
+        long timestampUs = mTimeInterpolator.interpolate(mTrackType, mDataChunk.timeUs);
+        int flags = mDataChunk.keyframe ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0;
         mBufferInfo.set(0, mDataChunk.bytes, timestampUs, flags);
         mDataSink.writeTrack(mTrackType, mDataChunk.buffer, mBufferInfo);
         return true;

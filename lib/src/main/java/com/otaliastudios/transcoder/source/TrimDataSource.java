@@ -12,9 +12,10 @@ import com.otaliastudios.transcoder.internal.utils.Logger;
 public class TrimDataSource extends DataSourceWrapper {
     private static final Logger LOG = new Logger("TrimDataSource");
 
-    private long trimStartUs;
+    private final long trimStartUs;
     private final long trimEndUs;
 
+    private long extraDurationUs;
     private long trimDurationUs;
     private boolean trimDone = false;
 
@@ -38,9 +39,10 @@ public class TrimDataSource extends DataSourceWrapper {
         super.initialize();
         long duration = getSource().getDurationUs();
         if (trimStartUs + trimEndUs >= duration) {
-            LOG.w("Trim values are too large! start=" +
-                    trimStartUs + ", end=" +
-                    trimEndUs + ", duration=" + duration);
+            LOG.w("Trim values are too large! " +
+                    "start=" + trimStartUs + ", " +
+                    "end=" + trimEndUs + ", " +
+                    "duration=" + duration);
             throw new IllegalArgumentException(
                     "Trim values cannot be greater than media duration.");
         }
@@ -49,13 +51,15 @@ public class TrimDataSource extends DataSourceWrapper {
 
     @Override
     public long getDurationUs() {
-        return trimDurationUs;
+        return trimDurationUs + extraDurationUs;
     }
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
+        // Seek lazily here instead of in initialize, so that it is done once all
+        // tracks have been selected.
         if (!trimDone && trimStartUs > 0) {
-            trimStartUs = getSource().seekTo(trimStartUs);
+            extraDurationUs = trimStartUs - getSource().seekTo(trimStartUs);
             trimDone = true;
         }
         return super.canReadTrack(type);
@@ -63,14 +67,18 @@ public class TrimDataSource extends DataSourceWrapper {
 
     @Override
     public boolean isDrained() {
+        // Enforce the trim end: this works thanks to the fact that extraDurationUs is added
+        // to the duration, otherwise it would fail for videos with sparse keyframes.
         return super.isDrained() || getReadUs() >= getDurationUs();
     }
 
     @Override
-    public long seekTo(long durationUs) {
+    public long seekTo(long desiredPositionUs) {
         // our 0 is the wrapped source's trimStartUs
-        long result = super.seekTo(trimStartUs + durationUs);
-        return result - trimStartUs;
+        // TODO should we update extraDurationUs?
+        long superDesiredUs = trimStartUs + desiredPositionUs;
+        long superReceivedUs = getSource().seekTo(superDesiredUs);
+        return superReceivedUs - trimStartUs;
     }
 
     @Override
