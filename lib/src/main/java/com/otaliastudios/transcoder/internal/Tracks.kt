@@ -12,7 +12,8 @@ import com.otaliastudios.transcoder.strategy.TrackStrategy
 
 internal class Tracks(
         strategies: TrackMap<TrackStrategy>,
-        sources: DataSources
+        sources: DataSources,
+        videoRotation: Int
 ) {
 
     private val log = Logger("Tracks")
@@ -26,7 +27,10 @@ internal class Tracks(
         val (videoFormat, videoStatus) = resolveTrack(TrackType.VIDEO, strategies.video, sources.videoOrNull())
         log.i("init: videoStatus=$videoStatus, videoFormat=$videoFormat")
         log.i("init: audioStatus=$audioStatus, audioFormat=$audioFormat")
-        all = trackMapOf(video = videoStatus, audio = audioStatus)
+        all = trackMapOf(
+                video = resolveVideoStatus(videoStatus, videoRotation),
+                audio = audioStatus
+        )
         outputFormats = trackMapOf(video = videoFormat, audio = audioFormat)
     }
 
@@ -34,6 +38,12 @@ internal class Tracks(
             video = all.video.takeIf { it.isTranscoding },
             audio = all.audio.takeIf { it.isTranscoding }
     )
+
+    private fun resolveVideoStatus(status: TrackStatus, rotation: Int): TrackStatus {
+        return if (status == TrackStatus.PASS_THROUGH && rotation != 0) {
+            TrackStatus.COMPRESSING
+        } else status
+    }
 
     private fun resolveTrack(
             type: TrackType,
