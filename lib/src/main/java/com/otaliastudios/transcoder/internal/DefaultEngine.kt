@@ -31,7 +31,7 @@ internal class DefaultEngine(
 
     private val log = Logger("DefaultEngine")
 
-    private val tracks = Tracks(strategies, dataSources)
+    private val tracks = Tracks(strategies, dataSources, videoRotation)
 
     private val segments = Segments(dataSources, tracks, ::createPipeline)
 
@@ -78,11 +78,7 @@ internal class DefaultEngine(
     }
 
     override fun validate(): Boolean {
-        // If we have to apply some rotation, and the video should be transcoded,
-        // ignore any Validator trying to abort the operation. The operation must happen
-        // because we must apply the rotation.
-        val ignoreValidatorResult = tracks.active.hasVideo && videoRotation != 0
-        if (!validator.validate(tracks.all.video, tracks.all.audio) && !ignoreValidatorResult) {
+        if (!validator.validate(tracks.all.video, tracks.all.audio)) {
             LOG.i("Validator has decided that the input is fine and transcoding is not necessary.")
             return false
         }
