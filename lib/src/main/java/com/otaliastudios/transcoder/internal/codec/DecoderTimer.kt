@@ -43,8 +43,8 @@ internal class DecoderTimer(
 
         return State.Ok(DecoderTimerData(
                 buffer = state.value.buffer,
-                rawTimeUs = state.value.timeUs,
-                timeUs = interpolator.interpolate(track, state.value.timeUs),
+                rawTimeUs = rawTimeUs,
+                timeUs = timeUs,
                 timeStretch = timeStretch,
                 release = state.value.release
         ))

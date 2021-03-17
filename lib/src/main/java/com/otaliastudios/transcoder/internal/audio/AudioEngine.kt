@@ -5,19 +5,10 @@ import android.media.MediaFormat.*
 import android.view.Surface
 import com.otaliastudios.transcoder.internal.audio.remix.AudioRemixer
 import com.otaliastudios.transcoder.internal.codec.*
-import com.otaliastudios.transcoder.internal.codec.DecoderChannel
-import com.otaliastudios.transcoder.internal.codec.DecoderData
-import com.otaliastudios.transcoder.internal.codec.DecoderTimerData
-import com.otaliastudios.transcoder.internal.codec.EncoderChannel
-import com.otaliastudios.transcoder.internal.codec.EncoderData
-import com.otaliastudios.transcoder.internal.media.MediaFormatConstants.KEY_ROTATION_DEGREES
 import com.otaliastudios.transcoder.internal.pipeline.*
-import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
-import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.resample.AudioResampler
 import com.otaliastudios.transcoder.stretch.AudioStretcher
-import com.otaliastudios.transcoder.time.TimeInterpolator
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -53,7 +44,7 @@ internal class AudioEngine(
 
     override fun enqueueEos(data: DecoderData) {
         data.release(false)
-        chunks.eos()
+        chunks.enqueueEos()
     }
 
     override fun enqueue(data: DecoderData) {
@@ -89,22 +80,22 @@ internal class AudioEngine(
             val stretchSize = ceil(processableSize * stretch)
             val stretchBuffer = buffers.acquire("stretch", stretchSize.toInt())
             stretcher.stretch(inBuffer, stretchBuffer, rawFormat.channels)
-            stretchBuffer.rewind()
+            stretchBuffer.flip()
 
             // Remix
             val remixSize = remixer.getRemixedSize(stretchSize.toInt())
             val remixBuffer = buffers.acquire("remix", remixSize)
             remixer.remix(stretchBuffer, remixBuffer)
-            remixBuffer.rewind()
+            remixBuffer.flip()
 
             // Resample
             resampler.resample(
                     remixBuffer, rawFormat.sampleRate,
                     outBuffer, targetFormat.sampleRate,
                     targetFormat.channels)
-            outBuffer.rewind()
+            outBuffer.flip()
 
-            // Adjust position and dispatch
+            // Adjust position and dispatch.
             outBytes.clear()
             outBytes.limit(outBuffer.limit() * BYTES_PER_SHORT)
             outBytes.position(outBuffer.position() * BYTES_PER_SHORT)

@@ -29,7 +29,7 @@ internal class ChunkQueue(private val sampleRate: Int, private val channels: Int
         queue.addLast(Chunk(buffer, timeUs, timeStretch, release))
     }
 
-    fun eos() {
+    fun enqueueEos() {
         queue.addLast(Chunk.Eos)
     }
 

@@ -1,7 +1,6 @@
 package com.otaliastudios.transcoder.internal
 
 import android.media.MediaFormat
-import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.pipeline.EmptyPipeline
@@ -17,7 +16,6 @@ import com.otaliastudios.transcoder.sink.DataSink
 import com.otaliastudios.transcoder.strategy.TrackStrategy
 import com.otaliastudios.transcoder.stretch.AudioStretcher
 import com.otaliastudios.transcoder.time.TimeInterpolator
-import com.otaliastudios.transcoder.transcode.*
 import com.otaliastudios.transcoder.validator.Validator
 
 internal class DefaultEngine(
