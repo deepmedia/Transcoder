@@ -9,7 +9,12 @@ import com.otaliastudios.transcoder.internal.pipeline.Step
 import com.otaliastudios.transcoder.sink.DataSink
 import java.nio.ByteBuffer
 
-internal data class WriterData(val buffer: ByteBuffer, val timeUs: Long, val flags: Int, val release: () -> Unit)
+internal data class WriterData(
+        val buffer: ByteBuffer,
+        val timeUs: Long,
+        val flags: Int,
+        val release: () -> Unit
+)
 
 internal interface WriterChannel : Channel {
     fun handleFormat(format: MediaFormat)

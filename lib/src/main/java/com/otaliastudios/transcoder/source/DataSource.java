@@ -130,7 +130,6 @@ public interface DataSource {
         public ByteBuffer buffer;
         public boolean keyframe;
         public long timeUs;
-        public int bytes;
         public boolean render;
     }
 }

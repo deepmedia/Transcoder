@@ -7,7 +7,7 @@ import com.otaliastudios.transcoder.internal.pipeline.Step
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-internal class ReaderWriterBridge(private val format: MediaFormat)
+internal class Bridge(private val format: MediaFormat)
     : Step<ReaderData, ReaderChannel, WriterData, WriterChannel>, ReaderChannel {
 
     private val bufferSize = format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE)
@@ -15,6 +15,7 @@ internal class ReaderWriterBridge(private val format: MediaFormat)
     override val channel = this
 
     override fun buffer(): Pair<ByteBuffer, Int> {
+        buffer.clear()
         return buffer to 0
     }
 

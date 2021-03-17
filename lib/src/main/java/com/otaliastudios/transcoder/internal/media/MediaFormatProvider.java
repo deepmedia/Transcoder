@@ -157,8 +157,8 @@ public class MediaFormatProvider {
         chunk.buffer = buffers.getInputBuffer(result);
         source.readTrack(chunk);
         decoder.queueInputBuffer(result,
-                0,
-                chunk.bytes,
+                chunk.buffer.position(),
+                chunk.buffer.remaining(),
                 chunk.timeUs,
                 chunk.keyframe ? MediaCodec.BUFFER_FLAG_SYNC_FRAME : 0);
     }
