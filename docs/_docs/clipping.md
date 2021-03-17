@@ -11,13 +11,11 @@ both ends. This is done by using special `DataSource` objects that wrap you orig
 so that, in case of [concatenation](concatenation) of multiple media files, the trimming values
 can be set individually for each segment.
 
-> When video tracks are involved, Transcoder will always move the clipping position to the 
-closest video sync frame. This means that sync frames define the granularity of clipping!
-If the rate of sync frames in your media is very low, there might be a significant difference
-with respect to what you would expect.
-
-For example, if your media has sync frames at seconds 2 and 4 and you try to clip the first 2.5
-seconds, Transcoder will actually only clip the first 2.
+> If Transcoder determines that the video should be decoded and re-encoded (status is `TrackStatus.COMPRESSING`)
+the clipping position is respected precisely. However, if your [strategy](track-strategies) does not
+include video decoding / re-encoding, the clipping position will be moved to the closest video sync frame.
+This means that the clipped output duration might be different than expected,
+depending on the frequency of sync frames in your original file.
 
 ### TrimDataSource
 
