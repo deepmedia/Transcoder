@@ -1,11 +1,9 @@
 package com.otaliastudios.transcoder.internal
 
-import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.pipeline.Pipeline
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.utils.Logger
-import com.otaliastudios.transcoder.transcode.TrackTranscoder
 
 internal class Segment(
         val type: TrackType,

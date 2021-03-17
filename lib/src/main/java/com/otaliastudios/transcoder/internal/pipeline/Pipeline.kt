@@ -17,6 +17,7 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
         }
     }
 
+    // Returns Eos, Ok or Wait
     fun execute(): State<Unit> {
         log.w("execute(): starting. head=$headIndex steps=${chain.size} remaining=${chain.size - headIndex}")
         val head = headIndex
