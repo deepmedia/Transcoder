@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
-import com.otaliastudios.transcoder.transcode.TrackTranscoder;
 
 import java.nio.ByteBuffer;
 
@@ -46,7 +45,7 @@ public interface DataSink {
                         @NonNull TrackStatus status);
 
     /**
-     * Called by {@link TrackTranscoder}s when they have an output format.
+     * Called by the transcoding pipeline when we have an output format.
      * This is not the output format chosen by the library user but rather the
      * output format determined by {@link MediaCodec}, which contains more information,
      * and should be inspected to know what kind of data we're collecting.
@@ -57,7 +56,7 @@ public interface DataSink {
                         @NonNull MediaFormat format);
 
     /**
-     * Called by {@link TrackTranscoder}s to write data into this sink.
+     * Called by the transcoding pipeline to write data into this sink.
      *  @param type the track type
      * @param byteBuffer the data
      * @param bufferInfo the metadata
