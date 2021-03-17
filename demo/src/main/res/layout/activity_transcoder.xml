@@ -205,6 +205,42 @@
                     android:layout_height="wrap_content" />
             </RadioGroup>
 
+            <!-- VIDEO SCALE METHOD -->
+            <TextView
+                android:padding="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Video Scaling Method" />
+            <RadioGroup
+                android:id="@+id/scale"
+                android:checkedButton="@id/scale_up"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/scale_up"
+                    android:text="Up"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/scale_down"
+                    android:text="down"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/scale_stretch"
+                    android:text="stretch"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </RadioGroup>
+
             <!-- VIDEO ROTATION -->
             <TextView
                 android:padding="16dp"

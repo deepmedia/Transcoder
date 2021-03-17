@@ -16,6 +16,7 @@ import com.otaliastudios.transcoder.strategy.size.Size;
 import com.otaliastudios.transcoder.strategy.size.Resizer;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
+import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
 
 import androidx.annotation.NonNull;
 
