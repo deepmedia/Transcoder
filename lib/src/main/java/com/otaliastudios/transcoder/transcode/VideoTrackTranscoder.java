@@ -16,21 +16,23 @@
 package com.otaliastudios.transcoder.transcode;
 
 import android.media.MediaCodec;
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
 import com.otaliastudios.transcoder.engine.TrackType;
 import com.otaliastudios.transcoder.internal.MediaCodecBuffers;
+import com.otaliastudios.transcoder.io_factory.DecoderIOFactory;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.time.TimeInterpolator;
-import com.otaliastudios.transcoder.transcode.internal.VideoDecoderOutput;
-import com.otaliastudios.transcoder.transcode.internal.VideoEncoderInput;
 import com.otaliastudios.transcoder.internal.Logger;
 import com.otaliastudios.transcoder.internal.MediaFormatConstants;
 import com.otaliastudios.transcoder.transcode.internal.VideoFrameDropper;
+import com.otaliastudios.transcoder.transcode.base.VideoDecoderOutputBase;
+import com.otaliastudios.transcoder.transcode.base.VideoEncoderInputBase;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 
@@ -41,20 +43,24 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
     @SuppressWarnings("unused")
     private static final Logger LOG = new Logger(TAG);
 
-    private VideoDecoderOutput mDecoderOutputSurface;
-    private VideoEncoderInput mEncoderInputSurface;
+    private VideoDecoderOutputBase mDecoderOutputSurface;
+    private VideoEncoderInputBase mEncoderInputSurface;
     private MediaCodec mEncoder; // Keep this since we want to signal EOS on it.
     private VideoFrameDropper mFrameDropper;
+    private DecoderIOFactory mDecoderIOFactory;
     private final TimeInterpolator mTimeInterpolator;
     private final int mSourceRotation;
     private final int mExtraRotation;
 
+
     public VideoTrackTranscoder(
             @NonNull DataSource dataSource,
             @NonNull DataSink dataSink,
+            @NotNull DecoderIOFactory decoderIOFactory,
             @NonNull TimeInterpolator timeInterpolator,
             int rotation) {
         super(dataSource, dataSink, TrackType.VIDEO);
+        mDecoderIOFactory = decoderIOFactory;
         mTimeInterpolator = timeInterpolator;
         mSourceRotation = dataSource.getOrientation();
         mExtraRotation = rotation;
@@ -76,7 +82,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
 
     @Override
     protected void onStartEncoder(@NonNull MediaFormat format, @NonNull MediaCodec encoder) {
-        mEncoderInputSurface = new VideoEncoderInput(encoder.createInputSurface());
+        mEncoderInputSurface = mDecoderIOFactory.createVideoInput(encoder.createInputSurface());
         super.onStartEncoder(format, encoder);
     }
 
@@ -98,10 +104,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
         // refer: https://android.googlesource.com/platform/frameworks/av/+blame/lollipop-release/media/libstagefright/Utils.cpp
         format.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
 
-        // The rotation we should apply is the intrinsic source rotation, plus any extra
-        // rotation that was set into the TranscoderOptions.
-        mDecoderOutputSurface = new VideoDecoderOutput();
-        mDecoderOutputSurface.setRotation((mSourceRotation + mExtraRotation) % 360);
+        mDecoderOutputSurface = mDecoderIOFactory.createVideoOutput();
         decoder.configure(format, mDecoderOutputSurface.getSurface(), null, 0);
     }
 
@@ -112,25 +115,7 @@ public class VideoTrackTranscoder extends BaseTrackTranscoder {
                 inputFormat.getInteger(MediaFormat.KEY_FRAME_RATE),
                 outputFormat.getInteger(MediaFormat.KEY_FRAME_RATE));
         mEncoder = encoder;
-
-        // Cropping support.
-        // Ignoring any outputFormat KEY_ROTATION (which is applied at playback time), the rotation
-        // difference between input and output is mSourceRotation + mExtraRotation.
-        int rotation = (mSourceRotation + mExtraRotation) % 360;
-        boolean flip = (rotation % 180) != 0;
-        float inputWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
-        float inputHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
-        float inputRatio = inputWidth / inputHeight;
-        float outputWidth = flip ? outputFormat.getInteger(MediaFormat.KEY_HEIGHT) : outputFormat.getInteger(MediaFormat.KEY_WIDTH);
-        float outputHeight = flip ? outputFormat.getInteger(MediaFormat.KEY_WIDTH) : outputFormat.getInteger(MediaFormat.KEY_HEIGHT);
-        float outputRatio = outputWidth / outputHeight;
-        float scaleX = 1, scaleY = 1;
-        if (inputRatio > outputRatio) { // Input wider. We have a scaleX.
-            scaleX = inputRatio / outputRatio;
-        } else if (inputRatio < outputRatio) { // Input taller. We have a scaleY.
-            scaleY = outputRatio / inputRatio;
-        }
-        mDecoderOutputSurface.setScale(scaleX, scaleY);
+        mDecoderOutputSurface.configureWith(inputFormat, outputFormat, mSourceRotation, mExtraRotation);
     }
 
     @Override

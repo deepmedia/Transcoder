@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 
 import com.otaliastudios.opengl.core.EglCore;
 import com.otaliastudios.opengl.surface.EglWindowSurface;
+import com.otaliastudios.transcoder.transcode.base.VideoEncoderInputBase;
 
 /**
  * The purpose of this class is basically doing OpenGL initialization.
@@ -19,7 +20,7 @@ import com.otaliastudios.opengl.surface.EglWindowSurface;
  * Calls to {@link #onFrame(long)} cause a frame of data to be sent to the surface, thus
  * to the {@link android.media.MediaCodec} input.
  */
-public class VideoEncoderInput {
+public class VideoEncoderInput implements VideoEncoderInputBase {
     @SuppressWarnings("unused")
     private static final String TAG = VideoEncoderInput.class.getSimpleName();
 
@@ -37,11 +38,13 @@ public class VideoEncoderInput {
         mEglSurface.makeCurrent();
     }
 
+    @Override
     public void onFrame(long presentationTimeUs) {
         mEglSurface.setPresentationTime(presentationTimeUs * 1000L);
         mEglSurface.swapBuffers();
     }
 
+    @Override
     public void release() {
         // NOTE: Original code calls android.view.Surface.release()
         // after the egl core releasing. This should not be an issue.

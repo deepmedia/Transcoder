@@ -170,6 +170,7 @@ public class Engine {
                 switch (type) {
                     case VIDEO:
                         transcoder = new VideoTrackTranscoder(dataSource, mDataSink,
+                                options.getDecoderIOFactory(),
                                 interpolator,
                                 options.getVideoRotation());
                         break;

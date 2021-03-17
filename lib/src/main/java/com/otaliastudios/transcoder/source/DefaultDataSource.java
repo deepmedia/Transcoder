@@ -35,10 +35,12 @@ public abstract class DefaultDataSource implements DataSource {
             = new TrackTypeMap<>(0L, 0L);
     private long mFirstTimestampUs = Long.MIN_VALUE;
 
+    private long mCachedDuration = Long.MIN_VALUE;
     private void ensureMetadata() {
         if (!mMetadataApplied) {
             mMetadataApplied = true;
             applyRetriever(mMetadata);
+            mCachedDuration = Long.MIN_VALUE;
         }
     }
 
@@ -163,9 +165,13 @@ public abstract class DefaultDataSource implements DataSource {
     @Override
     public long getDurationUs() {
         ensureMetadata();
+        if (mCachedDuration != Long.MIN_VALUE) {
+            return mCachedDuration;
+        }
         try {
-            return Long.parseLong(mMetadata
+            mCachedDuration = Long.parseLong(mMetadata
                     .extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) * 1000;
+            return mCachedDuration;
         } catch (NumberFormatException e) {
             return -1;
         }
@@ -237,5 +243,6 @@ public abstract class DefaultDataSource implements DataSource {
         } catch (Exception ignore) { }
         mMetadata = new MediaMetadataRetriever();
         mMetadataApplied = false;
+        mCachedDuration = Long.MIN_VALUE;
     }
 }

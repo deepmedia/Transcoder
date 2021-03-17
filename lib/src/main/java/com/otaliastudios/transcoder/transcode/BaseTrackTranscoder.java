@@ -3,6 +3,7 @@ package com.otaliastudios.transcoder.transcode;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.util.Log;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
@@ -212,8 +213,9 @@ public abstract class BaseTrackTranscoder implements TrackTranscoder {
         }
 
         final int result = mDecoder.dequeueInputBuffer(timeoutUs);
-        if (result < 0) return DRAIN_STATE_NONE;
-
+        if (result < 0) {
+            return DRAIN_STATE_NONE;
+        }
         mDataChunk.buffer = mDecoderBuffers.getInputBuffer(result);
         mDataSource.readTrack(mDataChunk);
         mDecoder.queueInputBuffer(result,

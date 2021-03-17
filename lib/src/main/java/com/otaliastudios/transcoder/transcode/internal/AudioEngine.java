@@ -2,6 +2,7 @@ package com.otaliastudios.transcoder.transcode.internal;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -210,7 +211,6 @@ public class AudioEngine {
         final int outputSize = encoderBuffer.remaining();
         final int totalInputSize = buffer.decoderData.remaining();
         int processedTotalInputSize = totalInputSize;
-
         // 1. Perform TimeInterpolator computation
         // TODO we should compare the NEXT timestamp with this, instead of comparing this with previous!
         long encoderUs = mTimeInterpolator.interpolate(TrackType.AUDIO, buffer.decoderTimestampUs);
@@ -255,18 +255,28 @@ public class AudioEngine {
                 " inputSize:" + inputSize);
 
         // 5. Do the stretching. We need a bridge buffer for its output.
-        ensureTempBuffer1((int) Math.ceil(inputSize * stretchFactor));
-        mStretcher.stretch(buffer.decoderData, mTempBuffer1, mDecoderChannels);
-        mTempBuffer1.rewind();
+
+        int stretchSize = (int) Math.ceil(inputSize * stretchFactor);
+        ShortBuffer currentBuffer = buffer.decoderData;
+        if (stretchSize != inputSize) {
+            ensureTempBuffer1(stretchSize);
+            mStretcher.stretch(currentBuffer, mTempBuffer1, mDecoderChannels);
+            mTempBuffer1.rewind();
+            currentBuffer = mTempBuffer1;
+        }
 
         // 6. Do the actual remixing.
-        ensureTempBuffer2(mRemixer.getRemixedSize((int) Math.ceil(inputSize * stretchFactor)));
-        mRemixer.remix(mTempBuffer1, mTempBuffer2);
-        mTempBuffer2.rewind();
+        int remixerSize = mRemixer.getRemixedSize(stretchSize);
+        if (stretchSize != remixerSize) {
+            ensureTempBuffer2(remixerSize);
+            mRemixer.remix(currentBuffer, mTempBuffer2);
+            mTempBuffer2.rewind();
+            currentBuffer = mTempBuffer2;
+        }
 
         // 7. Do the actual resampling.
-        mResampler.resample(mTempBuffer2, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate,
-                mDecoderChannels);
+        mResampler.resample(currentBuffer, mDecoderSampleRate, encoderBuffer, mEncoderSampleRate,
+                    mDecoderChannels);
 
         // 8. Add the bytes we have processed to the decoderTimestampUs, and restore the limit.
         // We need an updated timestamp for the next cycle, since we will cycle on the same input

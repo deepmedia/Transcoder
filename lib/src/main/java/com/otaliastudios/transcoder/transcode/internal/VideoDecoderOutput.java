@@ -2,6 +2,7 @@ package com.otaliastudios.transcoder.transcode.internal;
 
 
 import android.graphics.SurfaceTexture;
+import android.media.MediaFormat;
 import android.opengl.Matrix;
 import android.view.Surface;
 
@@ -12,6 +13,7 @@ import com.otaliastudios.opengl.draw.GlRect;
 import com.otaliastudios.opengl.program.GlTextureProgram;
 import com.otaliastudios.opengl.texture.GlTexture;
 import com.otaliastudios.transcoder.internal.Logger;
+import com.otaliastudios.transcoder.transcode.base.VideoDecoderOutputBase;
 
 /**
  * The purpose of this class is to create a {@link Surface} associated to a certain GL texture.
@@ -26,7 +28,7 @@ import com.otaliastudios.transcoder.internal.Logger;
  * NOTE: By default, the Surface will be using a BufferQueue in asynchronous mode, so we
  * can potentially drop frames.
  */
-public class VideoDecoderOutput {
+public class VideoDecoderOutput implements VideoDecoderOutputBase {
     private static final String TAG = VideoDecoderOutput.class.getSimpleName();
     private static final Logger LOG = new Logger(TAG);
 
@@ -77,22 +79,31 @@ public class VideoDecoderOutput {
         mSurface = new Surface(mSurfaceTexture);
     }
 
-    /**
-     * Sets the frame scale along the two axes.
-     * @param scaleX x scale
-     * @param scaleY y scale
-     */
-    public void setScale(float scaleX, float scaleY) {
+
+    @Override
+    public void configureWith(@NonNull MediaFormat inputFormat, @NonNull MediaFormat outputFormat, int sourceRotation, int extraRotation) {
+        // The rotation we should apply is the intrinsic source rotation, plus any extra
+        // rotation that was set into the TranscoderOptions.
+
+        // Cropping support.
+        // Ignoring any outputFormat KEY_ROTATION (which is applied at playback time), the rotation
+        // difference between input and output is mSourceRotation + mExtraRotation.
+        int rotation = (sourceRotation + extraRotation) % 360;
+        boolean flip = (rotation % 180) != 0;
+        float inputWidth = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        float inputHeight = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        float inputRatio = inputWidth / inputHeight;
+        float outputWidth = flip ? outputFormat.getInteger(MediaFormat.KEY_HEIGHT) : outputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        float outputHeight = flip ? outputFormat.getInteger(MediaFormat.KEY_WIDTH) : outputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        float outputRatio = outputWidth / outputHeight;
+        float scaleX = 1, scaleY = 1;
+        if (inputRatio > outputRatio) { // Input wider. We have a scaleX.
+            scaleX = inputRatio / outputRatio;
+        } else if (inputRatio < outputRatio) { // Input taller. We have a scaleY.
+            scaleY = outputRatio / inputRatio;
+        }
         mScaleX = scaleX;
         mScaleY = scaleY;
-    }
-
-    /**
-     * Sets the desired frame rotation with respect
-     * to its natural orientation.
-     * @param rotation rotation
-     */
-    public void setRotation(int rotation) {
         mRotation = rotation;
     }
 
@@ -100,6 +111,7 @@ public class VideoDecoderOutput {
      * Returns a Surface to draw onto.
      * @return the output surface
      */
+    @Override
     @NonNull
     public Surface getSurface() {
         return mSurface;
@@ -108,6 +120,7 @@ public class VideoDecoderOutput {
     /**
      * Discard all resources held by this class, notably the EGL context.
      */
+    @Override
     public void release() {
         mProgram.release();
         mSurface.release();
@@ -124,6 +137,7 @@ public class VideoDecoderOutput {
      * Waits for a new frame drawn into our surface (see {@link #getSurface()}),
      * then draws it using OpenGL.
      */
+    @Override
     public void drawFrame() {
         awaitNewFrame();
         drawNewFrame();
