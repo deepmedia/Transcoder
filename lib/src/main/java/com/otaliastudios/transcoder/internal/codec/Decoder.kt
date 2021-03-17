@@ -8,12 +8,13 @@ import com.otaliastudios.transcoder.internal.data.ReaderData
 import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers
 import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
+import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.utils.Logger
 import java.nio.ByteBuffer
 
 
-internal data class DecoderData(
+internal open class DecoderData(
         val buffer: ByteBuffer,
         val timeUs: Long,
         val release: (render: Boolean) -> Unit
@@ -26,7 +27,7 @@ internal interface DecoderChannel : Channel {
 
 internal class Decoder(
         private val format: MediaFormat, // source.getTrackFormat(track)
-) : BaseStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(), ReaderChannel {
+) : QueuedStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(), ReaderChannel {
 
     private val log = Logger("Decoder")
     override val channel = this
@@ -48,22 +49,19 @@ internal class Decoder(
         return if (id >= 0) buffers.getInputBuffer(id) to id else null
     }
 
-    override fun step(state: State.Ok<ReaderData>, fresh: Boolean): State<DecoderData> {
-        // Input - feedDecoder
-        if (fresh) {
-            if (state is State.Eos) {
-                val flag = BUFFER_FLAG_END_OF_STREAM
-                codec.queueInputBuffer(state.value.id, 0, 0, 0, flag)
-            } else {
-                val (chunk, id) = state.value
-                log.v("feedDecoder(): id=$id isKeyFrame=${chunk.keyframe} bytes=${chunk.bytes} timeUs=${chunk.timeUs} buffer=${chunk.buffer}")
-                val flag = if (chunk.keyframe) BUFFER_FLAG_SYNC_FRAME else 0
-                codec.queueInputBuffer(id, 0, chunk.bytes, chunk.timeUs, flag)
-                dropper.input(chunk.timeUs, chunk.render)
-            }
-        }
+    override fun enqueueEos(data: ReaderData) {
+        val flag = BUFFER_FLAG_END_OF_STREAM
+        codec.queueInputBuffer(data.id, 0, 0, 0, flag)
+    }
 
-        // Output - drainDecoder
+    override fun enqueue(data: ReaderData) {
+        val (chunk, id) = data
+        val flag = if (chunk.keyframe) BUFFER_FLAG_SYNC_FRAME else 0
+        codec.queueInputBuffer(id, 0, chunk.bytes, chunk.timeUs, flag)
+        dropper.input(chunk.timeUs, chunk.render)
+    }
+
+    override fun drain(): State<DecoderData> {
         val result = codec.dequeueOutputBuffer(info, 0)
         return when (result) {
             INFO_TRY_AGAIN_LATER -> State.Wait
@@ -77,7 +75,7 @@ internal class Decoder(
             }
             else -> {
                 val isEos = info.flags and BUFFER_FLAG_END_OF_STREAM != 0
-                val timeUs = if (isEos) info.presentationTimeUs else dropper.output(info.presentationTimeUs)
+                val timeUs = if (isEos) 0 else dropper.output(info.presentationTimeUs)
                 if (timeUs != null /* && (isEos || info.size > 0) */) {
                     val buffer = buffers.getOutputBuffer(result)
                     val data = DecoderData(buffer, timeUs) {

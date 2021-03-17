@@ -1,9 +1,17 @@
 package com.otaliastudios.transcoder.internal.codec
 
 import com.otaliastudios.transcoder.internal.utils.Logger
+import com.otaliastudios.transcoder.source.DataSource
 
-// Hard to read class that takes decoder input frames along with their render boolean,
-// and decides which output frames should be rendered, and with which timestamp.
+/**
+ * Hard to read, late-night class that takes decoder input frames along with their render
+ * boolean coming from [DataSource.Chunk.render] and understands which periods of time should be
+ * rendered and which shouldn't.
+ *
+ * These ranges are then matched in the decoder raw output frames. Those that do not belong to
+ * a render period are dropped, the others are rendered but their timestamp is shifted according
+ * to the no-render periods behind.
+ */
 internal class DecoderDropper {
 
     private val log = Logger("DecoderDropper")
@@ -15,11 +23,11 @@ internal class DecoderDropper {
     private var firstOutputUs: Long? = null
 
     private fun debug(message: String, important: Boolean = false) {
-        val full = "$message pendingRangeUs=${pendingRange} firstInputUs=$firstInputUs " +
+        /* val full = "$message pendingRangeUs=${pendingRange} firstInputUs=$firstInputUs " +
                 "validInputUs=[${closedRanges.joinToString {
                     "$it(deltaUs=${closedDeltas[it]})"
                 }}]"
-        if (important) log.w(full) else log.v(full)
+        if (important) log.w(full) else log.v(full) */
     }
 
     fun input(timeUs: Long, render: Boolean) {
