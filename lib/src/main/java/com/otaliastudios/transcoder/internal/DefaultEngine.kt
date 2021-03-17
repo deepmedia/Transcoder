@@ -60,7 +60,7 @@ internal class DefaultEngine(
             status: TrackStatus,
             outputFormat: MediaFormat
     ): Pipeline {
-        LOG.e("createPipeline($type), index=$index status=$status format=$outputFormat")
+        LOG.w("createPipeline($type, $index, $status), format=$outputFormat")
         val interpolator = timer.interpolator(type, index)
         val sources = dataSources[type]
         val source = sources[index].forcingEos {
@@ -68,19 +68,16 @@ internal class DefaultEngine(
             // with a little tolerance.
             timer.readUs[type] > timer.durationUs + 100L
         }
-        val sink = when {
-            index == sources.lastIndex -> dataSink
-            else -> dataSink.ignoringEos()
-        }
+        val sink = dataSink.ignoringEos { index < sources.lastIndex }
         return when (status) {
             TrackStatus.ABSENT -> EmptyPipeline()
             TrackStatus.REMOVING -> EmptyPipeline()
             TrackStatus.PASS_THROUGH -> PassThroughPipeline(type, source, sink, interpolator)
             TrackStatus.COMPRESSING -> RegularPipeline(type,
-                    source, sink, interpolator, outputFormat, videoRotation)
+                    source, sink, interpolator, outputFormat,
+                    videoRotation, audioStretcher, audioResampler)
         }
     }
-
 
     override fun validate(): Boolean {
         // If we have to apply some rotation, and the video should be transcoded,

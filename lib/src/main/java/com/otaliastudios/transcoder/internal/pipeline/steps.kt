@@ -1,49 +1,5 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
-internal sealed class State<out T> {
-
-    // Running
-    open class Ok<T>(val value: T) : State<T>() {
-        override fun toString() = "State.Ok($value)"
-    }
-
-    // Run for the last time
-    class Eos<T>(value: T) : Ok<T>(value) {
-        override fun toString() = "State.Eos($value)"
-    }
-
-    // couldn't run, but might in the future
-    object Wait : State<Nothing>() {
-        override fun toString() = "State.Wait"
-    }
-
-    // call again as soon as possible
-    object Retry : State<Nothing>() {
-        override fun toString() = "State.Retry"
-    }
-}
-
-internal interface Channel {
-    companion object : Channel
-}
-
-internal interface Step<
-        Input: Any,
-        InputChannel: Channel,
-        Output: Any,
-        OutputChannel: Channel
-> {
-    val channel: InputChannel
-
-    fun initialize(next: OutputChannel) = Unit
-
-    fun step(state: State.Ok<Input>, fresh: Boolean): State<Output>
-
-    fun release() = Unit
-}
-
-internal val Step<*, *, *, *>.name get() = this::class.simpleName
-
 internal abstract class BaseStep<
         Input: Any,
         InputChannel: Channel,
@@ -58,9 +14,31 @@ internal abstract class BaseStep<
     }
 }
 
-internal abstract class DataStep<I: Any, O: Any, C: Channel> : Step<I, C, O, C> {
+internal abstract class DataStep<D: Any, C: Channel> : Step<D, C, D, C> {
     override lateinit var channel: C
     override fun initialize(next: C) {
         channel = next
+    }
+}
+
+internal abstract class QueuedStep<
+        Input: Any,
+        InputChannel: Channel,
+        Output: Any,
+        OutputChannel: Channel
+> : BaseStep<Input, InputChannel, Output, OutputChannel>() {
+
+    protected abstract fun enqueue(data: Input)
+
+    protected abstract fun enqueueEos(data: Input)
+
+    protected abstract fun drain(): State<Output>
+
+    final override fun step(state: State.Ok<Input>, fresh: Boolean): State<Output> {
+        if (fresh) {
+            if (state is State.Eos) enqueueEos(state.value)
+            else enqueue(state.value)
+        }
+        return drain()
     }
 }

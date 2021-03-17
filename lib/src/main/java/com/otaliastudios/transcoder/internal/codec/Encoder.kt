@@ -10,17 +10,28 @@ import com.otaliastudios.transcoder.internal.data.WriterData
 import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers
 import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
+import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.utils.Logger
+import com.otaliastudios.transcoder.source.DataSource
+import java.nio.ByteBuffer
 
+internal data class EncoderData(
+        val buffer: ByteBuffer?, // If present, it must have correct position/remaining!
+        val id: Int,
+        val timeUs: Long
+) {
+    companion object { val Empty = EncoderData(null, 0, 0L) }
+}
 
 internal interface EncoderChannel : Channel {
     val surface: Surface?
+    fun buffer(): Pair<ByteBuffer, Int>?
 }
 
 internal class Encoder(
         private val format: MediaFormat, // desired output format
-) : BaseStep<Unit, EncoderChannel, WriterData, WriterChannel>(), EncoderChannel {
+) : QueuedStep<EncoderData, EncoderChannel, WriterData, WriterChannel>(), EncoderChannel {
 
     private val log = Logger("Encoder")
     override val channel = this
@@ -42,21 +53,30 @@ internal class Encoder(
         codec.start()
     }
 
-    override fun step(state: State.Ok<Unit>, fresh: Boolean): State<WriterData> {
-        // Input - feedEncoder
-        if (fresh) {
-            if (surface == null) {
-                // Audio handling
-                TODO("Do buffer communication with previous audio component!")
-            } else {
-                // Video handling. Nothing to do unless EOS.
-                if (state is State.Eos) codec.signalEndOfInputStream()
-            }
-        }
+    override fun buffer(): Pair<ByteBuffer, Int>? {
+        val id = codec.dequeueInputBuffer(0)
+        log.v("buffer(): id=$id")
+        return if (id >= 0) buffers.getInputBuffer(id) to id else null
+    }
 
-        // Output - drainEncoder
-        val result = codec.dequeueOutputBuffer(info, 0)
-        return when (result) {
+    override fun enqueueEos(data: EncoderData) {
+        if (surface != null) codec.signalEndOfInputStream()
+        else {
+            val flag = BUFFER_FLAG_END_OF_STREAM
+            codec.queueInputBuffer(data.id, 0, 0, 0, flag)
+        }
+    }
+
+    override fun enqueue(data: EncoderData) {
+        if (surface != null) return
+        else {
+            val buffer = requireNotNull(data.buffer) { "Audio should always pass a buffer to Encoder." }
+            codec.queueInputBuffer(data.id, buffer.position(), buffer.remaining(), data.timeUs, 0)
+        }
+    }
+
+    override fun drain(): State<WriterData> {
+        return when (val result = codec.dequeueOutputBuffer(info, 0)) {
             INFO_TRY_AGAIN_LATER -> {
                 log.e("Can't dequeue output buffer: INFO_TRY_AGAIN_LATER")
                 State.Wait
