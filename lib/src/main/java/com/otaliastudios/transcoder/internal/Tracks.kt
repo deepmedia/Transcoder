@@ -50,27 +50,26 @@ internal class Tracks(
             strategy: TrackStrategy,
             sources: List<DataSource>? // null or not-empty
     ): Pair<MediaFormat, TrackStatus> {
-        return if (sources == null) {
-            MediaFormat() to TrackStatus.ABSENT
-        } else {
-            var status = TrackStatus.ABSENT
-            val outputFormat = MediaFormat()
-            val provider = MediaFormatProvider()
-            val inputFormats = sources.mapNotNull {
-                val format = it.getTrackFormat(type)
-                format?.run { it to this }
-            }.map { (source, format) ->
-                provider.provideMediaFormat(source, type, format)
+        if (sources == null) {
+            return MediaFormat() to TrackStatus.ABSENT
+        }
+
+        val provider = MediaFormatProvider()
+        val inputs = sources.mapNotNull {
+            val format = it.getTrackFormat(type) ?: return@mapNotNull null
+            provider.provideMediaFormat(it, type, format)
+        }
+
+        // The DataSources class already tries to address this for audio, by inserting
+        // a BlankAudioDataSource. However we still don't have a solution for video.
+        return when (inputs.size) {
+            0 -> MediaFormat() to TrackStatus.ABSENT
+            sources.size -> {
+                val output = MediaFormat()
+                val status = strategy.createOutputFormat(inputs, output)
+                output to status
             }
-            if (inputFormats.size == sources.size) {
-                status = strategy.createOutputFormat(inputFormats, outputFormat)
-            } else {
-                require(inputFormats.isEmpty()) {
-                    "getTrackFormat returned null for ${sources.size - inputFormats.size}" +
-                            "/${sources.size} sources of type $type"
-                }
-            }
-            outputFormat to status
+            else -> error("Of all $type sources, some have a $type track, some don't.")
         }
     }
 }
