@@ -162,7 +162,20 @@ public abstract class DefaultDataSource implements DataSource {
     @Override
     public void readTrack(@NonNull Chunk chunk) {
         int index = mExtractor.getSampleTrackIndex();
-        chunk.bytes = mExtractor.readSampleData(chunk.buffer, 0);
+
+        int position = chunk.buffer.position();
+        int limit = chunk.buffer.limit();
+        int read = mExtractor.readSampleData(chunk.buffer, position);
+        if (read < 0) {
+            throw new IllegalStateException("No samples available! Forgot to call " +
+                    "canReadTrack / isDrained?");
+        } else if (position + read > limit) {
+            throw new IllegalStateException("MediaExtractor is not respecting the buffer limit. " +
+                    "This might cause other issues down the pipeline.");
+        }
+        chunk.buffer.limit(position + read);
+        chunk.buffer.position(position);
+
         chunk.keyframe = (mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) != 0;
         chunk.timeUs = mExtractor.getSampleTime();
         chunk.render = chunk.timeUs < mDontRenderRangeStart || chunk.timeUs >= mDontRenderRangeEnd;

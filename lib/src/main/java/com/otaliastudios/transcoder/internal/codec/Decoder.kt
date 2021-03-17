@@ -57,7 +57,7 @@ internal class Decoder(
     override fun enqueue(data: ReaderData) {
         val (chunk, id) = data
         val flag = if (chunk.keyframe) BUFFER_FLAG_SYNC_FRAME else 0
-        codec.queueInputBuffer(id, 0, chunk.bytes, chunk.timeUs, flag)
+        codec.queueInputBuffer(id, chunk.buffer.position(), chunk.buffer.remaining(), chunk.timeUs, flag)
         dropper.input(chunk.timeUs, chunk.render)
     }
 

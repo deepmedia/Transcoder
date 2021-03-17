@@ -26,7 +26,7 @@ import com.otaliastudios.transcoder.internal.utils.Logger;
  * NOTE: By default, the Surface will be using a BufferQueue in asynchronous mode, so we
  * can potentially drop frames.
  */
-public class FrameDrawer {
+class FrameDrawer {
     private static final Logger LOG = new Logger("FrameDrawer");
 
     private static final long NEW_IMAGE_TIMEOUT_MILLIS = 10000;

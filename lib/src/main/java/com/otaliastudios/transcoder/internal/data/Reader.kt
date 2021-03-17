@@ -37,8 +37,10 @@ internal class Reader(
     override fun step(state: State.Ok<Unit>, fresh: Boolean): State<ReaderData> {
         return if (source.isDrained) {
             nextBufferOrWait { byteBuffer, id ->
-                // TODO we might have to clear the chunk fields
+                byteBuffer.limit(0)
                 chunk.buffer = byteBuffer
+                chunk.keyframe = false
+                chunk.render = true
                 State.Eos(ReaderData(chunk, id))
             }
         } else if (!source.canReadTrack(track)) {

@@ -10,6 +10,9 @@ import com.otaliastudios.transcoder.common.TrackType;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static com.otaliastudios.transcoder.internal.audio.ConversionsKt.bitRate;
+import static com.otaliastudios.transcoder.internal.audio.ConversionsKt.bytesToUs;
+import static com.otaliastudios.transcoder.internal.audio.ConversionsKt.samplesToBytes;
 import static com.otaliastudios.transcoder.internal.media.MediaFormatConstants.MIMETYPE_AUDIO_RAW;
 
 /**
@@ -21,12 +24,8 @@ public class BlankAudioDataSource implements DataSource {
 
     private static final int CHANNEL_COUNT = 2;
     private static final int SAMPLE_RATE = 44100;
-    private static final int BITS_PER_SAMPLE = 16;
-    private static final int BIT_RATE = CHANNEL_COUNT * SAMPLE_RATE * BITS_PER_SAMPLE;
-    private static final double SAMPLES_PER_PERIOD = 2048;
-    private static final double PERIOD_TIME_SECONDS = SAMPLES_PER_PERIOD / SAMPLE_RATE;
-    private static final long PERIOD_TIME_US = (long) (1000000 * PERIOD_TIME_SECONDS);
-    private static final int PERIOD_SIZE = (int) (PERIOD_TIME_SECONDS * BIT_RATE / 8);
+    // "period" = our MediaFormat.KEY_MAX_INPUT_SIZE
+    private static final int PERIOD_SIZE = samplesToBytes(2048, CHANNEL_COUNT);
 
     private final long durationUs;
 
@@ -44,7 +43,7 @@ public class BlankAudioDataSource implements DataSource {
         byteBuffer = ByteBuffer.allocateDirect(PERIOD_SIZE).order(ByteOrder.nativeOrder());
         audioFormat = new MediaFormat();
         audioFormat.setString(MediaFormat.KEY_MIME, MIMETYPE_AUDIO_RAW);
-        audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE);
+        audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitRate(SAMPLE_RATE, CHANNEL_COUNT));
         audioFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, CHANNEL_COUNT);
         audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, PERIOD_SIZE);
         audioFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, SAMPLE_RATE);
@@ -108,14 +107,21 @@ public class BlankAudioDataSource implements DataSource {
 
     @Override
     public void readTrack(@NonNull Chunk chunk) {
+        // Could fill the chunk with a while loop in case it's bigger than our buffer,
+        // but let's respect our MediaFormat.KEY_MAX_INPUT_SIZE
+        int position = chunk.buffer.position();
+        int bytes = Math.min(chunk.buffer.remaining(), PERIOD_SIZE);
+
         byteBuffer.clear();
-        chunk.buffer = byteBuffer;
+        byteBuffer.limit(bytes);
+        chunk.buffer.put(byteBuffer);
+        chunk.buffer.position(position);
+        chunk.buffer.limit(position + bytes);
+
         chunk.keyframe = true;
         chunk.timeUs = positionUs;
-        chunk.bytes = PERIOD_SIZE;
         chunk.render = true;
-
-        positionUs += PERIOD_TIME_US;
+        positionUs += bytesToUs(bytes, SAMPLE_RATE, CHANNEL_COUNT);
     }
 
     @Override

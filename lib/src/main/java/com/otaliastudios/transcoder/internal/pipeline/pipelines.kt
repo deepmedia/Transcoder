@@ -28,7 +28,7 @@ internal fun PassThroughPipeline(
 ) = Pipeline.build("PassThrough($track)") {
     Reader(source, track) +
             ReaderTimer(track, interpolator) +
-            ReaderWriterBridge(source.getTrackFormat(track)!!) +
+            Bridge(source.getTrackFormat(track)!!) +
             Writer(sink, track)
 }
 

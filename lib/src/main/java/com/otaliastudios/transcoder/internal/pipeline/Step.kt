@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
+// TODO this could be Any
 internal interface Channel {
     companion object : Channel
 }
