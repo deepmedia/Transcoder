@@ -1,12 +1,12 @@
-package com.otaliastudios.transcoder.internal
+package com.otaliastudios.transcoder.internal.transcode
 
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.TranscoderOptions
+import com.otaliastudios.transcoder.internal.DataSources
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.trackMapOf
-import kotlin.jvm.Throws
 
-internal abstract class Engine {
+internal abstract class TranscodeEngine {
 
     abstract fun validate(): Boolean
 
@@ -15,7 +15,7 @@ internal abstract class Engine {
     abstract fun cleanup()
 
     companion object {
-        private val log = Logger("Engine")
+        private val log = Logger("TranscodeEngine")
 
         private fun Throwable.isInterrupted(): Boolean {
             if (this is InterruptedException) return true
@@ -26,10 +26,10 @@ internal abstract class Engine {
         @JvmStatic
         fun transcode(options: TranscoderOptions) {
             log.i("transcode(): called...")
-            var engine: Engine? = null
-            val dispatcher = Dispatcher(options)
+            var engine: TranscodeEngine? = null
+            val dispatcher = TranscodeDispatcher(options)
             try {
-                engine = DefaultEngine(
+                engine = DefaultTranscodeEngine(
                         dataSources = DataSources(options),
                         dataSink = options.dataSink,
                         strategies = trackMapOf(

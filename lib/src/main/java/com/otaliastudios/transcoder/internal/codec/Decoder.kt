@@ -27,6 +27,7 @@ internal interface DecoderChannel : Channel {
 
 internal class Decoder(
         private val format: MediaFormat, // source.getTrackFormat(track)
+        continuous: Boolean, // relevant if the source sends no-render chunks. should we compensate or not?
 ) : QueuedStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(), ReaderChannel {
 
     private val log = Logger("Decoder")
@@ -34,7 +35,7 @@ internal class Decoder(
     private val codec = createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
     private val buffers by lazy { MediaCodecBuffers(codec) }
     private var info = BufferInfo()
-    private val dropper = DecoderDropper()
+    private val dropper = DecoderDropper(continuous)
 
     override fun initialize(next: DecoderChannel) {
         super.initialize(next)
@@ -81,6 +82,7 @@ internal class Decoder(
                     val data = DecoderData(buffer, timeUs) {
                         codec.releaseOutputBuffer(result, it)
                     }
+                    // log.w("TDBG isEos=$isEos timeUs=$timeUs")
                     if (isEos) State.Eos(data) else State.Ok(data)
                 } else {
                     codec.releaseOutputBuffer(result, false)

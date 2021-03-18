@@ -69,8 +69,8 @@ public class DataSourceWrapper implements DataSource {
     }
 
     @Override
-    public long getReadUs() {
-        return mSource.getReadUs();
+    public long getPositionUs() {
+        return mSource.getPositionUs();
     }
 
     @Override

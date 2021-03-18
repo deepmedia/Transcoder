@@ -17,18 +17,14 @@ package com.otaliastudios.transcoder;
 
 import android.os.Build;
 
-import com.otaliastudios.transcoder.internal.Engine;
+import com.otaliastudios.transcoder.internal.transcode.TranscodeEngine;
+import com.otaliastudios.transcoder.internal.utils.ThreadPool;
 import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.validator.Validator;
 
 import java.io.FileDescriptor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -47,19 +43,10 @@ public class Transcoder {
      */
     public static final int SUCCESS_NOT_NEEDED = 1;
 
-    private static volatile Transcoder sTranscoder;
-
     @SuppressWarnings("WeakerAccess")
     @NonNull
     public static Transcoder getInstance() {
-        if (sTranscoder == null) {
-            synchronized (Transcoder.class) {
-                if (sTranscoder == null) {
-                    sTranscoder = new Transcoder();
-                }
-            }
-        }
-        return sTranscoder;
+        return new Transcoder();
     }
 
     private Transcoder() { /* private */ }
@@ -102,25 +89,6 @@ public class Transcoder {
     }
 
     /**
-     * NOTE: A better maximum pool size (instead of CPU+1) would be the number of MediaCodec
-     * instances that the device can handle at the same time. Hard to tell though as that
-     * also depends on the codec type / on input data.
-     */
-    private final ThreadPoolExecutor mExecutor = new ThreadPoolExecutor(
-            Runtime.getRuntime().availableProcessors() + 1,
-            Runtime.getRuntime().availableProcessors() + 1,
-            60,
-            TimeUnit.SECONDS,
-            new LinkedBlockingQueue<Runnable>(),
-            new ThreadFactory() {
-                private final AtomicInteger count = new AtomicInteger(1);
-                @Override
-                public Thread newThread(Runnable r) {
-                    return new Thread(r, "TranscoderThread #" + count.getAndIncrement());
-                }
-            });
-
-    /**
      * Transcodes video file asynchronously.
      *
      * @param options The transcoder options.
@@ -128,10 +96,10 @@ public class Transcoder {
      */
     @NonNull
     public Future<Void> transcode(@NonNull final TranscoderOptions options) {
-        return mExecutor.submit(new Callable<Void>() {
+        return ThreadPool.getExecutor().submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                Engine.transcode(options);
+                TranscodeEngine.transcode(options);
                 return null;
             }
         });

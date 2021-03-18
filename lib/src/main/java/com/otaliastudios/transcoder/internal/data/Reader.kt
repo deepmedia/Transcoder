@@ -36,6 +36,7 @@ internal class Reader(
 
     override fun step(state: State.Ok<Unit>, fresh: Boolean): State<ReaderData> {
         return if (source.isDrained) {
+            log.i("Source is drained! Returning Eos as soon as possible.")
             nextBufferOrWait { byteBuffer, id ->
                 byteBuffer.limit(0)
                 chunk.buffer = byteBuffer

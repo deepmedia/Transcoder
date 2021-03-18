@@ -54,7 +54,7 @@ private fun VideoPipeline(
         videoRotation: Int
 ) = Pipeline.build("Video") {
     Reader(source, TrackType.VIDEO) +
-            Decoder(source.getTrackFormat(TrackType.VIDEO)!!) +
+            Decoder(source.getTrackFormat(TrackType.VIDEO)!!, true) +
             DecoderTimer(TrackType.VIDEO, interpolator) +
             VideoRenderer(source.orientation, videoRotation, format) +
             VideoPublisher() +
@@ -71,7 +71,7 @@ private fun AudioPipeline(
         audioResampler: AudioResampler
 ) = Pipeline.build("Audio") {
     Reader(source, TrackType.AUDIO) +
-            Decoder(source.getTrackFormat(TrackType.AUDIO)!!) +
+            Decoder(source.getTrackFormat(TrackType.AUDIO)!!, true) +
             DecoderTimer(TrackType.VIDEO, interpolator) +
             AudioEngine(audioStretcher, audioResampler, format) +
             Encoder(format) +

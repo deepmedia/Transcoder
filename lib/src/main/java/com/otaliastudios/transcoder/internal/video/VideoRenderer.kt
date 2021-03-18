@@ -15,7 +15,7 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 internal class VideoRenderer(
         private val sourceRotation: Int, // intrinsic source rotation
         private val extraRotation: Int, // any extra rotation in TranscoderOptions
-        private val targetFormat: MediaFormat
+        private val targetFormat: MediaFormat,
 ): Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
 
     private val log = Logger("VideoRenderer")

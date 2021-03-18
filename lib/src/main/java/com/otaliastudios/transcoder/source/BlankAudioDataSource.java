@@ -125,7 +125,7 @@ public class BlankAudioDataSource implements DataSource {
     }
 
     @Override
-    public long getReadUs() {
+    public long getPositionUs() {
         return positionUs;
     }
 
