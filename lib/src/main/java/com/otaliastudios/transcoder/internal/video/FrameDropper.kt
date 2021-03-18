@@ -21,14 +21,14 @@ internal fun FrameDropper(inputFps: Int, outputFps: Int) = object : FrameDropper
     override fun shouldRender(timeUs: Long): Boolean {
         currentSpf += inputSpf
         if (frameCount++ == 0) {
-            log.v("RENDERING (first frame) - currentSpf=$currentSpf")
+            log.v("RENDERING (first frame) - currentSpf=$currentSpf inputSpf=$inputSpf outputSpf=$outputSpf")
             return true
         } else if (currentSpf > outputSpf) {
             currentSpf -= outputSpf
-            log.v("RENDERING - currentSpf=$currentSpf")
+            log.v("RENDERING - currentSpf=$currentSpf inputSpf=$inputSpf outputSpf=$outputSpf")
             return true
         } else {
-            log.v("DROPPING - currentSpf=$currentSpf")
+            log.v("DROPPING - currentSpf=$currentSpf inputSpf=$inputSpf outputSpf=$outputSpf")
             return false
         }
     }

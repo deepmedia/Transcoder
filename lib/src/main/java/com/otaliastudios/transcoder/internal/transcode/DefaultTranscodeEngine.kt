@@ -1,8 +1,12 @@
-package com.otaliastudios.transcoder.internal
+package com.otaliastudios.transcoder.internal.transcode
 
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.DataSources
+import com.otaliastudios.transcoder.internal.Segments
+import com.otaliastudios.transcoder.internal.Timer
+import com.otaliastudios.transcoder.internal.Tracks
 import com.otaliastudios.transcoder.internal.pipeline.EmptyPipeline
 import com.otaliastudios.transcoder.internal.pipeline.PassThroughPipeline
 import com.otaliastudios.transcoder.internal.pipeline.Pipeline
@@ -18,7 +22,7 @@ import com.otaliastudios.transcoder.stretch.AudioStretcher
 import com.otaliastudios.transcoder.time.TimeInterpolator
 import com.otaliastudios.transcoder.validator.Validator
 
-internal class DefaultEngine(
+internal class DefaultTranscodeEngine(
         private val dataSources: DataSources,
         private val dataSink: DataSink,
         strategies: TrackMap<TrackStrategy>,
@@ -27,11 +31,11 @@ internal class DefaultEngine(
         private val audioStretcher: AudioStretcher,
         private val audioResampler: AudioResampler,
         interpolator: TimeInterpolator
-) : Engine() {
+) : TranscodeEngine() {
 
-    private val log = Logger("DefaultEngine")
+    private val log = Logger("TranscodeEngine")
 
-    private val tracks = Tracks(strategies, dataSources, videoRotation)
+    private val tracks = Tracks(strategies, dataSources, videoRotation, false)
 
     private val segments = Segments(dataSources, tracks, ::createPipeline)
 
@@ -58,13 +62,13 @@ internal class DefaultEngine(
             status: TrackStatus,
             outputFormat: MediaFormat
     ): Pipeline {
-        LOG.w("createPipeline($type, $index, $status), format=$outputFormat")
+        log.w("createPipeline($type, $index, $status), format=$outputFormat")
         val interpolator = timer.interpolator(type, index)
         val sources = dataSources[type]
         val source = sources[index].forcingEos {
             // Enforce EOS if we exceed duration of other tracks,
             // with a little tolerance.
-            timer.readUs[type] > timer.durationUs + 100L
+            timer.positionUs[type] > timer.totalDurationUs + 100L
         }
         val sink = dataSink.ignoringEos { index < sources.lastIndex }
         return when (status) {
@@ -79,7 +83,7 @@ internal class DefaultEngine(
 
     override fun validate(): Boolean {
         if (!validator.validate(tracks.all.video, tracks.all.audio)) {
-            LOG.i("Validator has decided that the input is fine and transcoding is not necessary.")
+            log.i("Validator has decided that the input is fine and transcoding is not necessary.")
             return false
         }
         return true
@@ -92,10 +96,10 @@ internal class DefaultEngine(
      */
     override fun transcode(progress: (Double) -> Unit) {
         var loop = 0L
-        LOG.i("transcode(): about to start, " +
-                "durationUs=${timer.durationUs}, " +
-                "audioUs=${timer.totalUs.audioOrNull()}, " +
-                "videoUs=${timer.totalUs.videoOrNull()}"
+        log.i("transcode(): about to start, " +
+                "durationUs=${timer.totalDurationUs}, " +
+                "audioUs=${timer.durationUs.audioOrNull()}, " +
+                "videoUs=${timer.durationUs.videoOrNull()}"
         )
         while (true) {
             val advanced =
@@ -103,7 +107,7 @@ internal class DefaultEngine(
                     (segments.next(TrackType.VIDEO)?.advance() ?: false)
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
 
-            LOG.v("transcode(): executed step=$loop advanced=$advanced completed=$completed")
+            log.v("transcode(): executed step=$loop advanced=$advanced completed=$completed")
             if (Thread.interrupted()) {
                 throw InterruptedException()
             } else if (completed) {
@@ -114,7 +118,7 @@ internal class DefaultEngine(
             } else if (++loop % PROGRESS_LOOPS == 0L) {
                 val audioProgress = timer.progress.audio
                 val videoProgress = timer.progress.video
-                LOG.v("transcode(): got progress, video=$videoProgress audio=$audioProgress")
+                log.v("transcode(): got progress, video=$videoProgress audio=$audioProgress")
                 progress((videoProgress + audioProgress) / tracks.active.size)
             }
         }
@@ -129,7 +133,6 @@ internal class DefaultEngine(
 
 
     companion object {
-        private val LOG = Logger("Engine")
         private val WAIT_MS = 10L
         private val PROGRESS_LOOPS = 10L
     }

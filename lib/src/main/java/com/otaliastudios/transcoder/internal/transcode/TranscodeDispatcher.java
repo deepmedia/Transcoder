@@ -1,4 +1,4 @@
-package com.otaliastudios.transcoder.internal;
+package com.otaliastudios.transcoder.internal.transcode;
 
 import android.os.Handler;
 
@@ -10,12 +10,12 @@ import com.otaliastudios.transcoder.TranscoderOptions;
 /**
  * Wraps a TranscoderListener and posts events on the given handler.
  */
-class Dispatcher {
+class TranscodeDispatcher {
 
     private final Handler mHandler;
     private final TranscoderListener mListener;
 
-    Dispatcher(@NonNull TranscoderOptions options) {
+    TranscodeDispatcher(@NonNull TranscoderOptions options) {
         mHandler = options.getListenerHandler();
         mListener = options.getListener();
     }

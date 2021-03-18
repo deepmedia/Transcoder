@@ -19,7 +19,7 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
 
     // Returns Eos, Ok or Wait
     fun execute(): State<Unit> {
-        log.w("execute(): starting. head=$headIndex steps=${chain.size} remaining=${chain.size - headIndex}")
+        log.v("execute(): starting. head=$headIndex steps=${chain.size} remaining=${chain.size - headIndex}")
         val head = headIndex
         var state = headState
         chain.forEachIndexed { index, step ->
@@ -31,6 +31,7 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
             }
             log.v("execute(): executed ${step.name} (#$index/${chain.size}). result=$state")
             if (state is State.Eos) {
+                log.i("execute(): EOS from ${step.name} (#$index/${chain.size}).")
                 headState = state
                 headIndex = index + 1
             }
@@ -57,7 +58,7 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
 
     companion object {
         @Suppress("UNCHECKED_CAST")
-        internal fun build(name: String, builder: () -> Builder<Unit, Channel> = { Builder() }): Pipeline {
+        internal fun build(name: String, builder: () -> Builder<*, Channel> = { Builder<Unit, Channel>() }): Pipeline {
             return Pipeline(name, builder().steps as List<AnyStep>)
         }
     }

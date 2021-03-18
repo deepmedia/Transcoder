@@ -13,7 +13,8 @@ import com.otaliastudios.transcoder.strategy.TrackStrategy
 internal class Tracks(
         strategies: TrackMap<TrackStrategy>,
         sources: DataSources,
-        videoRotation: Int
+        videoRotation: Int,
+        forceCompression: Boolean
 ) {
 
     private val log = Logger("Tracks")
@@ -25,13 +26,13 @@ internal class Tracks(
     init {
         val (audioFormat, audioStatus) = resolveTrack(TrackType.AUDIO, strategies.audio, sources.audioOrNull())
         val (videoFormat, videoStatus) = resolveTrack(TrackType.VIDEO, strategies.video, sources.videoOrNull())
-        log.i("init: videoStatus=$videoStatus, videoFormat=$videoFormat")
-        log.i("init: audioStatus=$audioStatus, audioFormat=$audioFormat")
         all = trackMapOf(
-                video = resolveVideoStatus(videoStatus, videoRotation),
-                audio = audioStatus
+                video = resolveVideoStatus(videoStatus, forceCompression, videoRotation),
+                audio = resolveAudioStatus(audioStatus, forceCompression)
         )
         outputFormats = trackMapOf(video = videoFormat, audio = audioFormat)
+        log.i("init: videoStatus=$videoStatus, resolvedVideoStatus=${all.video}, videoFormat=$videoFormat")
+        log.i("init: audioStatus=$audioStatus, resolvedAudioStatus=${all.audio}, audioFormat=$audioFormat")
     }
 
     val active: TrackMap<TrackStatus> = trackMapOf(
@@ -39,10 +40,16 @@ internal class Tracks(
             audio = all.audio.takeIf { it.isTranscoding }
     )
 
-    private fun resolveVideoStatus(status: TrackStatus, rotation: Int): TrackStatus {
-        return if (status == TrackStatus.PASS_THROUGH && rotation != 0) {
-            TrackStatus.COMPRESSING
-        } else status
+    private fun resolveVideoStatus(status: TrackStatus, forceCompression: Boolean, rotation: Int): TrackStatus {
+        val force = forceCompression || rotation != 0
+        val canForce = status == TrackStatus.PASS_THROUGH
+        return if (canForce && force) TrackStatus.COMPRESSING else status
+    }
+
+    private fun resolveAudioStatus(status: TrackStatus, forceCompression: Boolean): TrackStatus {
+        val force = forceCompression
+        val canForce = status == TrackStatus.PASS_THROUGH
+        return if (canForce && force) TrackStatus.COMPRESSING else status
     }
 
     private fun resolveTrack(

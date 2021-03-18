@@ -92,11 +92,10 @@ public interface DataSource {
     void readTrack(@NonNull DataSource.Chunk chunk);
 
     /**
-     * Returns the total number of microseconds that have been read until now.
-     *
-     * @return total read us
+     * Returns the current read position, between 0 and duration.
+     * @return position in us
      */
-    long getReadUs();
+    long getPositionUs();
 
     /**
      * When this source has been totally read, it can return true here to
@@ -116,7 +115,7 @@ public interface DataSource {
      * Rewinds this source, moving it to its default state.
      * To be used again, tracks will be selected again.
      * After this call, for instance,
-     * - {@link #getReadUs()} should be 0
+     * - {@link #getPositionUs()} should be 0
      * - {@link #isDrained()} should be false
      * - {@link #readTrack(Chunk)} should return the very first bytes
      */

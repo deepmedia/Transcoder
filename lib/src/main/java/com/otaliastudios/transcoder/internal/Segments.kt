@@ -70,9 +70,9 @@ internal class Segments(
     private fun tryCreateSegment(type: TrackType, index: Int): Segment? {
         // Return null if out of bounds, either because segments are over or because the
         // source set does not have sources for this track type.
-        log.i("createSegment($type, $index)...")
+        log.i("tryCreateSegment($type, $index)...")
         val source = sources[type].getOrNull(index) ?: return null
-        log.e("createSegment($type, $index): created!")
+        log.i("tryCreateSegment($type, $index): created!")
         if (tracks.active.has(type)) {
             source.selectTrack(type)
         }

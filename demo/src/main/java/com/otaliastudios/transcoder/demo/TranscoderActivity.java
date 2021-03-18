@@ -46,7 +46,7 @@ import androidx.core.content.FileProvider;
 public class TranscoderActivity extends AppCompatActivity implements
         TranscoderListener {
 
-    private static final Logger LOG = new Logger("DemoApp");
+    private static final Logger LOG = new Logger("TranscoderActivity");
 
     private static final String FILE_PROVIDER_AUTHORITY = "com.otaliastudios.transcoder.demo.fileprovider";
     private static final int REQUEST_CODE_PICK = 1;

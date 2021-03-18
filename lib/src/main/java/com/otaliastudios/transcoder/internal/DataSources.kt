@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.internal
 
+import com.otaliastudios.transcoder.ThumbnailerOptions
 import com.otaliastudios.transcoder.TranscoderOptions
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.utils.Logger
@@ -14,6 +15,7 @@ internal class DataSources private constructor(
 ) : TrackMap<List<DataSource>> {
 
     constructor(options: TranscoderOptions) : this(options.videoDataSources, options.audioDataSources)
+    constructor(options: ThumbnailerOptions) : this(options.dataSources, listOf())
 
     private val log = Logger("DataSources")
 
