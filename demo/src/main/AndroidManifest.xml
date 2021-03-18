@@ -18,6 +18,7 @@
             android:name=".TranscoderActivity"
             android:label="Transcoder">
             <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -26,7 +27,6 @@
             android:name=".ThumbnailerActivity"
             android:label="Thumbnailer">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

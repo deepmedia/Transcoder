@@ -16,11 +16,11 @@
 
 # Transcoder
 
-Transcodes and compresses video files into the MP4 format, with audio support, using hardware-accelerated 
+Transcodes and compresses video files into the MP4 format, with audio support, using hardware-accelerated
 Android codecs available on the device. Works on API 18+.
 
 ```groovy
-implementation 'com.otaliastudios:transcoder:0.9.1'
+implementation 'com.otaliastudios:transcoder:0.10.0'
 ```
 
 - Fast transcoding to AAC/AVC

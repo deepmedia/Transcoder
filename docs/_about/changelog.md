@@ -9,6 +9,16 @@ New versions are released through GitHub, so the reference page is the [GitHub R
 > Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
 Companies can share a tiny part of their revenue and get private support hours in return. Thanks!
 
+### v0.10.0
+
+> Transcoder is now distributed through Maven Central. Snapshot releases are available as well.
+
+- New: thumbnails support ([#119][119])
+- Improvement: rewritten transcoding pipeline ([#118][118])
+- Fix: many bugs fixed while rewriting the pipeline ([#118][118])
+
+<https://github.com/natario1/Transcoder/compare/v0.9.1...v0.10.0>
+
 ### v0.9.1
 
 - Improvement: `DefaultDataSink` new constructor with support for FileDescriptor. ([#87][87])
@@ -124,3 +134,5 @@ frames, the trim timestamp might be different than what was selected.
 [61]: https://github.com/natario1/Transcoder/pull/61
 [64]: https://github.com/natario1/Transcoder/pull/64
 [87]: https://github.com/natario1/Transcoder/pull/87
+[118]: https://github.com/natario1/Transcoder/pull/118
+[119]: https://github.com/natario1/Transcoder/pull/119
