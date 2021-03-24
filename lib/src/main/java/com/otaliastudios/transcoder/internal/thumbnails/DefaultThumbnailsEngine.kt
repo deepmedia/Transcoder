@@ -97,7 +97,7 @@ internal class DefaultThumbnailsEngine(
             Seeker(source, positions) { it == stubs.firstOrNull()?.localizedUs } +
                     Reader(source, type) +
                     Decoder(source.getTrackFormat(type)!!, continuous = false) +
-                    VideoRenderer(source.orientation, rotation, outputFormat) +
+                    VideoRenderer(source.orientation, rotation, outputFormat, flipY = true) +
                     VideoSnapshots(outputFormat, positions, 50 * 1000) { pos, bitmap ->
                         val stub = stubs.removeFirst()
                         stub.actualLocalizedUs = pos

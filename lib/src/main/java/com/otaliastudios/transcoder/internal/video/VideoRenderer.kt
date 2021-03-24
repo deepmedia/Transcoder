@@ -16,6 +16,7 @@ internal class VideoRenderer(
         private val sourceRotation: Int, // intrinsic source rotation
         private val extraRotation: Int, // any extra rotation in TranscoderOptions
         private val targetFormat: MediaFormat,
+        flipY: Boolean = false
 ): Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
 
     private val log = Logger("VideoRenderer")
@@ -23,7 +24,11 @@ internal class VideoRenderer(
     override val channel = this
 
     // frame drawer needs EGL context which is not created by us, so let's use by lazy.
-    private val frameDrawer by lazy { FrameDrawer() }
+    private val frameDrawer by lazy {
+        val drawer = FrameDrawer()
+        drawer.setFlipY(flipY)
+        drawer
+    }
 
     private lateinit var frameDropper: FrameDropper
 

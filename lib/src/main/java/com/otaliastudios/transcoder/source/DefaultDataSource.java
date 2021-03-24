@@ -43,6 +43,7 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public void initialize() {
+        LOG.i("initialize(): initializing...");
         mExtractor = new MediaExtractor();
         try {
             initializeExtractor(mExtractor);
@@ -67,13 +68,27 @@ public abstract class DefaultDataSource implements DataSource {
         // This is very important to have a timebase e.g. for seeks that happen before any read.
         for (int i = 0; i < mExtractor.getTrackCount(); i++) mExtractor.selectTrack(i);
         mOriginUs = mExtractor.getSampleTime();
+        LOG.v("initialize(): found origin=" + mOriginUs);
         for (int i = 0; i < mExtractor.getTrackCount(); i++) mExtractor.unselectTrack(i);
         mInitialized = true;
+
+        // Debugging mOriginUs issues.
+        /* LOG.v("initialize(): origin after unselect is" + mExtractor.getSampleTime());
+        if (getTrackFormat(TrackType.VIDEO) != null) {
+            mExtractor.selectTrack(mIndex.getVideo());
+            LOG.v("initialize(): video only origin is" + mExtractor.getSampleTime());
+            mExtractor.unselectTrack(mIndex.getVideo());
+        }
+        if (getTrackFormat(TrackType.AUDIO) != null) {
+            mExtractor.selectTrack(mIndex.getAudio());
+            LOG.v("initialize(): audio only origin is" + mExtractor.getSampleTime());
+            mExtractor.unselectTrack(mIndex.getAudio());
+        } */
     }
 
     @Override
     public void deinitialize() {
-        LOG.i("deinitialize(): releasing...");
+        LOG.i("deinitialize(): deinitializing...");
         try {
             mExtractor.release();
         } catch (Exception e) {
@@ -124,6 +139,7 @@ public abstract class DefaultDataSource implements DataSource {
         boolean hasAudio = mSelectedTracks.contains(TrackType.AUDIO);
         LOG.i("seekTo(): seeking to " + (mOriginUs + desiredPositionUs)
                 + " originUs=" + mOriginUs
+                + " extractorUs=" + mExtractor.getSampleTime()
                 + " externalUs=" + desiredPositionUs
                 + " hasVideo=" + hasVideo
                 + " hasAudio=" + hasAudio);
@@ -140,17 +156,18 @@ public abstract class DefaultDataSource implements DataSource {
         }
         mDontRenderRangeStart = mExtractor.getSampleTime();
         mDontRenderRangeEnd = mOriginUs + desiredPositionUs;
-
         if (mDontRenderRangeStart > mDontRenderRangeEnd) {
-            throw new IllegalStateException("The dontRenderRange has unexpected values! " +
-                    "start=" + mDontRenderRangeStart + ", " +
-                    "end=" + mDontRenderRangeEnd);
-        } else {
-            LOG.i("seekTo(): dontRenderRange=" +
-                    mDontRenderRangeStart + ".." +
-                    mDontRenderRangeEnd + " (" +
-                    (mDontRenderRangeEnd - mDontRenderRangeStart) + "us)");
+            // Extractor jumped beyond the requested point!
+            // This can happen in edge cases because we compute mOriginUs with both tracks selected,
+            // while source can later be used with a single track. E.g. audio track starts at 0,
+            // video track starts at 20000, mOriginUs is 0. A seekTo(0) will give range=20000..0.
+            // In this case, range should just be empty.
+            mDontRenderRangeStart = mDontRenderRangeEnd; // 0..0
         }
+        LOG.i("seekTo(): dontRenderRange=" +
+                mDontRenderRangeStart + ".." +
+                mDontRenderRangeEnd + " (" +
+                (mDontRenderRangeEnd - mDontRenderRangeStart) + "us)");
         return mExtractor.getSampleTime() - mOriginUs;
     }
 

@@ -40,6 +40,7 @@ class FrameDrawer {
     private float mScaleX = 1F;
     private float mScaleY = 1F;
     private int mRotation = 0;
+    private boolean mFlipY = false;
 
     @GuardedBy("mFrameAvailableLock")
     private boolean mFrameAvailable;
@@ -93,6 +94,10 @@ class FrameDrawer {
      */
     public void setRotation(int rotation) {
         mRotation = rotation;
+    }
+
+    public void setFlipY(boolean flipY) {
+        mFlipY = flipY;
     }
 
     /**
@@ -169,10 +174,14 @@ class FrameDrawer {
         Matrix.translateM(mProgram.getTextureTransform(), 0, glTranslX, glTranslY, 0);
         // Scale.
         Matrix.scaleM(mProgram.getTextureTransform(), 0, glScaleX, glScaleY, 1);
-        // Apply rotation.
+        // Apply rotation and flip.
         Matrix.translateM(mProgram.getTextureTransform(), 0, 0.5F, 0.5F, 0);
         Matrix.rotateM(mProgram.getTextureTransform(), 0, mRotation, 0, 0, 1);
+        if (mFlipY) {
+            Matrix.scaleM(mProgram.getTextureTransform(), 0, 1F, -1F, 1F);
+        }
         Matrix.translateM(mProgram.getTextureTransform(), 0, -0.5F, -0.5F, 0);
+
         // Draw.
         mProgram.draw(mDrawable);
     }
