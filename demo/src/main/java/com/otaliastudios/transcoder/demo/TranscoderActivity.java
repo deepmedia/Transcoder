@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
@@ -20,8 +21,6 @@ import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.utils.Logger;
-import com.otaliastudios.transcoder.sink.DataSink;
-import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.TrimDataSource;
 import com.otaliastudios.transcoder.source.UriDataSource;
@@ -108,9 +107,10 @@ public class TranscoderActivity extends AppCompatActivity implements
         mButtonView = findViewById(R.id.button);
         mButtonView.setOnClickListener(v -> {
             if (!mIsTranscoding) {
-                startActivityForResult(new Intent(Intent.ACTION_GET_CONTENT)
-                        .setType("video/*")
-                        .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true), REQUEST_CODE_PICK);
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+                        .setDataAndType(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, "video/*")
+                        .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                startActivityForResult(intent, REQUEST_CODE_PICK);
             } else {
                 mTranscodeFuture.cancel(true);
             }
@@ -239,16 +239,16 @@ public class TranscoderActivity extends AppCompatActivity implements
         if (requestCode == REQUEST_CODE_PICK
                 && resultCode == RESULT_OK
                 && data != null) {
-            if (data.getData() != null) {
-                mTranscodeInputUri1 = data.getData();
-                mTranscodeInputUri2 = null;
-                mTranscodeInputUri3 = null;
-                transcode();
-            } else if (data.getClipData() != null) {
+            if (data.getClipData() != null) {
                 ClipData clipData = data.getClipData();
                 mTranscodeInputUri1 = clipData.getItemAt(0).getUri();
                 mTranscodeInputUri2 = clipData.getItemCount() >= 2 ? clipData.getItemAt(1).getUri() : null;
                 mTranscodeInputUri3 = clipData.getItemCount() >= 3 ? clipData.getItemAt(2).getUri() : null;
+                transcode();
+            } else if (data.getData() != null) {
+                mTranscodeInputUri1 = data.getData();
+                mTranscodeInputUri2 = null;
+                mTranscodeInputUri3 = null;
                 transcode();
             }
         }
@@ -294,9 +294,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
-        DataSink sink = new DefaultDataSink(mTranscodeOutputFile.getAbsolutePath());
         LOG.e("Building transcoding options...");
-        TranscoderOptions.Builder builder = Transcoder.into(sink);
+        TranscoderOptions.Builder builder = Transcoder.into(mTranscodeOutputFile.getAbsolutePath());
         if (mAudioReplacementUri == null) {
             if (mTranscodeInputUri1 != null) {
                 DataSource source = new UriDataSource(this, mTranscodeInputUri1);

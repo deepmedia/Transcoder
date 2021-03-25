@@ -111,6 +111,7 @@ public class DefaultDataSink implements DataSink {
 
     @Override
     public void setTrackFormat(@NonNull TrackType type, @NonNull MediaFormat format) {
+        LOG.i("setTrackFormat(" + type + ") format=" + format);
         boolean shouldValidate = mStatus.get(type) == TrackStatus.COMPRESSING;
         if (shouldValidate) {
             mMuxerChecks.checkOutputFormat(type, format);

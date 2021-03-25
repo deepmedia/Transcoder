@@ -10,7 +10,8 @@ import com.otaliastudios.transcoder.common.TrackType;
 
 /**
  * A {@link DataSource} wrapper that simply delegates all methods to the
- * wrapped source.
+ * wrapped source. It is the implementor responsibility to care about the case where
+ * the wrapped source is already initialized, in case they are overriding initialize.
  */
 public class DataSourceWrapper implements DataSource {
 
@@ -90,7 +91,10 @@ public class DataSourceWrapper implements DataSource {
 
     @Override
     public void initialize() {
-        mSource.initialize();
+        // Make it easier for subclasses to put their logic in initialize safely.
+        if (!mSource.isInitialized()) {
+            mSource.initialize();
+        }
     }
 
     @Override

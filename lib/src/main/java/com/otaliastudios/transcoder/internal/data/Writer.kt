@@ -6,6 +6,7 @@ import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.pipeline.Step
+import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.sink.DataSink
 import java.nio.ByteBuffer
 
@@ -27,9 +28,11 @@ internal class Writer(
 
     override val channel = this
 
+    private val log = Logger("Writer")
     private val info = MediaCodec.BufferInfo()
 
     override fun handleFormat(format: MediaFormat) {
+        log.i("handleFormat($format)")
         sink.setTrackFormat(track, format)
     }
 
