@@ -15,8 +15,8 @@ public class TrimDataSource extends DataSourceWrapper {
     private final long trimStartUs;
     private final long trimEndUs;
 
-    private long extraDurationUs;
-    private long trimDurationUs;
+    private long extraDurationUs = 0;
+    private long trimDurationUs = Long.MIN_VALUE;
     private boolean trimDone = false;
 
     @SuppressWarnings("WeakerAccess")
@@ -32,6 +32,18 @@ public class TrimDataSource extends DataSourceWrapper {
         }
         this.trimStartUs = trimStartUs;
         this.trimEndUs = trimEndUs;
+    }
+
+    @Override
+    public boolean isInitialized() {
+        return super.isInitialized() && trimDurationUs != Long.MIN_VALUE;
+    }
+
+    @Override
+    public void deinitialize() {
+        super.deinitialize();
+        trimDurationUs = Long.MIN_VALUE;
+        trimDone = false;
     }
 
     @Override
@@ -79,11 +91,5 @@ public class TrimDataSource extends DataSourceWrapper {
         long superDesiredUs = trimStartUs + desiredPositionUs;
         long superReceivedUs = getSource().seekTo(superDesiredUs);
         return superReceivedUs - trimStartUs;
-    }
-
-    @Override
-    public void deinitialize() {
-        super.deinitialize();
-        trimDone = false;
     }
 }

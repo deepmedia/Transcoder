@@ -4,12 +4,14 @@ import android.media.MediaCodec
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.pipeline.Step
+import com.otaliastudios.transcoder.internal.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 internal class Bridge(private val format: MediaFormat)
     : Step<ReaderData, ReaderChannel, WriterData, WriterChannel>, ReaderChannel {
 
+    private val log = Logger("Bridge")
     private val bufferSize = format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE)
     private val buffer = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder())
     override val channel = this
@@ -20,6 +22,7 @@ internal class Bridge(private val format: MediaFormat)
     }
 
     override fun initialize(next: WriterChannel) {
+        log.i("initialize(): format=$format")
         next.handleFormat(format)
     }
 

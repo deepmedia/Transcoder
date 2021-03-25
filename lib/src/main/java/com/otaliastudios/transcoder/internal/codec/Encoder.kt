@@ -82,6 +82,7 @@ internal class Encoder(
                 State.Wait
             }
             INFO_OUTPUT_FORMAT_CHANGED -> {
+                log.i("INFO_OUTPUT_FORMAT_CHANGED! format=${codec.outputFormat}")
                 next.handleFormat(codec.outputFormat)
                 State.Retry
             }
