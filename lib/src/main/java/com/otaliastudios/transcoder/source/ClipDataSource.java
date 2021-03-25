@@ -15,6 +15,11 @@ public class ClipDataSource extends DataSourceWrapper {
     public ClipDataSource(@NonNull DataSource source, long clipStartUs, long clipEndUs) {
         super(new TrimDataSource(source,
                 clipStartUs,
-                source.getDurationUs() - clipEndUs));
+                getSourceDurationUs(source) - clipEndUs));
+    }
+
+    private static long getSourceDurationUs(@NonNull DataSource source) {
+        if (!source.isInitialized()) source.initialize();
+        return source.getDurationUs();
     }
 }
