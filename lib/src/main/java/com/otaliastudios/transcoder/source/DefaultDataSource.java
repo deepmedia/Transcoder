@@ -148,9 +148,13 @@ public abstract class DefaultDataSource implements DataSource {
             // sync frames. MediaExtractor is not smart enough to sync the two tracks at the
             // video sync frame, so we must take care of this with the following trick.
             mExtractor.unselectTrack(mIndex.getAudio());
+            LOG.v("seekTo(): unselected AUDIO, seeking to " + (mOriginUs + desiredPositionUs) + " (extractorUs=" + mExtractor.getSampleTime() + ")");
             mExtractor.seekTo(mOriginUs + desiredPositionUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            LOG.v("seekTo(): unselected AUDIO and sought (extractorUs=" + mExtractor.getSampleTime() + ")");
             mExtractor.selectTrack(mIndex.getAudio()); // second seek might not be needed, but should not hurt.
+            LOG.v("seekTo(): reselected AUDIO, seeking to extractorUs (extractorUs=" + mExtractor.getSampleTime() + ")");
             mExtractor.seekTo(mExtractor.getSampleTime(), MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+            LOG.v("seekTo(): seek workaround completed. (extractorUs=" + mExtractor.getSampleTime() + ")");
         } else {
             mExtractor.seekTo(mOriginUs + desiredPositionUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
         }

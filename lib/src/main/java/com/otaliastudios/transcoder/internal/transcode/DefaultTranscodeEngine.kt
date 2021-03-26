@@ -102,9 +102,12 @@ internal class DefaultTranscodeEngine(
                 "videoUs=${timer.durationUs.videoOrNull()}"
         )
         while (true) {
-            val advanced =
-                    (segments.next(TrackType.AUDIO)?.advance() ?: false) or
-                    (segments.next(TrackType.VIDEO)?.advance() ?: false)
+            // Create both segments before reading. Creating the segment calls source.selectTrack,
+            // and if source is the same, it's important that both tracks are selected before
+            // reading (or even worse, seeking. DataSource.seek is broken if you add a track later on).
+            val audio = segments.next(TrackType.AUDIO)
+            val video = segments.next(TrackType.VIDEO)
+            val advanced = (audio?.advance() ?: false) or (video?.advance() ?: false)
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
 
             log.v("transcode(): executed step=$loop advanced=$advanced completed=$completed")

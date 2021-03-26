@@ -52,8 +52,9 @@ public class DefaultDataSink implements DataSink {
 
     private final static Logger LOG = new Logger("DefaultDataSink");
 
-    // I have no idea whether this value is appropriate or not...
-    private final static int BUFFER_SIZE = 64 * 1024;
+    // We must be able to handle potentially big buffers (e.g. first keyframe) in the queue.
+    // Got crashes with 152kb - let's use 256kb. TODO use a dynamic queue instead
+    private final static int BUFFER_SIZE = 256 * 1024;
 
     private boolean mMuxerStarted = false;
     private final MediaMuxer mMuxer;
@@ -117,10 +118,10 @@ public class DefaultDataSink implements DataSink {
             mMuxerChecks.checkOutputFormat(type, format);
         }
         mLastFormat.set(type, format);
-        startIfNeeded();
+        maybeStart();
     }
 
-    private void startIfNeeded() {
+    private void maybeStart() {
         if (mMuxerStarted) return;
         boolean isTranscodingVideo = mStatus.get(TrackType.VIDEO).isTranscoding();
         boolean isTranscodingAudio = mStatus.get(TrackType.AUDIO).isTranscoding();
@@ -170,6 +171,12 @@ public class DefaultDataSink implements DataSink {
         if (mQueueBuffer == null) {
             mQueueBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE).order(ByteOrder.nativeOrder());
         }
+        LOG.v("enqueue(" + type + "): offset=" + bufferInfo.offset
+                + "\trealOffset=" + buffer.position()
+                + "\tsize=" + bufferInfo.size
+                + "\trealSize=" + buffer.remaining()
+                + "\tavailable=" + mQueueBuffer.remaining()
+                + "\ttotal=" + BUFFER_SIZE);
         buffer.limit(bufferInfo.offset + bufferInfo.size);
         buffer.position(bufferInfo.offset);
         mQueueBuffer.put(buffer);

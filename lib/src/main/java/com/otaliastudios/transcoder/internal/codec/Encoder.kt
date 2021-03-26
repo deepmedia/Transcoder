@@ -100,6 +100,9 @@ internal class Encoder(
                     val flags = info.flags and BUFFER_FLAG_END_OF_STREAM.inv()
                     val buffer = buffers.getOutputBuffer(result)
                     val timeUs = info.presentationTimeUs
+                    buffer.clear()
+                    buffer.limit(info.offset + info.size)
+                    buffer.position(info.offset)
                     val data = WriterData(buffer, timeUs, flags) {
                         codec.releaseOutputBuffer(result, false)
                     }
