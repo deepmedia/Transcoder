@@ -13,17 +13,17 @@ internal fun DataSink.ignoringEos(ignore: () -> Boolean): DataSink
         = EosIgnoringDataSink(this, ignore)
 
 private class EosIgnoringDataSink(
-        private val source: DataSink,
+        private val sink: DataSink,
         private val ignore: () -> Boolean,
-) : DataSink by source {
+) : DataSink by sink {
     private val info = MediaCodec.BufferInfo()
     override fun writeTrack(type: TrackType, byteBuffer: ByteBuffer, bufferInfo: MediaCodec.BufferInfo) {
         if (ignore()) {
             val flags = bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM.inv()
             info.set(bufferInfo.offset, bufferInfo.size, bufferInfo.presentationTimeUs, flags)
-            source.writeTrack(type, byteBuffer, info)
+            sink.writeTrack(type, byteBuffer, info)
         } else {
-            source.writeTrack(type, byteBuffer, bufferInfo)
+            sink.writeTrack(type, byteBuffer, bufferInfo)
         }
     }
 }
