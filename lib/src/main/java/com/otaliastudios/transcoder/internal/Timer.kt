@@ -82,7 +82,6 @@ internal class Timer(
                 }
             }
 
-            // TODO consider using localize instead of this lastOut trick.
             override fun interpolate(type: TrackType, time: Long) = when (time) {
                 Long.MAX_VALUE -> lastOut
                 else -> {

@@ -19,7 +19,7 @@ internal class VideoPublisher: Step<Long, Channel, EncoderData, EncoderChannel> 
 
     override fun initialize(next: EncoderChannel) {
         super.initialize(next)
-        surface = EglWindowSurface(core, next.surface!!, true)
+        surface = EglWindowSurface(core, next.surface!!, false)
         surface.makeCurrent()
     }
 
