@@ -16,13 +16,7 @@ internal class Segments(
 
     private val log = Logger("Segments")
     private val current = mutableTrackMapOf<Segment>(null, null)
-    val currentIndex = object : TrackMap<Int> {
-        override fun has(type: TrackType) = true
-        override fun get(type: TrackType): Int {
-            return current.getOrNull(type)?.index ?: -1
-        }
-    }
-
+    val currentIndex = mutableTrackMapOf(-1, -1)
     private val requestedIndex = mutableTrackMapOf(0, 0)
 
     fun hasNext(type: TrackType): Boolean {
@@ -70,12 +64,14 @@ internal class Segments(
     private fun tryCreateSegment(type: TrackType, index: Int): Segment? {
         // Return null if out of bounds, either because segments are over or because the
         // source set does not have sources for this track type.
-        log.i("tryCreateSegment($type, $index)...")
         val source = sources[type].getOrNull(index) ?: return null
         log.i("tryCreateSegment($type, $index): created!")
         if (tracks.active.has(type)) {
             source.selectTrack(type)
         }
+        // Update current index before pipeline creation, for other components
+        // who check it during pipeline init.
+        currentIndex[type] = index
         val pipeline = factory(
                 type,
                 index,

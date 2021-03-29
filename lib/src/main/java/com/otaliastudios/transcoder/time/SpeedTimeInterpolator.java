@@ -54,7 +54,7 @@ public class SpeedTimeInterpolator implements TimeInterpolator {
             data.lastRealTime = time;
             data.lastCorrectedTime += correctedDelta;
         }
-        LOG.i("Track:" + type + " inputTime:" + time + " outputTime:" + data.lastCorrectedTime);
+        LOG.v("Track:" + type + " inputTime:" + time + " outputTime:" + data.lastCorrectedTime);
         return data.lastCorrectedTime;
     }
 

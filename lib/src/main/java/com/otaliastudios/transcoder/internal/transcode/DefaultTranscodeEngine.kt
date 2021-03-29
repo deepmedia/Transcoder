@@ -3,6 +3,8 @@ package com.otaliastudios.transcoder.internal.transcode
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.*
+import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.DataSources
 import com.otaliastudios.transcoder.internal.Segments
 import com.otaliastudios.transcoder.internal.Timer
@@ -41,6 +43,8 @@ internal class DefaultTranscodeEngine(
 
     private val timer = Timer(interpolator, dataSources, tracks, segments.currentIndex)
 
+    private val codecs = Codecs(dataSources, tracks, segments.currentIndex)
+
     init {
         log.i("Created Tracks, Segments, Timer...")
     }
@@ -76,7 +80,7 @@ internal class DefaultTranscodeEngine(
             TrackStatus.REMOVING -> EmptyPipeline()
             TrackStatus.PASS_THROUGH -> PassThroughPipeline(type, source, sink, interpolator)
             TrackStatus.COMPRESSING -> RegularPipeline(type,
-                    source, sink, interpolator, outputFormat,
+                    source, sink, interpolator, outputFormat, codecs,
                     videoRotation, audioStretcher, audioResampler)
         }
     }
@@ -132,6 +136,7 @@ internal class DefaultTranscodeEngine(
         runCatching { segments.release() }
         runCatching { dataSink.release() }
         runCatching { dataSources.release() }
+        runCatching { codecs.release() }
     }
 
 

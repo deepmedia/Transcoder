@@ -20,8 +20,10 @@ private class EosIgnoringDataSink(
     override fun writeTrack(type: TrackType, byteBuffer: ByteBuffer, bufferInfo: MediaCodec.BufferInfo) {
         if (ignore()) {
             val flags = bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM.inv()
-            info.set(bufferInfo.offset, bufferInfo.size, bufferInfo.presentationTimeUs, flags)
-            sink.writeTrack(type, byteBuffer, info)
+            if (bufferInfo.size > 0 || flags != 0) {
+                info.set(bufferInfo.offset, bufferInfo.size, bufferInfo.presentationTimeUs, flags)
+                sink.writeTrack(type, byteBuffer, info)
+            }
         } else {
             sink.writeTrack(type, byteBuffer, bufferInfo)
         }

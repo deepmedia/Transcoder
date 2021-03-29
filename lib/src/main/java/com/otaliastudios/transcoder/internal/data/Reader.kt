@@ -45,7 +45,7 @@ internal class Reader(
                 State.Eos(ReaderData(chunk, id))
             }
         } else if (!source.canReadTrack(track)) {
-            log.i("Returning State.Wait because source can't read this track right now.")
+            log.i("Returning State.Wait because source can't read $track right now.")
             State.Wait
         } else {
             nextBufferOrWait { byteBuffer, id ->

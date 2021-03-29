@@ -269,7 +269,7 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public long getDurationUs() {
-        LOG.i("getDurationUs()");
+        LOG.v("getDurationUs()");
         try {
             return Long.parseLong(mMetadata.extractMetadata(METADATA_KEY_DURATION)) * 1000;
         } catch (NumberFormatException e) {

@@ -151,6 +151,15 @@ public class DefaultDataSink implements DataSink {
     @Override
     public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mMuxerStarted) {
+            /* LOG.v("writeTrack(" + type + "): offset=" + bufferInfo.offset
+                    + "\trealOffset=" + byteBuffer.position()
+                    + "\tsize=" + bufferInfo.size
+                    + "\trealSize=" + byteBuffer.remaining()
+                    + "\ttime=" + bufferInfo.presentationTimeUs
+                    + "\tflags=" + bufferInfo.flags
+                    + "\teos=" + ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+            );
+             */
             mMuxer.writeSampleData(mMuxerIndex.get(type), byteBuffer, bufferInfo);
         } else {
             enqueue(type, byteBuffer, bufferInfo);
