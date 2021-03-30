@@ -9,7 +9,16 @@ New versions are released through GitHub, so the reference page is the [GitHub R
 > Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
 Companies can share a tiny part of their revenue and get private support hours in return. Thanks!
 
-### v0.10.0
+### v0.10.1
+
+- Fix: thumbnails upside down ([#125][125])
+- Fix: clip/trim issues ([#127][127])
+- Fix: seeking issues ([#128][128])
+- Fix: concatenation failure ([#130][130])
+
+<https://github.com/natario1/Transcoder/compare/v0.10.0...v0.10.1>
+
+## v0.10.0
 
 > Transcoder is now distributed through Maven Central. Snapshot releases are available as well.
 
@@ -136,3 +145,7 @@ frames, the trim timestamp might be different than what was selected.
 [87]: https://github.com/natario1/Transcoder/pull/87
 [118]: https://github.com/natario1/Transcoder/pull/118
 [119]: https://github.com/natario1/Transcoder/pull/119
+[125]: https://github.com/natario1/Transcoder/pull/125
+[127]: https://github.com/natario1/Transcoder/pull/127
+[128]: https://github.com/natario1/Transcoder/pull/128
+[130]: https://github.com/natario1/Transcoder/pull/130
