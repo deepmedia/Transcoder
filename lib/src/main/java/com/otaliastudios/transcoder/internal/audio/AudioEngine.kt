@@ -7,8 +7,10 @@ import com.otaliastudios.transcoder.internal.audio.remix.AudioRemixer
 import com.otaliastudios.transcoder.internal.codec.*
 import com.otaliastudios.transcoder.internal.pipeline.*
 import com.otaliastudios.transcoder.internal.utils.Logger
+import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.resample.AudioResampler
 import com.otaliastudios.transcoder.stretch.AudioStretcher
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -22,7 +24,10 @@ internal class AudioEngine(
         private val targetFormat: MediaFormat
 ): QueuedStep<DecoderData, DecoderChannel, EncoderData, EncoderChannel>(), DecoderChannel {
 
-    private val log = Logger("AudioEngine")
+    companion object {
+        private val ID = AtomicInteger(0)
+    }
+    private val log = Logger("AudioEngine(${ID.getAndIncrement()})")
 
     override val channel = this
     private val buffers = ShortBuffers()
@@ -37,12 +42,14 @@ internal class AudioEngine(
     override fun handleSourceFormat(sourceFormat: MediaFormat): Surface? = null
 
     override fun handleRawFormat(rawFormat: MediaFormat) {
+        log.i("handleRawFormat($rawFormat)")
         this.rawFormat = rawFormat
         remixer = AudioRemixer[rawFormat.channels, targetFormat.channels]
         chunks = ChunkQueue(rawFormat.sampleRate, rawFormat.channels)
     }
 
     override fun enqueueEos(data: DecoderData) {
+        log.i("enqueueEos()")
         data.release(false)
         chunks.enqueueEos()
     }
@@ -55,8 +62,14 @@ internal class AudioEngine(
     }
 
     override fun drain(): State<EncoderData> {
-        if (chunks.isEmpty()) return State.Wait
-        val (outBytes, outId) = next.buffer() ?: return State.Wait
+        if (chunks.isEmpty()) {
+            log.i("drain(): no chunks, waiting...")
+            return State.Wait
+        }
+        val (outBytes, outId) = next.buffer() ?: return run {
+            log.i("drain(): no next buffer, waiting...")
+            State.Wait
+        }
         val outBuffer = outBytes.asShortBuffer()
         return chunks.drain(
                 eos = State.Eos(EncoderData(outBytes, outId, 0))

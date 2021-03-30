@@ -29,7 +29,7 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
                 log.v("execute(): step ${step.name} (#$index/${chain.size}) is waiting. headState=$headState headIndex=$headIndex")
                 return State.Wait
             }
-            log.v("execute(): executed ${step.name} (#$index/${chain.size}). result=$state")
+            // log.v("execute(): executed ${step.name} (#$index/${chain.size}). result=$state")
             if (state is State.Eos) {
                 log.i("execute(): EOS from ${step.name} (#$index/${chain.size}).")
                 headState = state

@@ -4,6 +4,7 @@ import android.media.MediaCodec
 import android.media.MediaCodec.*
 import android.view.Surface
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.common.trackType
 import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.data.WriterChannel
 import com.otaliastudios.transcoder.internal.data.WriterData
@@ -12,7 +13,9 @@ import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.utils.Logger
+import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.properties.Delegates
 import kotlin.properties.Delegates.observable
 
@@ -44,13 +47,15 @@ internal class Encoder(
     )
 
     companion object {
-        // Debugging
-        private val log = Logger("Encoder")
-        private var dequeuedInputs by observable(0) { _, _, _ -> printDequeued() }
-        private var dequeuedOutputs by observable(0) { _, _, _ -> printDequeued() }
-        private fun printDequeued() {
-            log.v("dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
-        }
+        private val ID = trackMapOf(AtomicInteger(0), AtomicInteger(0))
+    }
+
+    private val type = if (surface != null) TrackType.VIDEO else TrackType.AUDIO
+    private val log = Logger("Encoder(${type},${ID[type].getAndIncrement()})")
+    private var dequeuedInputs by observable(0) { _, _, _ -> printDequeued() }
+    private var dequeuedOutputs by observable(0) { _, _, _ -> printDequeued() }
+    private fun printDequeued() {
+        log.v("dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
     }
 
     override val channel = this
@@ -69,22 +74,26 @@ internal class Encoder(
 
     override fun buffer(): Pair<ByteBuffer, Int>? {
         val id = codec.dequeueInputBuffer(0)
-        log.v("buffer(): id=$id")
-        if (id >= 0) dequeuedInputs++
-        return if (id >= 0) buffers.getInputBuffer(id) to id else null
+        return if (id >= 0) {
+            dequeuedInputs++
+            buffers.getInputBuffer(id) to id
+        } else {
+            log.i("buffer() failed. dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
+            null
+        }
     }
 
     private var eosReceivedButNotEnqueued = false
 
     override fun enqueueEos(data: EncoderData) {
-        if (!ownsCodecStop) {
-            eosReceivedButNotEnqueued = true
-        } else if (surface != null) {
-            codec.signalEndOfInputStream()
-        } else {
-            val flag = BUFFER_FLAG_END_OF_STREAM
+        if (surface == null) {
+            if (!ownsCodecStop) eosReceivedButNotEnqueued = true
+            val flag = if (!ownsCodecStop) 0 else BUFFER_FLAG_END_OF_STREAM
             codec.queueInputBuffer(data.id, 0, 0, 0, flag)
             dequeuedInputs--
+        } else {
+            if (!ownsCodecStop) eosReceivedButNotEnqueued = true
+            else codec.signalEndOfInputStream()
         }
     }
 
@@ -104,6 +113,7 @@ internal class Encoder(
                 if (eosReceivedButNotEnqueued) {
                     // Horrible hack. When we don't own the MediaCodec, we can't enqueue EOS so we
                     // can't dequeue them. INFO_TRY_AGAIN_LATER is returned. We assume this means EOS.
+                    log.i("Sending fake Eos. dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
                     val buffer = ByteBuffer.allocateDirect(0)
                     State.Eos(WriterData(buffer, 0L, 0) {})
                 } else {
@@ -145,6 +155,7 @@ internal class Encoder(
     }
 
     override fun release() {
+        log.i("release(): ownsStop=$ownsCodecStop dequeuedInputs=${dequeuedInputs} dequeuedOutputs=$dequeuedOutputs")
         if (ownsCodecStop) {
             codec.stop()
         }

@@ -35,11 +35,16 @@ import com.otaliastudios.transcoder.validator.DefaultValidator;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+
+import kotlin.collections.ArraysKt;
 
 
 public class TranscoderActivity extends AppCompatActivity implements
@@ -70,9 +75,6 @@ public class TranscoderActivity extends AppCompatActivity implements
     private boolean mIsTranscoding;
     private boolean mIsAudioOnly;
     private Future<Void> mTranscodeFuture;
-    private Uri mTranscodeInputUri1;
-    private Uri mTranscodeInputUri2;
-    private Uri mTranscodeInputUri3;
     private Uri mAudioReplacementUri;
     private File mTranscodeOutputFile;
     private long mTranscodeStartTime;
@@ -241,15 +243,13 @@ public class TranscoderActivity extends AppCompatActivity implements
                 && data != null) {
             if (data.getClipData() != null) {
                 ClipData clipData = data.getClipData();
-                mTranscodeInputUri1 = clipData.getItemAt(0).getUri();
-                mTranscodeInputUri2 = clipData.getItemCount() >= 2 ? clipData.getItemAt(1).getUri() : null;
-                mTranscodeInputUri3 = clipData.getItemCount() >= 3 ? clipData.getItemAt(2).getUri() : null;
-                transcode();
+                List<Uri> uris = new ArrayList<>();
+                for (int i = 0; i < clipData.getItemCount(); i++) {
+                    uris.add(clipData.getItemAt(i).getUri());
+                }
+                transcode(uris.toArray(new Uri[0]));
             } else if (data.getData() != null) {
-                mTranscodeInputUri1 = data.getData();
-                mTranscodeInputUri2 = null;
-                mTranscodeInputUri3 = null;
-                transcode();
+                transcode(data.getData());
             }
         }
         if (requestCode == REQUEST_CODE_PICK_AUDIO
@@ -262,7 +262,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         }
     }
 
-    private void transcode() {
+    private void transcode(@NonNull Uri... uris) {
         // Create a temporary file for output.
         try {
             File outputDir = new File(getExternalFilesDir(null), "outputs");
@@ -296,20 +296,16 @@ public class TranscoderActivity extends AppCompatActivity implements
         setIsTranscoding(true);
         LOG.e("Building transcoding options...");
         TranscoderOptions.Builder builder = Transcoder.into(mTranscodeOutputFile.getAbsolutePath());
+        List<DataSource> sources = ArraysKt.map(uris, uri -> new UriDataSource(this, uri));
+        sources.set(0, new TrimDataSource(sources.get(0), mTrimStartUs, mTrimEndUs));
         if (mAudioReplacementUri == null) {
-            if (mTranscodeInputUri1 != null) {
-                DataSource source = new UriDataSource(this, mTranscodeInputUri1);
-                builder.addDataSource(new TrimDataSource(source, mTrimStartUs, mTrimEndUs));
+            for (DataSource source : sources) {
+                builder.addDataSource(source);
             }
-            if (mTranscodeInputUri2 != null) builder.addDataSource(this, mTranscodeInputUri2);
-            if (mTranscodeInputUri3 != null) builder.addDataSource(this, mTranscodeInputUri3);
         } else {
-            if (mTranscodeInputUri1 != null) {
-                DataSource source = new UriDataSource(this, mTranscodeInputUri1);
-                builder.addDataSource(TrackType.VIDEO, new TrimDataSource(source, mTrimStartUs, mTrimEndUs));
+            for (DataSource source : sources) {
+                builder.addDataSource(TrackType.VIDEO, source);
             }
-            if (mTranscodeInputUri2 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri2);
-            if (mTranscodeInputUri3 != null) builder.addDataSource(TrackType.VIDEO, this, mTranscodeInputUri3);
             builder.addDataSource(TrackType.AUDIO, this, mAudioReplacementUri);
         }
         LOG.e("Starting transcoding!");

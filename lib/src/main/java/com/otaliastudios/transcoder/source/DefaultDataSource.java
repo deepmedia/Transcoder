@@ -15,6 +15,7 @@ import com.otaliastudios.transcoder.internal.utils.MutableTrackMap;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static android.media.MediaMetadataRetriever.METADATA_KEY_DURATION;
 import static android.media.MediaMetadataRetriever.METADATA_KEY_LOCATION;
@@ -26,7 +27,8 @@ import static com.otaliastudios.transcoder.internal.utils.TrackMapKt.mutableTrac
  */
 public abstract class DefaultDataSource implements DataSource {
 
-    private final Logger LOG = new Logger("DefaultDataSource(" + this.hashCode() + ")");
+    private final static AtomicInteger ID = new AtomicInteger(0);
+    private final Logger LOG = new Logger("DefaultDataSource(" + ID.getAndIncrement() + ")");
 
     private final MutableTrackMap<MediaFormat> mFormat = mutableTrackMapOf(null);
     private final MutableTrackMap<Integer> mIndex = mutableTrackMapOf(null);
@@ -269,7 +271,7 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public long getDurationUs() {
-        LOG.v("getDurationUs()");
+        // LOG.v("getDurationUs()");
         try {
             return Long.parseLong(mMetadata.extractMetadata(METADATA_KEY_DURATION)) * 1000;
         } catch (NumberFormatException e) {
