@@ -20,13 +20,13 @@ Transcodes and compresses video files into the MP4 format, with audio support, u
 Android codecs available on the device. Works on API 18+.
 
 ```groovy
-implementation 'com.otaliastudios:transcoder:0.10.0'
+implementation 'com.otaliastudios:transcoder:0.10.1'
 ```
 
 - Fast transcoding to AAC/AVC
 - Hardware accelerated
-- Multithreaded
 - Convenient, fluent API
+- Thumbnails support
 - Concatenate multiple video and audio tracks [[docs]](https://natario1.github.io/Transcoder/docs/concatenation)
 - Clip or trim video segments [[docs]](https://natario1.github.io/Transcoder/docs/clipping)
 - Choose output size, with automatic cropping [[docs]](https://natario1.github.io/Transcoder/docs/track-strategies#video-size)
