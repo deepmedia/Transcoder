@@ -38,6 +38,7 @@ public class FilePathDataSource extends DefaultDataSource {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        super.initialize();
     }
 
     @Override
@@ -46,6 +47,7 @@ public class FilePathDataSource extends DefaultDataSource {
         // This means that we must also recreate the underlying source.
         mDescriptorSource.deinitialize();
         try { mStream.close(); } catch (IOException ignore) { }
+        super.deinitialize();
     }
 
     @Override
