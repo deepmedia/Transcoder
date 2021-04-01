@@ -120,15 +120,19 @@ public abstract class DefaultDataSource implements DataSource {
     @Override
     public void selectTrack(@NonNull TrackType type) {
         LOG.i("selectTrack(" + type + ")");
-        mSelectedTracks.add(type);
-        mExtractor.selectTrack(mIndex.get(type));
+        if (!mSelectedTracks.contains(type)) {
+            mSelectedTracks.add(type);
+            mExtractor.selectTrack(mIndex.get(type));
+        }
     }
 
     @Override
     public void releaseTrack(@NonNull TrackType type) {
         LOG.i("releaseTrack(" + type + ")");
-        mSelectedTracks.remove(type);
-        mExtractor.unselectTrack(mIndex.get(type));
+        if (mSelectedTracks.contains(type)) {
+            mSelectedTracks.remove(type);
+            mExtractor.unselectTrack(mIndex.get(type));
+        }
     }
 
     protected abstract void initializeExtractor(@NonNull MediaExtractor extractor) throws IOException;

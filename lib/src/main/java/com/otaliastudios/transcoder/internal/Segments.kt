@@ -68,6 +68,18 @@ internal class Segments(
         log.i("tryCreateSegment($type, $index): created!")
         if (tracks.active.has(type)) {
             source.selectTrack(type)
+            // TODO this sucks
+            // By design, all sources must select all tracks before seeking. We can achieve this
+            // here but it still doesn't look right. The other source might be on a different
+            // point in the timeline, or it might be hidden because wrapped in a DataSourceWrapper...
+            // We have no checks for any of these options and they can all break concatenation.
+            val other = when (type) {
+                TrackType.AUDIO -> TrackType.VIDEO
+                TrackType.VIDEO -> TrackType.AUDIO
+            }
+            if (tracks.active.has(other) && sources[other].any { it === source }) {
+                source.selectTrack(other)
+            }
         }
         // Update current index before pipeline creation, for other components
         // who check it during pipeline init.

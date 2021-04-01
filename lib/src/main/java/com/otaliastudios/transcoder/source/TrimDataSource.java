@@ -58,8 +58,20 @@ public class TrimDataSource extends DataSourceWrapper {
             throw new IllegalArgumentException(
                     "Trim values cannot be greater than media duration.");
         }
+        LOG.i("initialize(): duration=" + duration
+                + " trimStart=" + trimStartUs
+                + " trimEnd=" + trimEndUs
+                + " trimDuration=" + (duration - trimStartUs - trimEndUs));
         trimDurationUs = duration - trimStartUs - trimEndUs;
     }
+
+    // Assuming e.g. video of 8 seconds, trimStart=2s, trimEnd=1s.
+    // The trimmed duration is 5 seconds. Assume also that the video has sparse keyframes
+    // so that when we do seekTo(2s), it returns 0 because it couldn't seek there. We have two options:
+    // - duration=5s, position goes from -2s to 5s
+    // - duration=7s, position goes from 0s to 7s
+    // What we choose is not so important, as long as we use the same approach in getDurationUs
+    // and getPositionUs consistently. Approach 1 would be easier (no extra) but also weird.
 
     @Override
     public long getDurationUs() {
@@ -68,7 +80,7 @@ public class TrimDataSource extends DataSourceWrapper {
     
     @Override
     public long getPositionUs() {
-        return super.getPositionUs() - trimStartUs;
+        return super.getPositionUs() - trimStartUs + extraDurationUs;
     }
 
     @Override
@@ -77,6 +89,9 @@ public class TrimDataSource extends DataSourceWrapper {
         // tracks have been selected.
         if (!trimDone && trimStartUs > 0) {
             extraDurationUs = trimStartUs - getSource().seekTo(trimStartUs);
+            LOG.i("canReadTrack(): extraDurationUs=" + extraDurationUs
+                    + " trimStartUs=" + trimStartUs
+                    + " source.seekTo(trimStartUs)=" + (extraDurationUs - trimStartUs));
             trimDone = true;
         }
         return super.canReadTrack(type);
