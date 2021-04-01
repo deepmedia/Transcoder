@@ -65,6 +65,11 @@ public class TrimDataSource extends DataSourceWrapper {
     public long getDurationUs() {
         return trimDurationUs + extraDurationUs;
     }
+    
+    @Override
+    public long getPositionUs() {
+        return super.getPositionUs() - trimStartUs;
+    }
 
     @Override
     public boolean canReadTrack(@NonNull TrackType type) {
