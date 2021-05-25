@@ -9,7 +9,7 @@ import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.source.BlankAudioDataSource
 import com.otaliastudios.transcoder.source.DataSource
 
-internal class DataSources private constructor(
+class DataSources private constructor(
         videoSources: List<DataSource>,
         audioSources: List<DataSource>,
 ) : TrackMap<List<DataSource>> {

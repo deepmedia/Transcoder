@@ -6,7 +6,7 @@ import java.nio.ShortBuffer
 
 internal const val BYTES_PER_SHORT = 2
 
-internal class ShortBuffers {
+class ShortBuffers {
     private val map = mutableMapOf<String, ShortBuffer>()
 
     fun acquire(name: String, size: Int): ShortBuffer {

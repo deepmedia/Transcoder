@@ -19,7 +19,7 @@ private data class Chunk(
  * big enough to contain the full processed size, in which case we want to consume only
  * part of the input buffer and keep it available for the next cycle.
  */
-internal class ChunkQueue(private val sampleRate: Int, private val channels: Int) {
+class ChunkQueue(private val sampleRate: Int, private val channels: Int) {
     private val queue = ArrayDeque<Chunk>()
 
     fun isEmpty() = queue.isEmpty()

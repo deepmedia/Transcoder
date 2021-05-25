@@ -8,7 +8,7 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
 import com.otaliastudios.transcoder.internal.utils.mutableTrackMapOf
 
-internal class Segments(
+class Segments(
         private val sources: DataSources,
         private val tracks: Tracks,
         private val factory: (TrackType, Int, TrackStatus, MediaFormat) -> Pipeline

@@ -1,6 +1,6 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
-internal abstract class BaseStep<
+abstract class BaseStep<
         Input: Any,
         InputChannel: Channel,
         Output: Any,
@@ -14,14 +14,14 @@ internal abstract class BaseStep<
     }
 }
 
-internal abstract class DataStep<D: Any, C: Channel> : Step<D, C, D, C> {
+abstract class DataStep<D: Any, C: Channel> : Step<D, C, D, C> {
     override lateinit var channel: C
     override fun initialize(next: C) {
         channel = next
     }
 }
 
-internal abstract class QueuedStep<
+abstract class QueuedStep<
         Input: Any,
         InputChannel: Channel,
         Output: Any,

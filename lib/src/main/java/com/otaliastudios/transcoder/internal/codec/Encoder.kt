@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.properties.Delegates
 import kotlin.properties.Delegates.observable
 
-internal data class EncoderData(
+data class EncoderData(
         val buffer: ByteBuffer?, // If present, it must have correct position/remaining!
         val id: Int,
         val timeUs: Long
@@ -27,12 +27,12 @@ internal data class EncoderData(
     companion object { val Empty = EncoderData(null, 0, 0L) }
 }
 
-internal interface EncoderChannel : Channel {
+interface EncoderChannel : Channel {
     val surface: Surface?
     fun buffer(): Pair<ByteBuffer, Int>?
 }
 
-internal class Encoder(
+class Encoder(
         private val codec: MediaCodec,
         override val surface: Surface?,
         ownsCodecStart: Boolean,

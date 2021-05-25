@@ -19,7 +19,7 @@ import com.otaliastudios.transcoder.strategy.TrackStrategy
  * output timestamps, even if input timestamps are. This would later create crashes when passing
  * data to MediaMuxer / MPEG4Writer.
  */
-internal class Codecs(
+class Codecs(
         private val sources: DataSources,
         private val tracks: Tracks,
         private val current: TrackMap<Int>

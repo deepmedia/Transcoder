@@ -24,7 +24,7 @@ import com.otaliastudios.transcoder.stretch.AudioStretcher
 import com.otaliastudios.transcoder.time.TimeInterpolator
 import com.otaliastudios.transcoder.validator.Validator
 
-internal class DefaultTranscodeEngine(
+class DefaultTranscodeEngine(
         private val dataSources: DataSources,
         private val dataSink: DataSink,
         strategies: TrackMap<TrackStrategy>,

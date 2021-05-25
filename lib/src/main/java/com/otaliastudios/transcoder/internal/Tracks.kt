@@ -10,7 +10,7 @@ import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.strategy.TrackStrategy
 
-internal class Tracks(
+class Tracks(
         strategies: TrackMap<TrackStrategy>,
         sources: DataSources,
         videoRotation: Int,

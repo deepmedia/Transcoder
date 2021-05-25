@@ -19,7 +19,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
 
-internal class VideoSnapshots(
+class VideoSnapshots(
         format: MediaFormat,
         requests: List<Long>,
         private val accuracyUs: Long,

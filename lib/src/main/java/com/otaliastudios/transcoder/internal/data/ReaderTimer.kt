@@ -5,7 +5,7 @@ import com.otaliastudios.transcoder.internal.pipeline.DataStep
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.time.TimeInterpolator
 
-internal class ReaderTimer(
+class ReaderTimer(
         private val track: TrackType,
         private val interpolator: TimeInterpolator
 ) : DataStep<ReaderData, ReaderChannel>() {

@@ -6,7 +6,7 @@ import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.time.TimeInterpolator
 import java.nio.ByteBuffer
 
-internal class DecoderTimerData(
+class DecoderTimerData(
         buffer: ByteBuffer,
         val rawTimeUs: Long,
         timeUs: Long,
@@ -14,7 +14,7 @@ internal class DecoderTimerData(
         release: (render: Boolean) -> Unit
 ) : DecoderData(buffer, timeUs, release)
 
-internal class DecoderTimer(
+class DecoderTimer(
         private val track: TrackType,
         private val interpolator: TimeInterpolator,
 ) : DataStep<DecoderData, DecoderChannel>() {

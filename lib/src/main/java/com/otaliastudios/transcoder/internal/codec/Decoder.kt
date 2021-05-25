@@ -19,18 +19,18 @@ import kotlin.properties.Delegates
 import kotlin.properties.Delegates.observable
 
 
-internal open class DecoderData(
+open class DecoderData(
         val buffer: ByteBuffer,
         val timeUs: Long,
         val release: (render: Boolean) -> Unit
 )
 
-internal interface DecoderChannel : Channel {
+interface DecoderChannel : Channel {
     fun handleSourceFormat(sourceFormat: MediaFormat): Surface?
     fun handleRawFormat(rawFormat: MediaFormat)
 }
 
-internal class Decoder(
+class Decoder(
         private val format: MediaFormat, // source.getTrackFormat(track)
         continuous: Boolean, // relevant if the source sends no-render chunks. should we compensate or not?
 ) : QueuedStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(), ReaderChannel {

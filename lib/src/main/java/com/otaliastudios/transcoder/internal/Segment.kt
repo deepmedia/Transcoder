@@ -5,7 +5,7 @@ import com.otaliastudios.transcoder.internal.pipeline.Pipeline
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.utils.Logger
 
-internal class Segment(
+class Segment(
         val type: TrackType,
         val index: Int,
         private val pipeline: Pipeline,

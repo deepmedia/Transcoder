@@ -36,7 +36,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
 
-internal class DefaultThumbnailsEngine(
+class DefaultThumbnailsEngine(
         private val dataSources: DataSources,
         private val rotation: Int,
         resizer: Resizer,

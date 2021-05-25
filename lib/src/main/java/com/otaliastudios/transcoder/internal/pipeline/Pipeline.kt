@@ -5,7 +5,7 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 
 private typealias AnyStep = Step<Any, Channel, Any, Channel>
 
-internal class Pipeline private constructor(name: String, private val chain: List<AnyStep>) {
+class Pipeline private constructor(name: String, private val chain: List<AnyStep>) {
 
     private val log = Logger("Pipeline($name)")
     private var headState: State.Ok<Any> = State.Ok(Unit)

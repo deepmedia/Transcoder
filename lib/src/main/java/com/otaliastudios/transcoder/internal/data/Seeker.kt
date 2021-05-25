@@ -8,7 +8,7 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.source.DataSource
 import java.nio.ByteBuffer
 
-internal class Seeker(
+class Seeker(
         private val source: DataSource,
         positions: List<Long>,
         private val seek: (Long) -> Boolean

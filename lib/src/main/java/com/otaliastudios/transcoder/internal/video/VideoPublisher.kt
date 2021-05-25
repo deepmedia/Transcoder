@@ -10,7 +10,7 @@ import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.pipeline.Step
 
 
-internal class VideoPublisher: Step<Long, Channel, EncoderData, EncoderChannel> {
+class VideoPublisher: Step<Long, Channel, EncoderData, EncoderChannel> {
 
     override val channel = Channel
 

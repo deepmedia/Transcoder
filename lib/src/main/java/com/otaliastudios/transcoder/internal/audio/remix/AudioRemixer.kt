@@ -6,7 +6,7 @@ import java.nio.ShortBuffer
  * Remixes audio data. See [DownMixAudioRemixer], [UpMixAudioRemixer] or [PassThroughAudioRemixer]
  * for concrete implementations.
  */
-internal interface AudioRemixer {
+interface AudioRemixer {
 
     /**
      * Remixes input audio from input buffer into the output buffer.

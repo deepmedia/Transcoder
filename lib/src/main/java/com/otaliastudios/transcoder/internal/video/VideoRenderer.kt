@@ -12,7 +12,7 @@ import com.otaliastudios.transcoder.internal.pipeline.Step
 import com.otaliastudios.transcoder.internal.utils.Logger
 
 
-internal class VideoRenderer(
+class VideoRenderer(
         private val sourceRotation: Int, // intrinsic source rotation
         private val extraRotation: Int, // any extra rotation in TranscoderOptions
         private val targetFormat: MediaFormat,

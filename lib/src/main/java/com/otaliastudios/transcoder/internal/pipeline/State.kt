@@ -1,6 +1,6 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
-internal sealed class State<out T> {
+sealed class State<out T> {
 
     // Running
     open class Ok<T>(val value: T) : State<T>() {

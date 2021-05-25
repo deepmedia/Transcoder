@@ -9,13 +9,13 @@ import com.otaliastudios.transcoder.source.DataSource
 import java.nio.ByteBuffer
 
 
-internal data class ReaderData(val chunk: DataSource.Chunk, val id: Int)
+data class ReaderData(val chunk: DataSource.Chunk, val id: Int)
 
-internal interface ReaderChannel : Channel {
+interface ReaderChannel : Channel {
     fun buffer(): Pair<ByteBuffer, Int>?
 }
 
-internal class Reader(
+class Reader(
         private val source: DataSource,
         private val track: TrackType
 ) : BaseStep<Unit, Channel, ReaderData, ReaderChannel>() {

@@ -8,7 +8,7 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
 
-internal abstract class ThumbnailsEngine {
+abstract class ThumbnailsEngine {
 
     abstract fun thumbnails(progress: (Thumbnail) -> Unit)
 

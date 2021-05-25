@@ -21,7 +21,7 @@ import com.otaliastudios.transcoder.source.DataSource
  * is screwed. Also, if the source jumps forward using seek, we won't catch the jump. This class
  * catches discontinuities only through changes in the render boolean passed to [input].
  */
-internal class DecoderDropper(private val continuous: Boolean) {
+class DecoderDropper(private val continuous: Boolean) {
 
     private val log = Logger("DecoderDropper")
     private val closedDeltas = mutableMapOf<LongRange, Long>()

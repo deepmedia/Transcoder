@@ -6,7 +6,7 @@ import com.otaliastudios.transcoder.internal.utils.TrackMap
 import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.time.TimeInterpolator
 
-internal class Timer(
+class Timer(
         private val interpolator: TimeInterpolator,
         private val sources: DataSources,
         private val tracks: Tracks,

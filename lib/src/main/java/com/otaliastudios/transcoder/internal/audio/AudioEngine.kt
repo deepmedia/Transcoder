@@ -18,7 +18,7 @@ import kotlin.math.floor
  * Performs audio rendering, from decoder output to encoder input, applying sample rate conversion,
  * remixing, stretching. TODO: With some extra work this could be split in different steps.
  */
-internal class AudioEngine(
+class AudioEngine(
         private val stretcher: AudioStretcher,
         private val resampler: AudioResampler,
         private val targetFormat: MediaFormat

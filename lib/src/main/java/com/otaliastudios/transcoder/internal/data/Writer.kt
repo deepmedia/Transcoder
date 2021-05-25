@@ -10,18 +10,18 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.sink.DataSink
 import java.nio.ByteBuffer
 
-internal data class WriterData(
+data class WriterData(
         val buffer: ByteBuffer,
         val timeUs: Long,
         val flags: Int,
         val release: () -> Unit
 )
 
-internal interface WriterChannel : Channel {
+interface WriterChannel : Channel {
     fun handleFormat(format: MediaFormat)
 }
 
-internal class Writer(
+class Writer(
         private val sink: DataSink,
         private val track: TrackType
 ) : Step<WriterData, WriterChannel, Unit, Channel>, WriterChannel {

@@ -2,7 +2,7 @@ package com.otaliastudios.transcoder.internal.video
 
 import com.otaliastudios.transcoder.internal.utils.Logger
 
-internal interface FrameDropper {
+interface FrameDropper {
     fun shouldRender(timeUs: Long): Boolean
 }
 

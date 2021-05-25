@@ -6,7 +6,7 @@ import com.otaliastudios.transcoder.internal.DataSources
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.trackMapOf
 
-internal abstract class TranscodeEngine {
+abstract class TranscodeEngine {
 
     abstract fun validate(): Boolean
 
