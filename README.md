@@ -14,7 +14,7 @@
 
 *Like the project, make profit from it, or simply want to thank back? Please consider [sponsoring me](https://github.com/sponsors/natario1)!*
 
-# Transcoder
+## Transcoder
 
 Transcodes and compresses video files into the MP4 format, with audio support, using hardware-accelerated
 Android codecs available on the device. Works on API 18+.
