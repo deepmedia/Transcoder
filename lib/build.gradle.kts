@@ -30,10 +30,6 @@ dependencies {
     androidTestImplementation("androidx.test:rules:1.3.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.2")
     androidTestImplementation("org.mockito:mockito-android:2.28.2")
-    implementation(project(":shared:features:avcore"))
-    implementation(project(":shared:features:windowsystem"))
-    api(project(":shared:renderer"))
-    implementation(Korlibs.korge)
 }
 
 publisher {
