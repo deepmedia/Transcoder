@@ -48,8 +48,7 @@ class Pipeline private constructor(name: String, private val chain: List<AnyStep
     }
 
     private fun executeStep(previous: State.Ok<Any>, step: AnyStep, fresh: Boolean): State.Ok<Any>? {
-        val state = step.step(previous, fresh)
-        return when (state) {
+        return when (val state = step.step(previous, fresh)) {
             is State.Ok -> state
             is State.Retry -> executeStep(previous, step, fresh = false)
             is State.Wait -> null
@@ -58,7 +57,7 @@ class Pipeline private constructor(name: String, private val chain: List<AnyStep
 
     companion object {
         @Suppress("UNCHECKED_CAST")
-        internal fun build(name: String, builder: () -> Builder<*, Channel> = { Builder<Unit, Channel>() }): Pipeline {
+         fun build(name: String, builder: () -> Builder<*, Channel> = { Builder<Unit, Channel>() }): Pipeline {
             return Pipeline(name, builder().steps as List<AnyStep>)
         }
     }
@@ -72,7 +71,7 @@ class Pipeline private constructor(name: String, private val chain: List<AnyStep
     }
 }
 
-internal operator fun <
+operator fun <
         CurrData: Any, CurrChannel: Channel,
         NewData: Any, NewChannel: Channel
 > Step<Unit, Channel, CurrData, CurrChannel>.plus(

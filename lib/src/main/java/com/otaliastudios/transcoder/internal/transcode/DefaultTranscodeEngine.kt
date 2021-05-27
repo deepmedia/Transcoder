@@ -1,11 +1,12 @@
 package com.otaliastudios.transcoder.internal.transcode
 
+import android.content.Context
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
-import com.otaliastudios.transcoder.internal.*
 import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.DataSources
+import com.otaliastudios.transcoder.internal.Segment
 import com.otaliastudios.transcoder.internal.Segments
 import com.otaliastudios.transcoder.internal.Timer
 import com.otaliastudios.transcoder.internal.Tracks
@@ -61,10 +62,11 @@ class DefaultTranscodeEngine(
     }
 
     private fun createPipeline(
-            type: TrackType,
-            index: Int,
-            status: TrackStatus,
-            outputFormat: MediaFormat
+        context: Context,
+        type: TrackType,
+        index: Int,
+        status: TrackStatus,
+        outputFormat: MediaFormat
     ): Pipeline {
         log.w("createPipeline($type, $index, $status), format=$outputFormat")
         val interpolator = timer.interpolator(type, index)
@@ -79,7 +81,7 @@ class DefaultTranscodeEngine(
             TrackStatus.ABSENT -> EmptyPipeline()
             TrackStatus.REMOVING -> EmptyPipeline()
             TrackStatus.PASS_THROUGH -> PassThroughPipeline(type, source, sink, interpolator)
-            TrackStatus.COMPRESSING -> RegularPipeline(type,
+            TrackStatus.COMPRESSING -> RegularPipeline(context,type,
                     source, sink, interpolator, outputFormat, codecs,
                     videoRotation, audioStretcher, audioResampler)
         }
@@ -98,7 +100,7 @@ class DefaultTranscodeEngine(
      * We don't have to worry about which tracks are available and how. The [Segments] class
      * will simply return null if there's nothing to be done.
      */
-    override fun transcode(progress: (Double) -> Unit) {
+    override fun transcode(context: Context, progress: (Double) -> Unit) {
         var loop = 0L
         log.i("transcode(): about to start, " +
                 "durationUs=${timer.totalDurationUs}, " +
@@ -109,8 +111,8 @@ class DefaultTranscodeEngine(
             // Create both segments before reading. Creating the segment calls source.selectTrack,
             // and if source is the same, it's important that both tracks are selected before
             // reading (or even worse, seeking. DataSource.seek is broken if you add a track later on).
-            val audio = segments.next(TrackType.AUDIO)
-            val video = segments.next(TrackType.VIDEO)
+            val audio = segments.next(context,TrackType.AUDIO)
+            val video = segments.next(context,TrackType.VIDEO)
             val advanced = (audio?.advance() ?: false) or (video?.advance() ?: false)
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
 

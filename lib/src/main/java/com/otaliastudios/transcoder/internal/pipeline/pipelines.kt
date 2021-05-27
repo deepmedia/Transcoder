@@ -1,6 +1,8 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
+import android.content.Context
 import android.media.MediaFormat
+import android.util.Log
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.audio.AudioEngine
@@ -18,6 +20,12 @@ import com.otaliastudios.transcoder.sink.DataSink
 import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.stretch.AudioStretcher
 import com.otaliastudios.transcoder.time.TimeInterpolator
+import io.invideo.features.avcore.VideoConfig
+import com.otaliastudios.transcoder.custom.OtaliaDriver
+import com.otaliastudios.transcoder.custom.RKorge
+import io.invideo.renderer.RenderTarget
+import io.invideo.renderer.RendererConfiguration
+import io.invideo.renderer.rendertree.Size
 
 internal fun EmptyPipeline() = Pipeline.build("Empty")
 
@@ -34,6 +42,7 @@ internal fun PassThroughPipeline(
 }
 
 internal fun RegularPipeline(
+        context: Context,
         track: TrackType,
         source: DataSource,
         sink: DataSink,
@@ -44,8 +53,30 @@ internal fun RegularPipeline(
         audioStretcher: AudioStretcher,
         audioResampler: AudioResampler
 ) = when (track) {
-    TrackType.VIDEO -> VideoPipeline(source, sink, interpolator, format, codecs, videoRotation)
+    TrackType.VIDEO -> KorgeVideoPipeline(context,source, sink, interpolator, format, codecs, videoRotation)
     TrackType.AUDIO -> AudioPipeline(source, sink, interpolator, format, codecs, audioStretcher, audioResampler)
+}
+
+private fun KorgeVideoPipeline(
+        context: Context,
+        source: DataSource,
+        sink: DataSink,
+        interpolator: TimeInterpolator,
+        format: MediaFormat,
+        codecs: Codecs,
+        videoRotation: Int
+) = Pipeline.build("Video") {
+
+        // Driver -> Renderer ->
+        OtaliaDriver(VideoConfig(720, 720, 10 * 1024 * 1024, duration = 20000, 30)) +
+                RKorge(context, RendererConfiguration(
+                        Size(720.0, 720.0),
+                        RenderTarget.DISPLAY
+                ) { Log.d("Pipeline", "Renderer Initialization complete") }, null
+                ) +
+                VideoPublisher() +
+                Encoder(codecs, TrackType.VIDEO) +
+                Writer(sink, TrackType.VIDEO)
 }
 
 private fun VideoPipeline(

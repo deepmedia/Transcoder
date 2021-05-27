@@ -15,6 +15,7 @@
  */
 package com.otaliastudios.transcoder;
 
+import android.content.Context;
 import android.os.Build;
 
 import com.otaliastudios.transcoder.internal.transcode.TranscodeEngine;
@@ -23,7 +24,6 @@ import com.otaliastudios.transcoder.sink.DataSink;
 import com.otaliastudios.transcoder.validator.Validator;
 
 import java.io.FileDescriptor;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import androidx.annotation.NonNull;
@@ -95,13 +95,10 @@ public class Transcoder {
      * @return a Future that completes when transcoding is completed
      */
     @NonNull
-    public Future<Void> transcode(@NonNull final TranscoderOptions options) {
-        return ThreadPool.getExecutor().submit(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                TranscodeEngine.transcode(options);
-                return null;
-            }
+    public Future<Void> transcode(Context context, @NonNull final TranscoderOptions options) {
+        return ThreadPool.getExecutor().submit(() -> {
+            TranscodeEngine.transcode(context, options);
+            return null;
         });
     }
 

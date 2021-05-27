@@ -1,7 +1,10 @@
 package com.otaliastudios.transcoder.internal
 
 import android.media.MediaCodec
+import android.media.MediaCodecInfo
 import android.media.MediaFormat
+import android.os.Build
+import android.util.Log
 import android.view.Surface
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
@@ -39,7 +42,18 @@ class Codecs(
         }
 
         private val lazyVideo by lazy {
-            val format = tracks.outputFormats.video
+//            val format = tracks.outputFormats.video
+            val format = MediaFormat.createVideoFormat("video/avc", 720, 720)
+            format.setInteger(
+                MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
+            )
+            format.setInteger(MediaFormat.KEY_BIT_RATE, 10 * 1024 * 1024 /*calcBitRate()*/)
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, 30)
+            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
+            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 720 * 720)
+
+
             val codec = MediaCodec.createEncoderByType(format.getString(MediaFormat.KEY_MIME)!!)
             codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             codec to codec.createInputSurface()

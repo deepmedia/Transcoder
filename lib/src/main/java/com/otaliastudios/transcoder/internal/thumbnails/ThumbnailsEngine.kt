@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.internal.thumbnails
 
+import android.content.Context
 import com.otaliastudios.transcoder.ThumbnailerOptions
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.TranscoderOptions
@@ -10,7 +11,7 @@ import com.otaliastudios.transcoder.thumbnail.Thumbnail
 
 abstract class ThumbnailsEngine {
 
-    abstract fun thumbnails(progress: (Thumbnail) -> Unit)
+    abstract fun thumbnails(context: Context,progress: (Thumbnail) -> Unit)
 
     abstract fun cleanup()
 
@@ -24,7 +25,7 @@ abstract class ThumbnailsEngine {
         }
 
         @JvmStatic
-        fun thumbnails(options: ThumbnailerOptions) {
+        fun thumbnails(context: Context,options: ThumbnailerOptions) {
             log.i("thumbnails(): called...")
             var engine: ThumbnailsEngine? = null
             val dispatcher = ThumbnailsDispatcher(options)
@@ -35,7 +36,7 @@ abstract class ThumbnailsEngine {
                         resizer = options.resizer,
                         requests = options.thumbnailRequests
                 )
-                engine.thumbnails {
+                engine.thumbnails(context) {
                     dispatcher.dispatchThumbnail(it)
                 }
                 dispatcher.dispatchCompletion()
