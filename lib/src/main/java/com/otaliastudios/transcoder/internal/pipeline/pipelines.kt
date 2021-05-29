@@ -1,14 +1,11 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
-import android.content.Context
 import android.graphics.Point
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.audio.AudioEngine
 import com.otaliastudios.transcoder.internal.codec.Decoder
-import com.otaliastudios.transcoder.internal.codec.DecoderChannel
-import com.otaliastudios.transcoder.internal.codec.DecoderData
 import com.otaliastudios.transcoder.internal.codec.DecoderTimer
 import com.otaliastudios.transcoder.internal.codec.Encoder
 import com.otaliastudios.transcoder.internal.data.Bridge
@@ -38,7 +35,6 @@ internal fun PassThroughPipeline(
 }
 
 internal fun RegularPipeline(
-        context: Context,
         track: TrackType,
         source: DataSource,
         sink: DataSink,
@@ -49,7 +45,7 @@ internal fun RegularPipeline(
         audioStretcher: AudioStretcher,
         audioResampler: AudioResampler
 ) = when (track) {
-    TrackType.VIDEO -> KorgeVideoPipeline(context,source, sink, interpolator, format, codecs, videoRotation)
+    TrackType.VIDEO -> KorgeVideoPipeline(source, sink, interpolator, format, codecs, videoRotation)
     TrackType.AUDIO -> AudioPipeline(source, sink, interpolator, format, codecs, audioStretcher, audioResampler)
 }
 
@@ -74,7 +70,6 @@ fun setRendererStep(korgeR: Step<RenderingData, RenderingChannel, Long, Channel>
 }
 
 private fun KorgeVideoPipeline(
-        context: Context,
         source: DataSource,
         sink: DataSink,
         interpolator: TimeInterpolator,

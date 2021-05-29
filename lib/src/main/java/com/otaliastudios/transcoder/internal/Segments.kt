@@ -1,6 +1,5 @@
 package com.otaliastudios.transcoder.internal
 
-import android.content.Context
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
@@ -11,7 +10,7 @@ import com.otaliastudios.transcoder.internal.utils.mutableTrackMapOf
 class Segments(
         private val sources: DataSources,
         private val tracks: Tracks,
-        private val factory: (Context, TrackType, Int, TrackStatus, MediaFormat) -> Pipeline
+        private val factory: (TrackType, Int, TrackStatus, MediaFormat) -> Pipeline
 ) {
 
     private val log = Logger("Segments")
@@ -34,7 +33,7 @@ class Segments(
      * - data sources don't have this type
      * - transcoding for this track is over
      */
-    fun next(context: Context,type: TrackType): Segment? {
+    fun next(type: TrackType): Segment? {
         val currentIndex = currentIndex[type]
         val requestedIndex = requestedIndex[type]
         return when {
@@ -43,7 +42,7 @@ class Segments(
             }
             // We need to open a new segment, if possible.
             // createSegment will make requested == current.
-            requestedIndex > currentIndex -> tryCreateSegment(context, type, requestedIndex)
+            requestedIndex > currentIndex -> tryCreateSegment(type, requestedIndex)
             // requested == current
             current[type].canAdvance() -> current[type]
             // requested == current, but this segment is finished:
@@ -51,7 +50,7 @@ class Segments(
             // so if this is the last one, we'll return null.
             else -> {
                 destroySegment(current[type])
-                next(context,type)
+                next(type)
             }
         }
     }
@@ -61,7 +60,7 @@ class Segments(
         current.audioOrNull()?.let { destroySegment(it) }
     }
 
-    private fun tryCreateSegment(context: Context,type: TrackType, index: Int): Segment? {
+    private fun tryCreateSegment(type: TrackType, index: Int): Segment? {
         // Return null if out of bounds, either because segments are over or because the
         // source set does not have sources for this track type.
         val source = sources[type].getOrNull(index) ?: return null
@@ -85,7 +84,6 @@ class Segments(
         // who check it during pipeline init.
         currentIndex[type] = index
         val pipeline = factory(
-            context,
                 type,
                 index,
                 tracks.all[type],

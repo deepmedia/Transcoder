@@ -95,9 +95,9 @@ public class Transcoder {
      * @return a Future that completes when transcoding is completed
      */
     @NonNull
-    public Future<Void> transcode(Context context, @NonNull final TranscoderOptions options) {
+    public Future<Void> transcode(@NonNull final TranscoderOptions options) {
         return ThreadPool.getExecutor().submit(() -> {
-            TranscodeEngine.transcode(context, options);
+            TranscodeEngine.transcode(options);
             return null;
         });
     }

@@ -1,6 +1,5 @@
 package com.otaliastudios.transcoder.internal.transcode
 
-import android.content.Context
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
@@ -62,7 +61,6 @@ class DefaultTranscodeEngine(
     }
 
     private fun createPipeline(
-        context: Context,
         type: TrackType,
         index: Int,
         status: TrackStatus,
@@ -81,7 +79,7 @@ class DefaultTranscodeEngine(
             TrackStatus.ABSENT -> EmptyPipeline()
             TrackStatus.REMOVING -> EmptyPipeline()
             TrackStatus.PASS_THROUGH -> PassThroughPipeline(type, source, sink, interpolator)
-            TrackStatus.COMPRESSING -> RegularPipeline(context,type,
+            TrackStatus.COMPRESSING -> RegularPipeline(type,
                     source, sink, interpolator, outputFormat, codecs,
                     videoRotation, audioStretcher, audioResampler)
         }
@@ -100,7 +98,7 @@ class DefaultTranscodeEngine(
      * We don't have to worry about which tracks are available and how. The [Segments] class
      * will simply return null if there's nothing to be done.
      */
-    override fun transcode(context: Context, progress: (Double) -> Unit) {
+    override fun transcode(progress: (Double) -> Unit) {
         var loop = 0L
         log.i("transcode(): about to start, " +
                 "durationUs=${timer.totalDurationUs}, " +
@@ -111,8 +109,8 @@ class DefaultTranscodeEngine(
             // Create both segments before reading. Creating the segment calls source.selectTrack,
             // and if source is the same, it's important that both tracks are selected before
             // reading (or even worse, seeking. DataSource.seek is broken if you add a track later on).
-            val audio = segments.next(context,TrackType.AUDIO)
-            val video = segments.next(context,TrackType.VIDEO)
+            val audio = segments.next(TrackType.AUDIO)
+            val video = segments.next(TrackType.VIDEO)
             val advanced = (audio?.advance() ?: false) or (video?.advance() ?: false)
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
 

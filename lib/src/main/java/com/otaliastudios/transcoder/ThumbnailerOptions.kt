@@ -104,8 +104,8 @@ class ThumbnailerOptions(
             )
         }
 
-        fun thumbnails(context: Context): Future<Void> {
-            return Thumbnailer.getInstance().thumbnails(context,build())
+        fun thumbnails(): Future<Void> {
+            return Thumbnailer.getInstance().thumbnails(build())
         }
     }
 }

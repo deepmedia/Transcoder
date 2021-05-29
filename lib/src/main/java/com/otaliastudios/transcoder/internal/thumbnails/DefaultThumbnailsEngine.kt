@@ -1,6 +1,5 @@
 package com.otaliastudios.transcoder.internal.thumbnails
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaFormat
 import android.media.MediaFormat.KEY_HEIGHT
@@ -77,7 +76,6 @@ class DefaultThumbnailsEngine(
     }
 
     private fun createPipeline(
-        context: Context,
         type: TrackType,
         index: Int,
         status: TrackStatus,
@@ -115,10 +113,10 @@ class DefaultThumbnailsEngine(
 
     private lateinit var progress: (Thumbnail) -> Unit
 
-    override fun thumbnails(context: Context,progress: (Thumbnail) -> Unit) {
+    override fun thumbnails(progress: (Thumbnail) -> Unit) {
         this.progress = progress
         while (true) {
-            val advanced = segments.next(context,TrackType.VIDEO)?.advance() ?: false
+            val advanced = segments.next(TrackType.VIDEO)?.advance() ?: false
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
             if (Thread.interrupted()) {
                 throw InterruptedException()

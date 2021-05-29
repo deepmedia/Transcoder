@@ -1,6 +1,5 @@
 package com.otaliastudios.transcoder.internal.transcode
 
-import android.content.Context
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.TranscoderOptions
 import com.otaliastudios.transcoder.internal.DataSources
@@ -11,7 +10,7 @@ abstract class TranscodeEngine {
 
     abstract fun validate(): Boolean
 
-    abstract fun transcode(context: Context,progress: (Double) -> Unit)
+    abstract fun transcode(progress: (Double) -> Unit)
 
     abstract fun cleanup()
 
@@ -25,7 +24,7 @@ abstract class TranscodeEngine {
         }
 
         @JvmStatic
-        fun transcode(context: Context, options: TranscoderOptions) {
+        fun transcode(options: TranscoderOptions) {
             log.i("transcode(): called...")
             var engine: TranscodeEngine? = null
             val dispatcher = TranscodeDispatcher(options)
@@ -46,7 +45,7 @@ abstract class TranscodeEngine {
                 if (!engine.validate()) {
                     dispatcher.dispatchSuccess(Transcoder.SUCCESS_NOT_NEEDED)
                 } else {
-                    engine.transcode(context) {
+                    engine.transcode {
                         dispatcher.dispatchProgress(it)
                     }
                     dispatcher.dispatchSuccess(Transcoder.SUCCESS_TRANSCODED)

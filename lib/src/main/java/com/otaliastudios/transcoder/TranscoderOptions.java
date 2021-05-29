@@ -386,8 +386,8 @@ public class TranscoderOptions {
         }
 
         @NonNull
-        public Future<Void> transcode(Context context) {
-            return Transcoder.getInstance().transcode(context, build());
+        public Future<Void> transcode() {
+            return Transcoder.getInstance().transcode(build());
         }
     }
 }
