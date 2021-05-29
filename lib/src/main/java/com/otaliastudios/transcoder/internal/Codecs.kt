@@ -42,16 +42,16 @@ class Codecs(
         }
 
         private val lazyVideo by lazy {
-//            val format = tracks.outputFormats.video
-            val format = MediaFormat.createVideoFormat("video/avc", 720, 720)
-            format.setInteger(
-                MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
-            )
-            format.setInteger(MediaFormat.KEY_BIT_RATE, 10 * 1024 * 1024 /*calcBitRate()*/)
-            format.setInteger(MediaFormat.KEY_FRAME_RATE, 30)
-            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
-            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 720 * 720)
+            val format = tracks.outputFormats.video
+//            val format = MediaFormat.createVideoFormat("video/avc", 720, 720)
+//            format.setInteger(
+//                MediaFormat.KEY_COLOR_FORMAT,
+//                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
+//            )
+//            format.setInteger(MediaFormat.KEY_BIT_RATE, 10 * 1024 * 1024 /*calcBitRate()*/)
+//            format.setInteger(MediaFormat.KEY_FRAME_RATE, 30)
+//            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
+//            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 720 * 720)
 
 
             val codec = MediaCodec.createEncoderByType(format.getString(MediaFormat.KEY_MIME)!!)
