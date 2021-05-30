@@ -10,7 +10,7 @@ interface FrameDropper {
  * A very simple dropper, from
  * https://stackoverflow.com/questions/4223766/dropping-video-frames
  */
-internal fun FrameDropper(inputFps: Int, outputFps: Int) = object : FrameDropper {
+fun FrameDropper(inputFps: Int, outputFps: Int) = object : FrameDropper {
 
     private val log = Logger("FrameDropper")
     private val inputSpf = 1.0 / inputFps
