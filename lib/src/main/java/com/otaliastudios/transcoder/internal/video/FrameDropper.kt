@@ -17,9 +17,12 @@ fun FrameDropper(inputFps: Int, outputFps: Int) = object : FrameDropper {
     private val outputSpf = 1.0 / outputFps
     private var currentSpf = 0.0
     private var frameCount = 0
+    private var previousTs = 0.0
 
     override fun shouldRender(timeUs: Long): Boolean {
-        currentSpf += inputSpf
+        val timeS = timeUs / 1000.0 / 1000.0
+        currentSpf += timeS - previousTs
+        previousTs = timeS
         if (frameCount++ == 0) {
             log.v("RENDERING (first frame) - currentSpf=$currentSpf inputSpf=$inputSpf outputSpf=$outputSpf")
             return true
