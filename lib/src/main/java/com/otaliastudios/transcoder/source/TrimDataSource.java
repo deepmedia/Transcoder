@@ -98,6 +98,12 @@ public class TrimDataSource extends DataSourceWrapper {
     }
 
     @Override
+    public void readTrack(@NonNull Chunk chunk) {
+        super.readTrack(chunk);
+        chunk.timeUs = chunk.timeUs - trimStartUs;
+    }
+
+    @Override
     public boolean isDrained() {
         // Enforce the trim end: this works thanks to the fact that extraDurationUs is added
         // to the duration, otherwise it would fail for videos with sparse keyframes.
