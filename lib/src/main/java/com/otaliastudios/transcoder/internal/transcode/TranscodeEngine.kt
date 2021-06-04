@@ -2,9 +2,13 @@ package com.otaliastudios.transcoder.internal.transcode
 
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.TranscoderOptions
+import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.DataSources
+import com.otaliastudios.transcoder.internal.pipeline.Pipeline
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.trackMapOf
+import com.otaliastudios.transcoder.sink.DataSink
 
 abstract class TranscodeEngine {
 
@@ -24,7 +28,10 @@ abstract class TranscodeEngine {
         }
 
         @JvmStatic
-        fun transcode(options: TranscoderOptions) {
+        fun transcode(
+            options: TranscoderOptions,
+            function: ((TrackType, DataSink, Codecs) -> Pipeline)?,
+            ) {
             log.i("transcode(): called...")
             var engine: TranscodeEngine? = null
             val dispatcher = TranscodeDispatcher(options)
@@ -40,7 +47,8 @@ abstract class TranscodeEngine {
                         videoRotation = options.videoRotation,
                         interpolator = options.timeInterpolator,
                         audioStretcher = options.audioStretcher,
-                        audioResampler = options.audioResampler
+                        audioResampler = options.audioResampler,
+                        pipelineFactory = function
                 )
                 if (!engine.validate()) {
                     dispatcher.dispatchSuccess(Transcoder.SUCCESS_NOT_NEEDED)

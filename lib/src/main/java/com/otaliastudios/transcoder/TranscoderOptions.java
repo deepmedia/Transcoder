@@ -6,7 +6,13 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+
 import com.otaliastudios.transcoder.common.TrackType;
+import com.otaliastudios.transcoder.internal.Codecs;
+import com.otaliastudios.transcoder.internal.pipeline.Pipeline;
 import com.otaliastudios.transcoder.resample.AudioResampler;
 import com.otaliastudios.transcoder.resample.DefaultAudioResampler;
 import com.otaliastudios.transcoder.sink.DataSink;
@@ -14,7 +20,6 @@ import com.otaliastudios.transcoder.sink.DefaultDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource;
 import com.otaliastudios.transcoder.source.FilePathDataSource;
-import com.otaliastudios.transcoder.source.BlankAudioDataSource;
 import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategies;
@@ -32,9 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
+import kotlin.jvm.functions.Function3;
 
 /**
  * Collects transcoding options consumed by {@link Transcoder}.
@@ -386,8 +389,8 @@ public class TranscoderOptions {
         }
 
         @NonNull
-        public Future<Void> transcode() {
-            return Transcoder.getInstance().transcode(build());
+        public Future<Void> transcode(Function3<? super TrackType, ? super DataSink, ? super Codecs, Pipeline> function) {
+            return Transcoder.getInstance().transcode(build(), function);
         }
     }
 }

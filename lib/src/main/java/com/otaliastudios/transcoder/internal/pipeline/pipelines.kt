@@ -20,7 +20,7 @@ import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.stretch.AudioStretcher
 import com.otaliastudios.transcoder.time.TimeInterpolator
 
-internal fun EmptyPipeline() = Pipeline.build("Empty")
+ fun EmptyPipeline() = Pipeline.build("Empty")
 
 internal fun PassThroughPipeline(
         track: TrackType,
@@ -45,7 +45,7 @@ internal fun RegularPipeline(
         audioStretcher: AudioStretcher,
         audioResampler: AudioResampler
 ) = when (track) {
-    TrackType.VIDEO -> KorgeVideoPipeline(source, sink, interpolator, format, codecs, videoRotation)
+    TrackType.VIDEO -> VideoPipeline(source, sink, interpolator, format, codecs, videoRotation)
     TrackType.AUDIO -> AudioPipeline(source, sink, interpolator, format, codecs, audioStretcher, audioResampler)
 }
 
@@ -58,32 +58,17 @@ data class RenderingData(
 interface RenderingChannel : Channel {
         fun setDimensions(point: Point)
 }
-lateinit var korgeDriver: Step<Unit, Channel, RenderingData, RenderingChannel>
-lateinit var korgeRenderer: Step<RenderingData, RenderingChannel, Long, Channel>
+//lateinit var korgeDriver: Step<Unit, Channel, RenderingData, RenderingChannel>
+//lateinit var korgeRenderer: Step<RenderingData, RenderingChannel, Long, Channel>
 
-fun setDriverStep(driver: Step<Unit, Channel, RenderingData, RenderingChannel>) {
-        korgeDriver = driver
-}
+//fun setDriverStep(driver: Step<Unit, Channel, RenderingData, RenderingChannel>) {
+//        korgeDriver = driver
+//}
+//
+//fun setRendererStep(korgeR: Step<RenderingData, RenderingChannel, Long, Channel>){
+//        korgeRenderer = korgeR
+//}
 
-fun setRendererStep(korgeR: Step<RenderingData, RenderingChannel, Long, Channel>){
-        korgeRenderer = korgeR
-}
-
-private fun KorgeVideoPipeline(
-        source: DataSource,
-        sink: DataSink,
-        interpolator: TimeInterpolator,
-        format: MediaFormat,
-        codecs: Codecs,
-        videoRotation: Int
-) = Pipeline.build("Video") {
-
-        korgeDriver +
-                korgeRenderer +
-                VideoPublisher() +
-                Encoder(codecs, TrackType.VIDEO) +
-                Writer(sink, TrackType.VIDEO)
-}
 
 private fun VideoPipeline(
         source: DataSource,

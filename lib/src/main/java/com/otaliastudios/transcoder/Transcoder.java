@@ -15,9 +15,16 @@
  */
 package com.otaliastudios.transcoder;
 
-import android.content.Context;
+import android.media.MediaFormat;
 import android.os.Build;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+
+import com.otaliastudios.transcoder.common.TrackStatus;
+import com.otaliastudios.transcoder.common.TrackType;
+import com.otaliastudios.transcoder.internal.Codecs;
+import com.otaliastudios.transcoder.internal.pipeline.Pipeline;
 import com.otaliastudios.transcoder.internal.transcode.TranscodeEngine;
 import com.otaliastudios.transcoder.internal.utils.ThreadPool;
 import com.otaliastudios.transcoder.sink.DataSink;
@@ -26,8 +33,8 @@ import com.otaliastudios.transcoder.validator.Validator;
 import java.io.FileDescriptor;
 import java.util.concurrent.Future;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
+import kotlin.jvm.functions.Function3;
+import kotlin.jvm.functions.Function4;
 
 public class Transcoder {
     /**
@@ -92,12 +99,13 @@ public class Transcoder {
      * Transcodes video file asynchronously.
      *
      * @param options The transcoder options.
+     * @param function
      * @return a Future that completes when transcoding is completed
      */
     @NonNull
-    public Future<Void> transcode(@NonNull final TranscoderOptions options) {
+    public Future<Void> transcode(@NonNull final TranscoderOptions options, Function3<? super TrackType, ? super DataSink, ? super Codecs, Pipeline> function) {
         return ThreadPool.getExecutor().submit(() -> {
-            TranscodeEngine.transcode(options);
+            TranscodeEngine.transcode(options, function);
             return null;
         });
     }

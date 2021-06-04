@@ -23,7 +23,7 @@ import com.otaliastudios.transcoder.TranscoderOptions;
 
 /**
  * One of the exceptions possibly thrown by
- * {@link Transcoder#transcode(TranscoderOptions)}, which means it can be
+ * {@link Transcoder#transcode(TranscoderOptions, kotlin.jvm.functions.Function4)}, which means it can be
  * passed to {@link TranscoderListener#onTranscodeFailed(Throwable)}.
  */
 public class InvalidOutputFormatException extends RuntimeException {

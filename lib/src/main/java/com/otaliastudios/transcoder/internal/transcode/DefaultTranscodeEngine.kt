@@ -25,15 +25,16 @@ import com.otaliastudios.transcoder.time.TimeInterpolator
 import com.otaliastudios.transcoder.validator.Validator
 
 class DefaultTranscodeEngine(
-        private val dataSources: DataSources,
-        private val dataSink: DataSink,
-        strategies: TrackMap<TrackStrategy>,
-        private val validator: Validator,
-        private val videoRotation: Int,
-        private val audioStretcher: AudioStretcher,
-        private val audioResampler: AudioResampler,
-        interpolator: TimeInterpolator
-) : TranscodeEngine() {
+    private val dataSources: DataSources,
+    private val dataSink: DataSink,
+    strategies: TrackMap<TrackStrategy>,
+    private val validator: Validator,
+    private val videoRotation: Int,
+    private val audioStretcher: AudioStretcher,
+    private val audioResampler: AudioResampler,
+    interpolator: TimeInterpolator,
+    private val pipelineFactory: ((TrackType, DataSink, Codecs) -> Pipeline)?,
+    ) : TranscodeEngine() {
 
     private val log = Logger("TranscodeEngine")
 
@@ -75,6 +76,9 @@ class DefaultTranscodeEngine(
             timer.positionUs[type] > timer.totalDurationUs + 100L
         }
         val sink = dataSink.ignoringEos { index < sources.lastIndex }
+        if (pipelineFactory != null)
+            return pipelineFactory.invoke(type, sink, codecs)
+
         return when (status) {
             TrackStatus.ABSENT -> EmptyPipeline()
             TrackStatus.REMOVING -> EmptyPipeline()
