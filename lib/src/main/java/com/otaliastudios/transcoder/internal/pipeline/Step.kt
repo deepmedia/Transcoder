@@ -20,4 +20,4 @@ interface Step<
     fun release() = Unit
 }
 
-internal val Step<*, *, *, *>.name get() = this::class.simpleName
+val Step<*, *, *, *>.name get() = this::class.simpleName
