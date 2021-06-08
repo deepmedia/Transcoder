@@ -26,7 +26,8 @@ class ChunkQueue(private val sampleRate: Int, private val channels: Int) {
     fun isEmpty() = queue.isEmpty()
 
     fun enqueue(buffer: ShortBuffer, timeUs: Long, timeStretch: Double, release: () -> Unit) {
-        Log.w("ChunkQueue", "enqueue: " + "buffer is empty")
+        if (!buffer.hasRemaining())
+            Log.w("ChunkQueue", "enqueue: " + "buffer is empty")
 //        require(buffer.hasRemaining())
 
         queue.addLast(Chunk(buffer, timeUs, timeStretch, release))
