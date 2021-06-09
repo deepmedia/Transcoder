@@ -15,12 +15,12 @@ internal fun bytesToUs(
     return MICROSECONDS_PER_SECOND * bytes / byteRate // usec
 }
 
-internal fun bitRate(sampleRate: Int, channels: Int): Int {
+ fun bitRate(sampleRate: Int, channels: Int): Int {
     val byteRate = channels * sampleRate * BYTES_PER_SAMPLE_PER_CHANNEL
     return byteRate * 8
 }
 
-internal fun samplesToBytes(samples: Int, channels: Int): Int {
+ fun samplesToBytes(samples: Int, channels: Int): Int {
     val bytesPerSample = BYTES_PER_SAMPLE_PER_CHANNEL * channels
     return samples * bytesPerSample
 }
