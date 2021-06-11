@@ -21,7 +21,6 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.Codecs;
 import com.otaliastudios.transcoder.internal.pipeline.Pipeline;
@@ -33,7 +32,6 @@ import com.otaliastudios.transcoder.validator.Validator;
 import java.io.FileDescriptor;
 import java.util.concurrent.Future;
 
-import kotlin.jvm.functions.Function3;
 import kotlin.jvm.functions.Function4;
 
 public class Transcoder {
@@ -103,7 +101,7 @@ public class Transcoder {
      * @return a Future that completes when transcoding is completed
      */
     @NonNull
-    public Future<Void> transcode(@NonNull final TranscoderOptions options, Function3<? super TrackType, ? super DataSink, ? super Codecs, Pipeline> function) {
+    public Future<Void> transcode(@NonNull final TranscoderOptions options, Function4<? super TrackType, ? super DataSink, ? super Codecs, ? super MediaFormat, Pipeline> function) {
         return ThreadPool.getExecutor().submit(() -> {
             TranscodeEngine.transcode(options, function);
             return null;

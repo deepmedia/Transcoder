@@ -1,6 +1,7 @@
 package com.otaliastudios.transcoder;
 
 import android.content.Context;
+import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -37,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import kotlin.jvm.functions.Function3;
+import kotlin.jvm.functions.Function4;
 
 /**
  * Collects transcoding options consumed by {@link Transcoder}.
@@ -389,7 +390,7 @@ public class TranscoderOptions {
         }
 
         @NonNull
-        public Future<Void> transcode(Function3<? super TrackType, ? super DataSink, ? super Codecs, Pipeline> function) {
+        public Future<Void> transcode(Function4<? super TrackType, ? super DataSink, ? super Codecs, ? super MediaFormat, Pipeline> function) {
             return Transcoder.getInstance().transcode(build(), function);
         }
     }

@@ -33,7 +33,7 @@ class DefaultTranscodeEngine(
     private val audioStretcher: AudioStretcher,
     private val audioResampler: AudioResampler,
     interpolator: TimeInterpolator,
-    private val pipelineFactory: ((TrackType, DataSink, Codecs) -> Pipeline)?,
+    private val pipelineFactory: ((TrackType, DataSink, Codecs, MediaFormat) -> Pipeline)?,
     ) : TranscodeEngine() {
 
     private val log = Logger("TranscodeEngine")
@@ -77,7 +77,7 @@ class DefaultTranscodeEngine(
         }
         val sink = dataSink.ignoringEos { index < sources.lastIndex }
         if (pipelineFactory != null)
-            return pipelineFactory.invoke(type, sink, codecs)
+            return pipelineFactory.invoke(type, sink, codecs,outputFormat)
 
         return when (status) {
             TrackStatus.ABSENT -> EmptyPipeline()

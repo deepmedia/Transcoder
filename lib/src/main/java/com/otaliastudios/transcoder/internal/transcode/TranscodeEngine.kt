@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.internal.transcode
 
+import android.media.MediaFormat
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.TranscoderOptions
 import com.otaliastudios.transcoder.common.TrackType
@@ -30,7 +31,7 @@ abstract class TranscodeEngine {
         @JvmStatic
         fun transcode(
             options: TranscoderOptions,
-            function: ((TrackType, DataSink, Codecs) -> Pipeline)?,
+            function: ((TrackType, DataSink, Codecs, MediaFormat) -> Pipeline)?,
             ) {
             log.i("transcode(): called...")
             var engine: TranscodeEngine? = null
