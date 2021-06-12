@@ -28,7 +28,7 @@ public class UpsampleAudioResampler implements AudioResampler {
         int remainingFakeSamples = fakeSamples;
         float remainingInputSamplesRatio = ratio(remainingInputSamples, inputSamples);
         float remainingFakeSamplesRatio = ratio(remainingFakeSamples, fakeSamples);
-        while (remainingInputSamples > 0 && remainingFakeSamples > 0) {
+        while (remainingInputSamples > 0 && remainingFakeSamples >= 0) {
             // Will this be an input sample or a fake sample?
             // Choose the one with the bigger ratio.
             if (remainingInputSamplesRatio >= remainingFakeSamplesRatio) {
