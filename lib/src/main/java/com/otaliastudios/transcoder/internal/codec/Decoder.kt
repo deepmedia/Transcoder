@@ -110,6 +110,8 @@ class Decoder(
                 if (timeUs != null /* && (isEos || info.size > 0) */) {
                     dequeuedOutputs++
                     val buffer = buffers.getOutputBuffer(result)
+                    // Ideally, we shouldn't rely on the fact that the buffer is properly configured.
+                    // We should configure its position and limit based on the buffer info's position and size.
                     val data = DecoderData(buffer, timeUs) {
                         codec.releaseOutputBuffer(result, it)
                         dequeuedOutputs--

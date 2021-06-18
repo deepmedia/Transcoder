@@ -141,6 +141,10 @@ class Encoder(
                     val flags = info.flags and BUFFER_FLAG_END_OF_STREAM.inv()
                     val buffer = buffers.getOutputBuffer(result)
                     val timeUs = info.presentationTimeUs
+                    if (isEos && timeUs == 0L) {
+                        info.offset = 0
+                        info.size = 0
+                    }
                     buffer.clear()
                     buffer.limit(info.offset + info.size)
                     buffer.position(info.offset)
