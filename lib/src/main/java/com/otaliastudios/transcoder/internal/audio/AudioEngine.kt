@@ -56,6 +56,7 @@ class AudioEngine(
 
     override fun enqueue(data: DecoderData) {
         val stretch = (data as? DecoderTimerData)?.timeStretch ?: 1.0
+        log.v("Enqueue: ${data.timeUs}   $this")
         chunks.enqueue(data.buffer.asShortBuffer(), data.timeUs, stretch) {
             data.release(false)
         }
@@ -112,6 +113,8 @@ class AudioEngine(
             outBytes.clear()
             outBytes.limit(outBuffer.limit() * BYTES_PER_SHORT)
             outBytes.position(outBuffer.position() * BYTES_PER_SHORT)
+
+            log.v("Drain: ts: ${timeUs}  size: ${outBuffer.limit()}")
             State.Ok(EncoderData(outBytes, outId, timeUs))
         }
     }
