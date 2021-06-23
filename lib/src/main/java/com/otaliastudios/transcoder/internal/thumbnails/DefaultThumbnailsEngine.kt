@@ -63,16 +63,13 @@ class DefaultThumbnailsEngine(
     }
 
     private var stubs = mutableListOf<Stub>()
-    private lateinit var type: TrackType
-    private var index: Int = 0
+
     private fun createPipeline(
         type: TrackType,
         index: Int,
         status: TrackStatus,
         outputFormat: MediaFormat
     ): Pipeline {
-        this.type = type
-        this.index = index
 
 //        if (stubs.isEmpty()) return EmptyPipeline()
         val source = dataSources[type][index].forcingEos {
@@ -85,7 +82,6 @@ class DefaultThumbnailsEngine(
                     VideoRenderer(source.orientation, rotation, outputFormat, flipY = true) +
                     VideoSnapshots(outputFormat, fetchPositions, 1000 * 1000) { pos, bitmap ->
                         val stub = stubs.removeFirst()
-                        timestamps.removeFirst()
                         stub.actualLocalizedUs = pos
                         log.i("Got snapshot. positionUs=${stub.positionUs} " +
                                 "localizedUs=${stub.localizedUs} " +
@@ -100,8 +96,8 @@ class DefaultThumbnailsEngine(
     private lateinit var progress: (Thumbnail) -> Unit
 
     override fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit) {
-        segments.next(TrackType.VIDEO)
-        this.updatePositions(list)
+        val segment = segments.next(TrackType.VIDEO)
+        segment?.let { this.updatePositions(list, it.index) }
         this.progress = progress
         while (true) {
             val advanced = segments.next(TrackType.VIDEO)?.advance() ?: false
@@ -121,7 +117,7 @@ class DefaultThumbnailsEngine(
         this.finish = true
     }
 
-    private fun updatePositions(requests: List<ThumbnailRequest>) {
+    private fun updatePositions(requests: List<ThumbnailRequest>, index: Int) {
         val positions = requests.flatMap { request ->
             val duration = timer.totalDurationUs
             request.locate(duration).map { it to request }
@@ -129,17 +125,14 @@ class DefaultThumbnailsEngine(
         log.i("Creating pipeline #$index. absoluteUs=${positions.joinToString { it.first.toString() }}")
 
         stubs = positions.mapNotNull { (positionUs, request) ->
-            val localizedUs = timer.localize(type, index, positionUs)
+            val localizedUs = timer.localize(TrackType.VIDEO, index, positionUs)
             localizedUs?.let { Stub(request, positionUs, localizedUs) }
         }.toMutableList()
 
-        timestamps = stubs.map { it.localizedUs } as MutableList<Long>
-
     }
 
-    private var timestamps = mutableListOf<Long>()
     private val fetchPositions: () -> List<Long> = {
-        timestamps
+        stubs.map { it.localizedUs }
     }
 
     override fun cleanup() {
