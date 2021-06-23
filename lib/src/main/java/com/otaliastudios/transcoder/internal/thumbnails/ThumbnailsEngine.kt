@@ -1,16 +1,14 @@
 package com.otaliastudios.transcoder.internal.thumbnails
 
 import com.otaliastudios.transcoder.ThumbnailerOptions
-import com.otaliastudios.transcoder.Transcoder
-import com.otaliastudios.transcoder.TranscoderOptions
 import com.otaliastudios.transcoder.internal.DataSources
 import com.otaliastudios.transcoder.internal.utils.Logger
-import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
+import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
 
 abstract class ThumbnailsEngine {
 
-    abstract fun thumbnails(progress: (Thumbnail) -> Unit)
+    abstract fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit)
 
     abstract fun cleanup()
 
@@ -23,34 +21,43 @@ abstract class ThumbnailsEngine {
             return this.cause?.isInterrupted() ?: false
         }
 
+        var engine: ThumbnailsEngine? = null
+        private lateinit var dispatcher: ThumbnailsDispatcher
+
         @JvmStatic
-        fun thumbnails(options: ThumbnailerOptions) {
+        fun thumbnails(options: ThumbnailerOptions): ThumbnailsEngine? {
             log.i("thumbnails(): called...")
-            var engine: ThumbnailsEngine? = null
-            val dispatcher = ThumbnailsDispatcher(options)
-            try {
-                engine = DefaultThumbnailsEngine(
-                        dataSources = DataSources(options),
-                        rotation = options.rotation,
-                        resizer = options.resizer,
-                        requests = options.thumbnailRequests
-                )
-                engine.thumbnails {
-                    dispatcher.dispatchThumbnail(it)
-                }
-                dispatcher.dispatchCompletion()
-            } catch (e: Exception) {
-                if (e.isInterrupted()) {
-                    log.i("Transcode canceled.", e)
-                    dispatcher.dispatchCancel()
-                } else {
-                    log.e("Unexpected error while transcoding.", e)
-                    dispatcher.dispatchFailure(e)
-                    throw e
-                }
-            } finally {
-                engine?.cleanup()
-            }
+            dispatcher = ThumbnailsDispatcher(options)
+
+             engine = DefaultThumbnailsEngine(
+                dataSources = DataSources(options),
+                rotation = options.rotation,
+                resizer = options.resizer,
+                requests = options.thumbnailRequests
+            )
+            return engine
         }
+    }
+    fun queue(list: List<ThumbnailRequest>){
+        engine?.queueThumbnails(list) {
+            dispatcher.dispatchThumbnail(it)
+        }
+
+        try {
+            dispatcher.dispatchCompletion()
+        } catch (e: Exception) {
+            if (e.isInterrupted()) {
+                log.i("Transcode canceled.", e)
+                dispatcher.dispatchCancel()
+            } else {
+                log.e("Unexpected error while transcoding.", e)
+                dispatcher.dispatchFailure(e)
+                throw e
+            }
+        } finally {
+            engine?.cleanup()
+        }
+
+
     }
 }

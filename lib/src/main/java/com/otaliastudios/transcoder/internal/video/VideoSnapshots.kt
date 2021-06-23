@@ -21,14 +21,14 @@ import kotlin.math.abs
 
 class VideoSnapshots(
         format: MediaFormat,
-        requests: List<Long>,
+        private val fetchRequests:()-> List<Long>,
         private val accuracyUs: Long,
         private val onSnapshot: (Long, Bitmap) -> Unit
 ) : BaseStep<Long, Channel, Long, Channel>() {
 
     private val log = Logger("VideoSnapshots")
     override val channel = Channel
-    private val requests = requests.toMutableList()
+    private val requests = mutableListOf<Long>()
     private val width = format.getInteger(KEY_WIDTH)
     private val height = format.getInteger(KEY_HEIGHT)
     private val core = EglCore(EGL14.EGL_NO_CONTEXT, EglCore.FLAG_RECORDABLE)
@@ -37,7 +37,12 @@ class VideoSnapshots(
     }
 
     override fun step(state: State.Ok<Long>, fresh: Boolean): State<Long> {
-        if (requests.isEmpty()) return state
+        if (requests.isEmpty()){
+            requests.addAll(fetchRequests())
+            if (requests.isEmpty()) {
+                return state
+            }
+        }
 
         val expectedUs = requests.first()
         val deltaUs = abs(expectedUs - state.value)

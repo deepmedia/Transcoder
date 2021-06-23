@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import com.otaliastudios.transcoder.internal.thumbnails.ThumbnailsEngine
 import com.otaliastudios.transcoder.resize.ExactResizer
 import com.otaliastudios.transcoder.resize.MultiResizer
 import com.otaliastudios.transcoder.resize.Resizer
@@ -104,8 +105,8 @@ class ThumbnailerOptions(
             )
         }
 
-        fun thumbnails(): Future<Void> {
-            return Thumbnailer.getInstance().thumbnails(build())
+        suspend fun thumbnails(): ThumbnailsEngine? {
+            return ThumbnailsEngine.thumbnails(build())
         }
     }
 }
