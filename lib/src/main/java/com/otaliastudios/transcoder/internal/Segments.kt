@@ -8,9 +8,10 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.mutableTrackMapOf
 
 class Segments(
-        private val sources: DataSources,
-        private val tracks: Tracks,
-        private val factory: (TrackType, Int, TrackStatus, MediaFormat) -> Pipeline
+    private val sources: DataSources,
+    private val tracks: Tracks,
+    private val factory: (TrackType, Int, TrackStatus, MediaFormat) -> Pipeline,
+    private val ownsLifeCycle: Boolean = true
 ) {
 
     private val log = Logger("Segments")
@@ -49,8 +50,12 @@ class Segments(
             // create a new one. destroySegment will increase the requested index,
             // so if this is the last one, we'll return null.
             else -> {
-                destroySegment(current[type])
-                next(type)
+                if (ownsLifeCycle) {
+                    destroySegment(current[type])
+                    next(type)
+                } else {
+                    null
+                }
             }
         }
     }

@@ -7,9 +7,10 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.source.DataSource
 
 class Seeker(
-        private val source: DataSource,
-        private val fetchPositions:()-> List<Long>,
-        private val seek: (Long) -> Boolean
+    private val source: DataSource,
+    private val fetchPositions: () ->  List<Long>,
+    private val shouldFetch:() -> Boolean,
+    private val seek: (Long) -> Boolean
 ) : BaseStep<Unit, Channel, Unit, Channel>() {
 
     private val log = Logger("Seeker")
@@ -18,11 +19,8 @@ class Seeker(
     private val positions:MutableList<Long> = mutableListOf()
 
     override fun step(state: State.Ok<Unit>, fresh: Boolean): State<Unit> {
-        if(positions.isEmpty()) {
+        if(positions.isEmpty() && shouldFetch()) {
             positions.addAll(fetchPositions())
-            if (positions.isEmpty()) {
-                return State.Eos(Unit)
-            }
         }
 
         if (positions.isNotEmpty()) {

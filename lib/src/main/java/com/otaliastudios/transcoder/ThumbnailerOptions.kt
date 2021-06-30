@@ -105,7 +105,7 @@ class ThumbnailerOptions(
             )
         }
 
-        suspend fun thumbnails(): ThumbnailsEngine? {
+         fun thumbnails(): ThumbnailsEngine? {
             return ThumbnailsEngine.thumbnails(build())
         }
     }
