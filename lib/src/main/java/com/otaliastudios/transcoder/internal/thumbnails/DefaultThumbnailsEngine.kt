@@ -72,10 +72,10 @@ class DefaultThumbnailsEngine(
         outputFormat: MediaFormat
     ): Pipeline {
 
-//        if (stubs.isEmpty()) return EmptyPipeline()
-        val source = dataSources[type][index].forcingEos {
-            stubs.isEmpty() && finish
-        }
+        val source = dataSources[type][index]
+//            .forcingEos {
+//            stubs.isEmpty() && finish
+//        }
         return Pipeline.build("Thumbnails") {
             Seeker(source, fetchPositions, shouldFetch) { it == stubs.firstOrNull()?.localizedUs } +
                     Reader(source, type) +
