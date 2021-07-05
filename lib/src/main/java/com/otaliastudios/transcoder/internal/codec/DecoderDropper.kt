@@ -32,11 +32,11 @@ class DecoderDropper(private val continuous: Boolean) {
     private var firstOutputUs: Long? = null
 
     private fun debug(message: String, important: Boolean = false) {
-        /* val full = "$message firstInputUs=$firstInputUs " +
+         val full = "$message firstInputUs=$firstInputUs " +
                 "validInputUs=[${closedRanges.joinToString {
                     "$it(deltaUs=${closedDeltas[it]})"
                 }}] pendingRangeUs=${pendingRange}"
-        if (important) log.w(full) else log.v(full) */
+        if (important) log.w(full) else log.v(full)
     }
 
     fun input(timeUs: Long, render: Boolean) {

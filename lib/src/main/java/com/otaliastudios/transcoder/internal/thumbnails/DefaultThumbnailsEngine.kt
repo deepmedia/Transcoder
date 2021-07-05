@@ -13,7 +13,6 @@ import com.otaliastudios.transcoder.internal.data.Seeker
 import com.otaliastudios.transcoder.internal.pipeline.Pipeline
 import com.otaliastudios.transcoder.internal.pipeline.plus
 import com.otaliastudios.transcoder.internal.utils.Logger
-import com.otaliastudios.transcoder.internal.utils.forcingEos
 import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.internal.video.VideoRenderer
 import com.otaliastudios.transcoder.internal.video.VideoSnapshots
@@ -80,8 +79,8 @@ class DefaultThumbnailsEngine(
             Seeker(source, fetchPositions, shouldFetch) { it == stubs.firstOrNull()?.localizedUs } +
                     Reader(source, type) +
                     Decoder(source.getTrackFormat(type)!!, continuous = false) +
-                    VideoRenderer(source.orientation, rotation, outputFormat, flipY = true) +
-                    VideoSnapshots(outputFormat, fetchPositions, 300 * 1000) { pos, bitmap ->
+                    VideoRenderer(source.orientation, rotation, outputFormat, flipY = true, true) +
+                    VideoSnapshots(outputFormat, fetchPositions, 500 * 1000) { pos, bitmap ->
                         val stub = stubs.removeFirst()
                         stub.actualLocalizedUs = pos
                         log.i("Got snapshot. positionUs=${stub.positionUs} " +

@@ -16,7 +16,8 @@ class VideoRenderer(
         private val sourceRotation: Int, // intrinsic source rotation
         private val extraRotation: Int, // any extra rotation in TranscoderOptions
         private val targetFormat: MediaFormat,
-        flipY: Boolean = false
+        flipY: Boolean = false,
+        private val isThumbnailer:Boolean = false
 ): Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
 
     private val log = Logger("VideoRenderer")
@@ -96,7 +97,7 @@ class VideoRenderer(
             state.value.release(false)
             State.Eos(0L)
         } else {
-            if (frameDropper.shouldRender(state.value.timeUs)) {
+            if (isThumbnailer || frameDropper.shouldRender(state.value.timeUs)) {
                 state.value.release(true)
                 frameDrawer.drawFrame()
                 State.Ok(state.value.timeUs)
