@@ -8,7 +8,7 @@ import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
 
 abstract class ThumbnailsEngine {
 
-    abstract fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit)
+    abstract suspend fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit)
 
     abstract fun cleanup()
 
@@ -38,7 +38,7 @@ abstract class ThumbnailsEngine {
             return engine
         }
     }
-    fun queue(list: List<ThumbnailRequest>){
+    suspend fun queue(list: List<ThumbnailRequest>){
         engine?.queueThumbnails(list) {
             dispatcher.dispatchThumbnail(it)
         }

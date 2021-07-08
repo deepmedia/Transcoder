@@ -1,11 +1,10 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
+import com.otaliastudios.transcoder.internal.codec.EncoderChannel
+import com.otaliastudios.transcoder.internal.codec.EncoderData
 import com.otaliastudios.transcoder.internal.utils.Logger
 
-
-internal typealias AnyStep = Step<Any, Channel, Any, Channel>
-
-class Pipeline private constructor(name: String, private val chain: List<AnyStep>) {
+class CustomPipeline private constructor(name: String, private val chain: List<AnyStep>) {
 
     private val log = Logger("Pipeline($name)")
     private var headState: State.Ok<Any> = State.Ok(Unit)
@@ -18,7 +17,7 @@ class Pipeline private constructor(name: String, private val chain: List<AnyStep
     }
 
     // Returns Eos, Ok or Wait
-    fun execute(): State<Unit> {
+    fun execute(): State<EncoderData> {
         log.v("execute(): starting. head=$headIndex steps=${chain.size} remaining=${chain.size - headIndex}")
         val head = headIndex
         var state = headState
@@ -37,9 +36,9 @@ class Pipeline private constructor(name: String, private val chain: List<AnyStep
             }
         }
         return when {
-            chain.isEmpty() -> State.Eos(Unit)
-            state is State.Eos -> State.Eos(Unit)
-            else -> State.Ok(Unit)
+            chain.isEmpty() -> State.Eos(EncoderData.Empty)
+            state is State.Eos -> State.Eos(EncoderData.Empty)
+            else -> State.Ok(state.value as EncoderData)
         }
     }
 
@@ -57,25 +56,8 @@ class Pipeline private constructor(name: String, private val chain: List<AnyStep
 
     companion object {
         @Suppress("UNCHECKED_CAST")
-         fun build(name: String, builder: () -> Builder<*, Channel> = { Builder<Unit, Channel>() }): Pipeline {
-            return Pipeline(name, builder().steps as List<AnyStep>)
+         fun build(name: String, builder: () -> Pipeline.Builder<*, EncoderChannel> = { Pipeline.Builder<EncoderData, EncoderChannel>() }): CustomPipeline {
+            return CustomPipeline(name, builder().steps as List<AnyStep>)
         }
     }
-
-    class Builder<D: Any, C: Channel> internal constructor(
-            internal val steps: List<Step<*, *, *, *>> = listOf()
-    ) {
-        operator fun <NewData: Any, NewChannel: Channel> plus(
-                step: Step<D, C, NewData, NewChannel>
-        ): Builder<NewData, NewChannel>  = Builder(steps + step)
-    }
-}
-
-operator fun <
-        CurrData: Any, CurrChannel: Channel,
-        NewData: Any, NewChannel: Channel
-> Step<Unit, Channel, CurrData, CurrChannel>.plus(
-        other: Step<CurrData, CurrChannel, NewData, NewChannel>
-): Pipeline.Builder<NewData, NewChannel> {
-    return Pipeline.Builder<CurrData, CurrChannel>(listOf(this)) + other
 }

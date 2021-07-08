@@ -22,6 +22,9 @@ import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
 import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 class DefaultThumbnailsEngine(
     private val dataSources: DataSources,
@@ -95,21 +98,19 @@ class DefaultThumbnailsEngine(
 
     private lateinit var progress: (Thumbnail) -> Unit
 
-    override fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit) {
+    override suspend fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit) {
         val segment = segments.next(TrackType.VIDEO)
         segment?.let {
             this.updatePositions(list, it.index)
         }
         this.progress = progress
-        while (true) {
+        while (currentCoroutineContext().isActive) {
             val advanced = segments.next(TrackType.VIDEO)?.advance() ?: false
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
-            if (Thread.interrupted()) {
-                throw InterruptedException()
-            } else if (completed || stubs.isEmpty()) {
+            if (completed || stubs.isEmpty()) {
                 break
             } else if (!advanced) {
-                Thread.sleep(WAIT_MS)
+                delay(WAIT_MS)
             }
         }
     }
