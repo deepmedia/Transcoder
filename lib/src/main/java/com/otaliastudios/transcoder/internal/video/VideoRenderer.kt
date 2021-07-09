@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.internal.video
 
+import android.graphics.Bitmap
 import android.media.MediaFormat
 import android.media.MediaFormat.*
 import android.view.Surface
@@ -17,7 +18,9 @@ class VideoRenderer(
         private val extraRotation: Int, // any extra rotation in TranscoderOptions
         private val targetFormat: MediaFormat,
         flipY: Boolean = false,
-        private val isThumbnailer:Boolean = false
+        private val isThumbnailer: Boolean = false,
+        private val getTargetTs: (() -> Long)? = null
+
 ): Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
 
     private val log = Logger("VideoRenderer")
@@ -97,7 +100,8 @@ class VideoRenderer(
             state.value.release(false)
             State.Eos(0L)
         } else {
-            if (isThumbnailer || frameDropper.shouldRender(state.value.timeUs)) {
+            if ((isThumbnailer && shouldRenderThumbnail(state.value.timeUs, getTargetTs?.invoke() ?: -1))
+                || frameDropper.shouldRender(state.value.timeUs)) {
                 state.value.release(true)
                 frameDrawer.drawFrame()
                 State.Ok(state.value.timeUs)
@@ -106,6 +110,15 @@ class VideoRenderer(
                 State.Wait
             }
         }
+    }
+
+    private fun shouldRenderThumbnail(timeUs: Long, target: Long): Boolean {
+        if (timeUs >= target) {
+            log.i("Renderer: Rendering $timeUs : target: $target")
+        } else {
+            log.i("Renderer: Skipping $timeUs : target: $target")
+        }
+        return timeUs >= target
     }
 
     override fun release() {
