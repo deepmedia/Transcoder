@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught", "UnnecessaryAbstractClass")
+
 package com.otaliastudios.transcoder.internal.transcode
 
 import android.media.MediaFormat
@@ -23,33 +25,35 @@ abstract class TranscodeEngine {
         private val log = Logger("TranscodeEngine")
 
         private fun Throwable.isInterrupted(): Boolean {
-            if (this is InterruptedException) return true
-            if (this == this.cause) return false
-            return this.cause?.isInterrupted() ?: false
+            return when {
+                this is InterruptedException -> true
+                this == this.cause -> false
+                else -> this.cause?.isInterrupted() ?: false
+            }
         }
 
         @JvmStatic
         fun transcode(
             options: TranscoderOptions,
             function: ((TrackType, DataSink, Codecs, MediaFormat) -> Pipeline)?,
-            ) {
+        ) {
             log.i("transcode(): called...")
             var engine: TranscodeEngine? = null
             val dispatcher = TranscodeDispatcher(options)
             try {
                 engine = DefaultTranscodeEngine(
-                        dataSources = DataSources(options),
-                        dataSink = options.dataSink,
-                        strategies = trackMapOf(
-                                video = options.videoTrackStrategy,
-                                audio = options.audioTrackStrategy
-                        ),
-                        validator = options.validator,
-                        videoRotation = options.videoRotation,
-                        interpolator = options.timeInterpolator,
-                        audioStretcher = options.audioStretcher,
-                        audioResampler = options.audioResampler,
-                        pipelineFactory = function
+                    dataSources = DataSources(options),
+                    dataSink = options.dataSink,
+                    strategies = trackMapOf(
+                        video = options.videoTrackStrategy,
+                        audio = options.audioTrackStrategy
+                    ),
+                    validator = options.validator,
+                    videoRotation = options.videoRotation,
+                    interpolator = options.timeInterpolator,
+                    audioStretcher = options.audioStretcher,
+                    audioResampler = options.audioResampler,
+                    pipelineFactory = function
                 )
                 if (!engine.validate()) {
                     dispatcher.dispatchSuccess(Transcoder.SUCCESS_NOT_NEEDED)

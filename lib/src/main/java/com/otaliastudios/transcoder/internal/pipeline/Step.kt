@@ -6,11 +6,11 @@ interface Channel {
 }
 
 interface Step<
-        Input: Any,
-        InputChannel: Channel,
-        Output: Any,
-        OutputChannel: Channel
-> {
+    Input : Any,
+    InputChannel : Channel,
+    Output : Any,
+    OutputChannel : Channel
+    > {
     val channel: InputChannel
 
     fun initialize(next: OutputChannel) = Unit

@@ -1,13 +1,20 @@
+@file:Suppress("ReturnCount")
+
 package com.otaliastudios.transcoder.internal.audio
 
 import android.media.MediaFormat
-import android.media.MediaFormat.*
+import android.media.MediaFormat.KEY_CHANNEL_COUNT
+import android.media.MediaFormat.KEY_SAMPLE_RATE
 import android.view.Surface
 import com.otaliastudios.transcoder.internal.audio.remix.AudioRemixer
-import com.otaliastudios.transcoder.internal.codec.*
-import com.otaliastudios.transcoder.internal.pipeline.*
+import com.otaliastudios.transcoder.internal.codec.DecoderChannel
+import com.otaliastudios.transcoder.internal.codec.DecoderData
+import com.otaliastudios.transcoder.internal.codec.DecoderTimerData
+import com.otaliastudios.transcoder.internal.codec.EncoderChannel
+import com.otaliastudios.transcoder.internal.codec.EncoderData
+import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
+import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.utils.Logger
-import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.resample.AudioResampler
 import com.otaliastudios.transcoder.stretch.AudioStretcher
 import java.util.concurrent.atomic.AtomicInteger
@@ -16,13 +23,13 @@ import kotlin.math.floor
 
 /**
  * Performs audio rendering, from decoder output to encoder input, applying sample rate conversion,
- * remixing, stretching. TODO: With some extra work this could be split in different steps.
+ * remixing, stretching.
  */
 class AudioEngine(
-        private val stretcher: AudioStretcher,
-        private val resampler: AudioResampler,
-        private val targetFormat: MediaFormat
-): QueuedStep<DecoderData, DecoderChannel, EncoderData, EncoderChannel>(), DecoderChannel {
+    private val stretcher: AudioStretcher,
+    private val resampler: AudioResampler,
+    private val targetFormat: MediaFormat
+) : QueuedStep<DecoderData, DecoderChannel, EncoderData, EncoderChannel>(), DecoderChannel {
 
     companion object {
         private val ID = AtomicInteger(0)
@@ -73,7 +80,7 @@ class AudioEngine(
         }
         val outBuffer = outBytes.asShortBuffer()
         return chunks.drain(
-                eos = State.Eos(EncoderData(outBytes, outId, 0))
+            eos = State.Eos(EncoderData(outBytes, outId, 0))
         ) { inBuffer, timeUs, stretch ->
             val outSize = outBuffer.remaining()
             val inSize = inBuffer.remaining()
@@ -104,9 +111,12 @@ class AudioEngine(
 
             // Resample
             resampler.resample(
-                    remixBuffer, rawFormat.sampleRate,
-                    outBuffer, targetFormat.sampleRate,
-                    targetFormat.channels)
+                remixBuffer,
+                rawFormat.sampleRate,
+                outBuffer,
+                targetFormat.sampleRate,
+                targetFormat.channels
+            )
             outBuffer.flip()
 
             // Adjust position and dispatch.
@@ -114,7 +124,7 @@ class AudioEngine(
             outBytes.limit(outBuffer.limit() * BYTES_PER_SHORT)
             outBytes.position(outBuffer.position() * BYTES_PER_SHORT)
 
-            log.v("Drain: ts: ${timeUs}  size: ${outBuffer.limit()}")
+            log.v("Drain: ts: $timeUs  size: ${outBuffer.limit()}")
             State.Ok(EncoderData(outBytes, outId, timeUs))
         }
     }

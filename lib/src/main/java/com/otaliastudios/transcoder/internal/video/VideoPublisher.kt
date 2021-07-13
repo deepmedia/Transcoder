@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.otaliastudios.transcoder.internal.video
 
 import android.opengl.EGL14
@@ -9,8 +11,7 @@ import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.pipeline.Step
 
-
-class VideoPublisher: Step<Long, Channel, EncoderData, EncoderChannel> {
+class VideoPublisher : Step<Long, Channel, EncoderData, EncoderChannel> {
 
     override val channel = Channel
 
@@ -24,12 +25,12 @@ class VideoPublisher: Step<Long, Channel, EncoderData, EncoderChannel> {
     }
 
     override fun step(state: State.Ok<Long>, fresh: Boolean): State<EncoderData> {
-        if (state is State.Eos) {
-            return State.Eos(EncoderData.Empty)
+        return if (state is State.Eos) {
+            State.Eos(EncoderData.Empty)
         } else {
-            surface.setPresentationTime(state.value * 1000)
+            surface.setPresentationTime(state.value * 1000L)
             surface.swapBuffers()
-            return State.Ok(EncoderData.Empty)
+            State.Ok(EncoderData.Empty)
         }
     }
 

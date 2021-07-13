@@ -1,3 +1,5 @@
+@file:Suppress("ReturnCount")
+
 package com.otaliastudios.transcoder.internal
 
 import android.media.MediaFormat
@@ -21,7 +23,10 @@ class Segments(
 
     fun hasNext(type: TrackType): Boolean {
         if (!sources.has(type)) return false
-        log.v("hasNext($type): segment=${current.getOrNull(type)} lastIndex=${sources.getOrNull(type)?.lastIndex} canAdvance=${current.getOrNull(type)?.canAdvance()}")
+        log.v(
+            "hasNext($type): segment=${current.getOrNull(type)} lastIndex=${sources.getOrNull(type)?.lastIndex}" +
+                " canAdvance=${current.getOrNull(type)?.canAdvance()}"
+        )
         val segment = current.getOrNull(type) ?: return true // not started
         val lastIndex = sources.getOrNull(type)?.lastIndex ?: return false // no track!
         return segment.canAdvance() || segment.index < lastIndex
@@ -89,15 +94,15 @@ class Segments(
         // who check it during pipeline init.
         currentIndex[type] = index
         val pipeline = factory(
-                type,
-                index,
-                tracks.all[type],
-                tracks.outputFormats[type]
+            type,
+            index,
+            tracks.all[type],
+            tracks.outputFormats[type]
         )
         return Segment(
-                type = type,
-                index = index,
-                pipeline = pipeline
+            type = type,
+            index = index,
+            pipeline = pipeline
         ).also {
             current[type] = it
         }

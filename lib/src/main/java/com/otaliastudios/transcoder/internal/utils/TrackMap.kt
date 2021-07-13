@@ -54,4 +54,3 @@ private class DefaultTrackMap<T>(video: T?, audio: T?) : MutableTrackMap<T> {
         map[type] = value
     }
 }
-

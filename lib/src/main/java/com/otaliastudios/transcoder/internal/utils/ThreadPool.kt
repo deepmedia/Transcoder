@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.otaliastudios.transcoder.internal.utils
 
 import java.util.concurrent.LinkedBlockingQueue
@@ -15,15 +17,16 @@ internal object ThreadPool {
      */
     @JvmStatic
     val executor = ThreadPoolExecutor(
-            Runtime.getRuntime().availableProcessors() + 1,
-            Runtime.getRuntime().availableProcessors() + 1,
-            60,
-            TimeUnit.SECONDS,
-            LinkedBlockingQueue(),
-            object : ThreadFactory {
-                private val count = AtomicInteger(1)
-                override fun newThread(r: Runnable): Thread {
-                    return Thread(r, "TranscoderThread #" + count.getAndIncrement())
-                }
-            })
+        Runtime.getRuntime().availableProcessors() + 1,
+        Runtime.getRuntime().availableProcessors() + 1,
+        60,
+        TimeUnit.SECONDS,
+        LinkedBlockingQueue(),
+        object : ThreadFactory {
+            private val count = AtomicInteger(1)
+            override fun newThread(r: Runnable): Thread {
+                return Thread(r, "TranscoderThread #" + count.getAndIncrement())
+            }
+        }
+    )
 }

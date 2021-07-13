@@ -1,13 +1,18 @@
 package com.otaliastudios.transcoder.internal.codec
 
-import android.media.MediaCodec.*
+import android.media.MediaCodec
+import android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM
+import android.media.MediaCodec.BUFFER_FLAG_SYNC_FRAME
+import android.media.MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED
+import android.media.MediaCodec.INFO_OUTPUT_FORMAT_CHANGED
+import android.media.MediaCodec.INFO_TRY_AGAIN_LATER
+import android.media.MediaCodec.createDecoderByType
 import android.media.MediaFormat
 import android.view.Surface
 import com.otaliastudios.transcoder.common.trackType
 import com.otaliastudios.transcoder.internal.data.ReaderChannel
 import com.otaliastudios.transcoder.internal.data.ReaderData
 import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers
-import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
 import com.otaliastudios.transcoder.internal.pipeline.State
@@ -15,14 +20,12 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.properties.Delegates
 import kotlin.properties.Delegates.observable
 
-
 open class DecoderData(
-        val buffer: ByteBuffer,
-        val timeUs: Long,
-        val release: (render: Boolean) -> Unit
+    val buffer: ByteBuffer,
+    val timeUs: Long,
+    val release: (render: Boolean) -> Unit
 )
 
 interface DecoderChannel : Channel {
@@ -31,8 +34,8 @@ interface DecoderChannel : Channel {
 }
 
 class Decoder(
-        private val format: MediaFormat, // source.getTrackFormat(track)
-        continuous: Boolean, // relevant if the source sends no-render chunks. should we compensate or not?
+    private val format: MediaFormat, // source.getTrackFormat(track)
+    continuous: Boolean, // relevant if the source sends no-render chunks. should we compensate or not?
 ) : QueuedStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(), ReaderChannel {
 
     companion object {
@@ -44,7 +47,7 @@ class Decoder(
 
     private val codec = createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
     private val buffers by lazy { MediaCodecBuffers(codec) }
-    private var info = BufferInfo()
+    private var info = MediaCodec.BufferInfo()
     private val dropper = DecoderDropper(continuous)
 
     private var dequeuedInputs by observable(0) { _, _, _ -> printDequeued() }
@@ -95,7 +98,10 @@ class Decoder(
                 State.Wait
             }
             INFO_OUTPUT_FORMAT_CHANGED -> {
-                log.i("drain(): got INFO_OUTPUT_FORMAT_CHANGED, handling format and retrying. format=${codec.outputFormat}")
+                log.i(
+                    "drain(): got INFO_OUTPUT_FORMAT_CHANGED," +
+                        " handling format and retrying. format=${codec.outputFormat}"
+                )
                 next.handleRawFormat(codec.outputFormat)
                 State.Retry
             }

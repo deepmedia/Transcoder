@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.otaliastudios.transcoder.internal.thumbnails
 
 import android.media.MediaFormat
@@ -29,11 +31,10 @@ import kotlinx.coroutines.isActive
 class DefaultThumbnailsEngine(
     private val dataSources: DataSources,
     private val rotation: Int,
-    resizer: Resizer,
-    requests: List<ThumbnailRequest>
+    resizer: Resizer
 ) : ThumbnailsEngine() {
 
-    private var fetch: Boolean = false
+    private var shouldSeek = true
     private var finish = false
     private val log = Logger("ThumbnailsEngine")
 
@@ -46,7 +47,10 @@ class DefaultThumbnailsEngine(
                 .addResizer(resizer)
                 .build(),
             audio = RemoveTrackStrategy()
-        ), dataSources, rotation, true
+        ),
+        dataSources,
+        rotation,
+        true
     )
 
     private val segments = Segments(dataSources, tracks, ::createPipeline, false)
@@ -63,9 +67,12 @@ class DefaultThumbnailsEngine(
         val localizedUs: Long
     ) {
         var actualLocalizedUs: Long = localizedUs
+        override fun toString(): String {
+            return positionUs.toString()
+        }
     }
 
-    private var stubs = mutableListOf<Stub>()
+    private val stubs = ArrayDeque<Stub>()
 
     private fun createPipeline(
         type: TrackType,
@@ -73,28 +80,32 @@ class DefaultThumbnailsEngine(
         status: TrackStatus,
         outputFormat: MediaFormat
     ): Pipeline {
-
         val source = dataSources[type][index]
-//            .forcingEos {
-//            stubs.isEmpty() && finish
-//        }
         return Pipeline.build("Thumbnails") {
-            Seeker(source, fetchPositions, shouldFetch) { it == stubs.firstOrNull()?.localizedUs } +
-                    Reader(source, type) +
-                    Decoder(source.getTrackFormat(type)!!, continuous = false) +
-                    VideoRenderer(source.orientation, rotation, outputFormat, flipY = true, true) {
-                        stubs.firstOrNull()?.positionUs ?: -1
-                    } +
-                    VideoSnapshots(outputFormat, fetchPositions, 500 * 1000) { pos, bitmap ->
-                        val stub = stubs.removeFirst()
-                        stub.actualLocalizedUs = pos
-                        log.i("Got snapshot. positionUs=${stub.positionUs} " +
-                                "localizedUs=${stub.localizedUs} " +
-                                "actualLocalizedUs=${stub.actualLocalizedUs} " +
-                                "deltaUs=${stub.localizedUs - stub.actualLocalizedUs}")
-                        val thumbnail = Thumbnail(stub.request, stub.positionUs, bitmap)
-                        progress(thumbnail)
-                    }
+            Seeker(source, fetchPosition) {
+                shouldSeek.also {
+                    shouldSeek = false
+                }
+                //                log.i("Seeker state check: $it :$stubs")
+            } +
+                Reader(source, type) +
+                Decoder(source.getTrackFormat(type)!!, continuous = false) +
+                VideoRenderer(source.orientation, rotation, outputFormat, flipY = true, true) {
+                    stubs.firstOrNull()?.positionUs ?: -1
+                } +
+                VideoSnapshots(outputFormat, fetchPosition, snapshotAccuracyUs) { pos, bitmap ->
+                    shouldSeek = true
+                    val stub = stubs.removeFirst()
+                    stub.actualLocalizedUs = pos
+                    log.i(
+                        "Got snapshot. positionUs=${stub.positionUs} " +
+                            "localizedUs=${stub.localizedUs} " +
+                            "actualLocalizedUs=${stub.actualLocalizedUs} " +
+                            "deltaUs=${stub.localizedUs - stub.actualLocalizedUs}"
+                    )
+                    val thumbnail = Thumbnail(stub.request, stub.positionUs, bitmap)
+                    progress(thumbnail)
+                }
         }
     }
 
@@ -110,6 +121,7 @@ class DefaultThumbnailsEngine(
             val advanced = segments.next(TrackType.VIDEO)?.advance() ?: false
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
             if (completed || stubs.isEmpty()) {
+                log.i("loop broken $stubs")
                 break
             } else if (!advanced) {
                 delay(WAIT_MS)
@@ -122,6 +134,17 @@ class DefaultThumbnailsEngine(
         segments.release()
     }
 
+    override suspend fun removePosition(positionUs: Long) {
+        if (positionUs == stubs.firstOrNull()?.positionUs) {
+            return
+        }
+        val stub = stubs.find { it.positionUs == positionUs }
+        if (stub != null) {
+            log.i("removePosition Match: $positionUs :$stubs")
+            stubs.remove(stub)
+        }
+    }
+
     private fun updatePositions(requests: List<ThumbnailRequest>, index: Int) {
         val positions = requests.flatMap { request ->
             val duration = timer.totalDurationUs
@@ -129,21 +152,15 @@ class DefaultThumbnailsEngine(
         }.sortedBy { it.first }
         log.i("Creating pipeline #$index. absoluteUs=${positions.joinToString { it.first.toString() }}")
 
-        stubs.addAll(positions.mapNotNull { (positionUs, request) ->
-            val localizedUs = timer.localize(TrackType.VIDEO, index, positionUs)
-            localizedUs?.let { Stub(request, positionUs, localizedUs) }
-        }.toMutableList())
-        fetch = true
+        stubs.addAll(
+            positions.mapNotNull { (positionUs, request) ->
+                val localizedUs = timer.localize(TrackType.VIDEO, index, positionUs)
+                localizedUs?.let { Stub(request, positionUs, localizedUs) }
+            }.toMutableList()
+        )
     }
 
-    private val shouldFetch:() -> Boolean = {
-        fetch.also {
-            fetch = false
-        }
-    }
-    private val fetchPositions: () -> List<Long> = {
-        stubs.map { it.localizedUs }
-    }
+    private val fetchPosition: () -> Long? = { stubs.firstOrNull()?.localizedUs }
 
     override fun cleanup() {
         runCatching { segments.release() }
@@ -151,7 +168,8 @@ class DefaultThumbnailsEngine(
     }
 
     companion object {
-        private val WAIT_MS = 10L
-        private val PROGRESS_LOOPS = 10L
+        private const val WAIT_MS = 10L
+        private const val PROGRESS_LOOPS = 10L
+        private const val snapshotAccuracyUs = 500 * 1000L
     }
 }

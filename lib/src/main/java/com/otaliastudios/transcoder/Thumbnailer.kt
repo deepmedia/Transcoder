@@ -1,11 +1,11 @@
 package com.otaliastudios.transcoder
 
-//import com.otaliastudios.transcoder.internal.thumbnails.ThumbnailsEngine
-//import com.otaliastudios.transcoder.internal.utils.ThreadPool
-//import java.util.concurrent.Callable
-//import java.util.concurrent.Future
+// import com.otaliastudios.transcoder.internal.thumbnails.ThumbnailsEngine
+// import com.otaliastudios.transcoder.internal.utils.ThreadPool
+// import java.util.concurrent.Callable
+// import java.util.concurrent.Future
 //
-//class Thumbnailer private constructor() {
+// class Thumbnailer private constructor() {
 //
 //    fun thumbnails(options: ThumbnailerOptions): Future<Void> {
 //        return ThreadPool.executor.submit(Callable {
@@ -22,4 +22,4 @@ package com.otaliastudios.transcoder
 //        // Just for consistency with Transcoder class.
 //        fun getInstance() = Thumbnailer()
 //    }
-//}
+// }

@@ -1,19 +1,12 @@
 package com.otaliastudios.transcoder.internal
 
 import android.media.MediaCodec
-import android.media.MediaCodecInfo
 import android.media.MediaFormat
-import android.os.Build
-import android.util.Log
 import android.view.Surface
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
-import com.otaliastudios.transcoder.internal.media.MediaFormatProvider
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
-import com.otaliastudios.transcoder.internal.utils.trackMapOf
-import com.otaliastudios.transcoder.source.DataSource
-import com.otaliastudios.transcoder.strategy.TrackStrategy
 
 /**
  * Encoders are shared between segments. This is not strictly needed but it is more efficient
@@ -23,9 +16,9 @@ import com.otaliastudios.transcoder.strategy.TrackStrategy
  * data to MediaMuxer / MPEG4Writer.
  */
 class Codecs(
-        private val sources: DataSources,
-        private val tracks: Tracks,
-        private val current: TrackMap<Int>
+    private val sources: DataSources,
+    private val tracks: Tracks,
+    private val current: TrackMap<Int>
 ) {
 
     private val log = Logger("Codecs")

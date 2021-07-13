@@ -8,8 +8,8 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-class Bridge(private val format: MediaFormat)
-    : Step<ReaderData, ReaderChannel, WriterData, WriterChannel>, ReaderChannel {
+class Bridge(private val format: MediaFormat) :
+    Step<ReaderData, ReaderChannel, WriterData, WriterChannel>, ReaderChannel {
 
     private val log = Logger("Bridge")
     private val bufferSize = format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE)

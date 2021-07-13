@@ -13,8 +13,8 @@ class ShortBuffers {
         var current = map[name]
         if (current == null || current.capacity() < size) {
             current = ByteBuffer.allocateDirect(size * BYTES_PER_SHORT)
-                    .order(ByteOrder.nativeOrder())
-                    .asShortBuffer()
+                .order(ByteOrder.nativeOrder())
+                .asShortBuffer()
         }
         current!!.clear()
         current.limit(size)

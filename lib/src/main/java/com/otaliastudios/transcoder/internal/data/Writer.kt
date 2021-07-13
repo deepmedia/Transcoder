@@ -11,10 +11,10 @@ import com.otaliastudios.transcoder.sink.DataSink
 import java.nio.ByteBuffer
 
 data class WriterData(
-        val buffer: ByteBuffer,
-        val timeUs: Long,
-        val flags: Int,
-        val release: () -> Unit
+    val buffer: ByteBuffer,
+    val timeUs: Long,
+    val flags: Int,
+    val release: () -> Unit
 )
 
 interface WriterChannel : Channel {
@@ -22,8 +22,8 @@ interface WriterChannel : Channel {
 }
 
 class Writer(
-        private val sink: DataSink,
-        private val track: TrackType
+    private val sink: DataSink,
+    private val track: TrackType
 ) : Step<WriterData, WriterChannel, Unit, Channel>, WriterChannel {
 
     override val channel = this
@@ -40,12 +40,12 @@ class Writer(
         val (buffer, timestamp, flags) = state.value
         val eos = state is State.Eos
         info.set(
-                buffer.position(),
-                buffer.remaining(),
-                timestamp,
-                if (eos) {
-                    flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM
-                } else flags
+            buffer.position(),
+            buffer.remaining(),
+            timestamp,
+            if (eos) {
+                flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM
+            } else flags
         )
         sink.writeTrack(track, buffer, info)
         state.value.release()

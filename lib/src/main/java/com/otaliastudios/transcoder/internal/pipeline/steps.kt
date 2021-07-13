@@ -1,20 +1,20 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
 abstract class BaseStep<
-        Input: Any,
-        InputChannel: Channel,
-        Output: Any,
-        OutputChannel: Channel
-> : Step<Input, InputChannel, Output, OutputChannel> {
+    Input : Any,
+    InputChannel : Channel,
+    Output : Any,
+    OutputChannel : Channel
+    > : Step<Input, InputChannel, Output, OutputChannel> {
     protected lateinit var next: OutputChannel
-    private set
+        private set
 
     override fun initialize(next: OutputChannel) {
         this.next = next
     }
 }
 
-abstract class DataStep<D: Any, C: Channel> : Step<D, C, D, C> {
+abstract class DataStep<D : Any, C : Channel> : Step<D, C, D, C> {
     override lateinit var channel: C
     override fun initialize(next: C) {
         channel = next
@@ -22,11 +22,11 @@ abstract class DataStep<D: Any, C: Channel> : Step<D, C, D, C> {
 }
 
 abstract class QueuedStep<
-        Input: Any,
-        InputChannel: Channel,
-        Output: Any,
-        OutputChannel: Channel
-> : BaseStep<Input, InputChannel, Output, OutputChannel>() {
+    Input : Any,
+    InputChannel : Channel,
+    Output : Any,
+    OutputChannel : Channel
+    > : BaseStep<Input, InputChannel, Output, OutputChannel>() {
 
     protected abstract fun enqueue(data: Input)
 

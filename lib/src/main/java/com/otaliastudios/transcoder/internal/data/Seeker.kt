@@ -8,30 +8,20 @@ import com.otaliastudios.transcoder.source.DataSource
 
 class Seeker(
     private val source: DataSource,
-    private val fetchPositions: () ->  List<Long>,
-    private val shouldFetch:() -> Boolean,
-    private val seek: (Long) -> Boolean
+    private val fetchPosition: () -> Long?,
+    private val shouldSeek: (Long) -> Boolean
 ) : BaseStep<Unit, Channel, Unit, Channel>() {
 
     private val log = Logger("Seeker")
     override val channel = Channel
 
-    private val positions:MutableList<Long> = mutableListOf()
-
     override fun step(state: State.Ok<Unit>, fresh: Boolean): State<Unit> {
-        if(positions.isEmpty() && shouldFetch()) {
-            positions.addAll(fetchPositions())
+        val position = fetchPosition()
+        if (position != null && shouldSeek(position)) {
+            log.i("Seeking to next position $position")
+            source.seekTo(position)
         }
 
-        if (positions.isNotEmpty()) {
-            if (seek(positions.first())) {
-                log.i("Seeking to next position ${positions.first()}")
-                val next = positions.removeFirst()
-                source.seekTo(next)
-            } else {
-                // log.v("Not seeking to next Request. head=${positions.first()}")
-            }
-        }
         return state
     }
 }

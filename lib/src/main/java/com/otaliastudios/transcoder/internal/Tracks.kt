@@ -11,10 +11,10 @@ import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.strategy.TrackStrategy
 
 class Tracks(
-        strategies: TrackMap<TrackStrategy>,
-        sources: DataSources,
-        videoRotation: Int,
-        forceCompression: Boolean
+    strategies: TrackMap<TrackStrategy>,
+    sources: DataSources,
+    videoRotation: Int,
+    forceCompression: Boolean
 ) {
 
     private val log = Logger("Tracks")
@@ -27,8 +27,8 @@ class Tracks(
         val (audioFormat, audioStatus) = resolveTrack(TrackType.AUDIO, strategies.audio, sources.audioOrNull())
         val (videoFormat, videoStatus) = resolveTrack(TrackType.VIDEO, strategies.video, sources.videoOrNull())
         all = trackMapOf(
-                video = resolveVideoStatus(videoStatus, forceCompression, videoRotation),
-                audio = resolveAudioStatus(audioStatus, forceCompression)
+            video = resolveVideoStatus(videoStatus, forceCompression, videoRotation),
+            audio = resolveAudioStatus(audioStatus, forceCompression)
         )
         outputFormats = trackMapOf(video = videoFormat, audio = audioFormat)
         log.i("init: videoStatus=$videoStatus, resolvedVideoStatus=${all.video}, videoFormat=$videoFormat")
@@ -36,8 +36,8 @@ class Tracks(
     }
 
     val active: TrackMap<TrackStatus> = trackMapOf(
-            video = all.video.takeIf { it.isTranscoding },
-            audio = all.audio.takeIf { it.isTranscoding }
+        video = all.video.takeIf { it.isTranscoding },
+        audio = all.audio.takeIf { it.isTranscoding }
     )
 
     private fun resolveVideoStatus(status: TrackStatus, forceCompression: Boolean, rotation: Int): TrackStatus {
@@ -53,9 +53,9 @@ class Tracks(
     }
 
     private fun resolveTrack(
-            type: TrackType,
-            strategy: TrackStrategy,
-            sources: List<DataSource>? // null or not-empty
+        type: TrackType,
+        strategy: TrackStrategy,
+        sources: List<DataSource>? // null or not-empty
     ): Pair<MediaFormat, TrackStatus> {
         if (sources == null) {
             return MediaFormat() to TrackStatus.ABSENT

@@ -8,7 +8,6 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.source.DataSource
 import java.nio.ByteBuffer
 
-
 data class ReaderData(val chunk: DataSource.Chunk, val id: Int)
 
 interface ReaderChannel : Channel {
@@ -16,8 +15,8 @@ interface ReaderChannel : Channel {
 }
 
 class Reader(
-        private val source: DataSource,
-        private val track: TrackType
+    private val source: DataSource,
+    private val track: TrackType
 ) : BaseStep<Unit, Channel, ReaderData, ReaderChannel>() {
 
     private val log = Logger("Reader")

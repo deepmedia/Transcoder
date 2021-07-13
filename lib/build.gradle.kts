@@ -21,11 +21,10 @@ android {
     buildTypes["release"].isMinifyEnabled = false
 }
 
-
 dependencies {
     api("com.otaliastudios.opengl:egloo:0.6.0")
     api("androidx.annotation:annotation:1.1.0")
-    api( "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9")
 
     androidTestImplementation("androidx.test:runner:1.3.0")
     androidTestImplementation("androidx.test:rules:1.3.0")

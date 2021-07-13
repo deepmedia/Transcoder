@@ -7,16 +7,16 @@ import com.otaliastudios.transcoder.time.TimeInterpolator
 import java.nio.ByteBuffer
 
 class DecoderTimerData(
-        buffer: ByteBuffer,
-        val rawTimeUs: Long,
-        timeUs: Long,
-        val timeStretch: Double,
-        release: (render: Boolean) -> Unit
+    buffer: ByteBuffer,
+    val rawTimeUs: Long,
+    timeUs: Long,
+    val timeStretch: Double,
+    release: (render: Boolean) -> Unit
 ) : DecoderData(buffer, timeUs, release)
 
 class DecoderTimer(
-        private val track: TrackType,
-        private val interpolator: TimeInterpolator,
+    private val track: TrackType,
+    private val interpolator: TimeInterpolator,
 ) : DataStep<DecoderData, DecoderChannel>() {
 
     private var lastTimeUs: Long? = null
@@ -41,12 +41,14 @@ class DecoderTimer(
         lastTimeUs = timeUs
         lastRawTimeUs = rawTimeUs
 
-        return State.Ok(DecoderTimerData(
+        return State.Ok(
+            DecoderTimerData(
                 buffer = state.value.buffer,
                 rawTimeUs = rawTimeUs,
                 timeUs = timeUs,
                 timeStretch = timeStretch,
                 release = state.value.release
-        ))
+            )
+        )
     }
 }

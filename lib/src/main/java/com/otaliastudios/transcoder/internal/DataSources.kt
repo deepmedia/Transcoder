@@ -5,13 +5,12 @@ import com.otaliastudios.transcoder.TranscoderOptions
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
-import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.source.BlankAudioDataSource
 import com.otaliastudios.transcoder.source.DataSource
 
 class DataSources constructor(
-        videoSources: List<DataSource>,
-        audioSources: List<DataSource>,
+    videoSources: List<DataSource>,
+    audioSources: List<DataSource>,
 ) : TrackMap<List<DataSource>> {
 
     constructor(options: TranscoderOptions) : this(options.videoDataSources, options.audioDataSources)

@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught")
+
 package com.otaliastudios.transcoder.internal.thumbnails
 
 import com.otaliastudios.transcoder.ThumbnailerOptions
@@ -10,15 +12,19 @@ abstract class ThumbnailsEngine {
 
     abstract suspend fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit)
 
+    abstract suspend fun removePosition(positionUs: Long)
+
     abstract fun cleanup()
 
     companion object {
         private val log = Logger("ThumbnailsEngine")
 
         private fun Throwable.isInterrupted(): Boolean {
-            if (this is InterruptedException) return true
-            if (this == this.cause) return false
-            return this.cause?.isInterrupted() ?: false
+            return when {
+                this is InterruptedException -> true
+                this == this.cause -> false
+                else -> this.cause?.isInterrupted() ?: false
+            }
         }
 
         var engine: ThumbnailsEngine? = null
@@ -29,16 +35,15 @@ abstract class ThumbnailsEngine {
             log.i("thumbnails(): called...")
             dispatcher = ThumbnailsDispatcher(options)
 
-             engine = DefaultThumbnailsEngine(
+            engine = DefaultThumbnailsEngine(
                 dataSources = DataSources(options),
                 rotation = options.rotation,
-                resizer = options.resizer,
-                requests = options.thumbnailRequests
+                resizer = options.resizer
             )
             return engine
         }
     }
-    suspend fun queue(list: List<ThumbnailRequest>){
+    suspend fun queue(list: List<ThumbnailRequest>) {
         engine?.queueThumbnails(list) {
             dispatcher.dispatchThumbnail(it)
         }
@@ -57,7 +62,5 @@ abstract class ThumbnailsEngine {
         } finally {
             engine?.cleanup()
         }
-
-
     }
 }

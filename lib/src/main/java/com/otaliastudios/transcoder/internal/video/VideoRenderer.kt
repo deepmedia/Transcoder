@@ -1,8 +1,11 @@
+@file:Suppress("MagicNumber")
+
 package com.otaliastudios.transcoder.internal.video
 
-import android.graphics.Bitmap
 import android.media.MediaFormat
-import android.media.MediaFormat.*
+import android.media.MediaFormat.KEY_FRAME_RATE
+import android.media.MediaFormat.KEY_HEIGHT
+import android.media.MediaFormat.KEY_WIDTH
 import android.view.Surface
 import com.otaliastudios.transcoder.internal.codec.DecoderChannel
 import com.otaliastudios.transcoder.internal.codec.DecoderData
@@ -12,16 +15,15 @@ import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.pipeline.Step
 import com.otaliastudios.transcoder.internal.utils.Logger
 
-
 class VideoRenderer(
-        private val sourceRotation: Int, // intrinsic source rotation
-        private val extraRotation: Int, // any extra rotation in TranscoderOptions
-        private val targetFormat: MediaFormat,
-        flipY: Boolean = false,
-        private val isThumbnailer: Boolean = false,
-        private val getTargetTs: (() -> Long)? = null
+    private val sourceRotation: Int, // intrinsic source rotation
+    private val extraRotation: Int, // any extra rotation in TranscoderOptions
+    private val targetFormat: MediaFormat,
+    flipY: Boolean = false,
+    private val isThumbnailer: Boolean = false,
+    private val getTargetTs: (() -> Long)? = null
 
-): Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
+) : Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
 
     private val log = Logger("VideoRenderer")
 
@@ -74,8 +76,16 @@ class VideoRenderer(
         val sourceWidth = sourceFormat.getInteger(KEY_WIDTH).toFloat()
         val sourceHeight = sourceFormat.getInteger(KEY_HEIGHT).toFloat()
         val sourceRatio = sourceWidth / sourceHeight
-        val targetWidth = (if (flip) targetFormat.getInteger(KEY_HEIGHT) else targetFormat.getInteger(KEY_WIDTH)).toFloat()
-        val targetHeight = (if (flip) targetFormat.getInteger(KEY_WIDTH) else targetFormat.getInteger(KEY_HEIGHT)).toFloat()
+        val targetWidth = (
+            if (flip) targetFormat.getInteger(KEY_HEIGHT) else {
+                targetFormat.getInteger(KEY_WIDTH)
+            }
+            ).toFloat()
+        val targetHeight = (
+            if (flip) targetFormat.getInteger(KEY_WIDTH) else {
+                targetFormat.getInteger(KEY_HEIGHT)
+            }
+            ).toFloat()
         val targetRatio = targetWidth / targetHeight
         var scaleX = 1f
         var scaleY = 1f
@@ -87,9 +97,7 @@ class VideoRenderer(
         frameDrawer.setScale(scaleX, scaleY)
 
         // Create the frame dropper, now that we know the source FPS and the target FPS.
-        frameDropper = FrameDropper(
-                sourceFormat.getInteger(KEY_FRAME_RATE),
-                targetFormat.getInteger(KEY_FRAME_RATE))
+        frameDropper = frameDropper(sourceFormat.getInteger(KEY_FRAME_RATE), targetFormat.getInteger(KEY_FRAME_RATE))
         return frameDrawer.surface
     }
 
@@ -100,8 +108,9 @@ class VideoRenderer(
             state.value.release(false)
             State.Eos(0L)
         } else {
-            if ((isThumbnailer && shouldRenderThumbnail(state.value.timeUs, getTargetTs?.invoke() ?: -1))
-                || frameDropper.shouldRender(state.value.timeUs)) {
+            if ((isThumbnailer && shouldRenderThumbnail(state.value.timeUs, getTargetTs?.invoke() ?: -1)) ||
+                frameDropper.shouldRender(state.value.timeUs)
+            ) {
                 state.value.release(true)
                 frameDrawer.drawFrame()
                 State.Ok(state.value.timeUs)

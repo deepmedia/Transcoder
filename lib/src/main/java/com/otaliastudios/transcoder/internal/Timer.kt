@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.otaliastudios.transcoder.internal
 
 import com.otaliastudios.transcoder.common.TrackType
@@ -7,10 +9,10 @@ import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.time.TimeInterpolator
 
 class Timer(
-        private val interpolator: TimeInterpolator,
-        private val sources: DataSources,
-        private val tracks: Tracks,
-        private val current: TrackMap<Int>
+    private val interpolator: TimeInterpolator,
+    private val sources: DataSources,
+    private val tracks: Tracks,
+    private val current: TrackMap<Int>
 ) {
 
     private val log = Logger("Timer")
@@ -60,12 +62,10 @@ class Timer(
     fun localize(type: TrackType, index: Int, positionUs: Long): Long? {
         if (!tracks.active.has(type)) return null
         val behindUs = sources[type]
-                .filterIndexed { i, _ -> i < index }
-                .durationUs(-1)
+            .filterIndexed { i, _ -> i < index }
+            .durationUs(-1)
         val localizedUs = positionUs - behindUs
-        if (localizedUs < 0L) return null
-        if (localizedUs > sources[type][index].durationUs) return null
-        return localizedUs
+        return if (localizedUs < 0L || localizedUs > sources[type][index].durationUs) null else localizedUs
     }
 
     fun interpolator(type: TrackType, index: Int) = interpolators.getOrPut(type to index) {

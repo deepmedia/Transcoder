@@ -1,10 +1,15 @@
+@file:Suppress("MagicNumber")
+
 package com.otaliastudios.transcoder.internal.codec
 
 import android.media.MediaCodec
-import android.media.MediaCodec.*
+import android.media.MediaCodec.BUFFER_FLAG_CODEC_CONFIG
+import android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM
+import android.media.MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED
+import android.media.MediaCodec.INFO_OUTPUT_FORMAT_CHANGED
+import android.media.MediaCodec.INFO_TRY_AGAIN_LATER
 import android.view.Surface
 import com.otaliastudios.transcoder.common.TrackType
-import com.otaliastudios.transcoder.common.trackType
 import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.data.WriterChannel
 import com.otaliastudios.transcoder.internal.data.WriterData
@@ -16,13 +21,12 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.properties.Delegates
 import kotlin.properties.Delegates.observable
 
 data class EncoderData(
-        val buffer: ByteBuffer?, // If present, it must have correct position/remaining!
-        val id: Int,
-        val timeUs: Long
+    val buffer: ByteBuffer?, // If present, it must have correct position/remaining!
+    val id: Int,
+    val timeUs: Long
 ) {
     companion object { val Empty = EncoderData(null, 0, 0L) }
 }
@@ -33,17 +37,17 @@ interface EncoderChannel : Channel {
 }
 
 class Encoder(
-        private val codec: MediaCodec,
-        override val surface: Surface?,
-        ownsCodecStart: Boolean,
-        private val ownsCodecStop: Boolean,
+    private val codec: MediaCodec,
+    override val surface: Surface?,
+    ownsCodecStart: Boolean,
+    private val ownsCodecStop: Boolean,
 ) : QueuedStep<EncoderData, EncoderChannel, WriterData, WriterChannel>(), EncoderChannel {
 
     constructor(codecs: Codecs, type: TrackType) : this(
-            codecs.encoders[type].first,
-            codecs.encoders[type].second,
-            codecs.ownsEncoderStart[type],
-            codecs.ownsEncoderStop[type]
+        codecs.encoders[type].first,
+        codecs.encoders[type].second,
+        codecs.ownsEncoderStart[type],
+        codecs.ownsEncoderStop[type]
     )
 
     companion object {
@@ -51,7 +55,7 @@ class Encoder(
     }
 
     private val type = if (surface != null) TrackType.VIDEO else TrackType.AUDIO
-    private val log = Logger("Encoder(${type},${ID[type].getAndIncrement()})")
+    private val log = Logger("Encoder($type,${ID[type].getAndIncrement()})")
     private var dequeuedInputs by observable(0) { _, _, _ -> printDequeued() }
     private var dequeuedOutputs by observable(0) { _, _, _ -> printDequeued() }
     private fun printDequeued() {
@@ -62,8 +66,7 @@ class Encoder(
 
     private val buffers by lazy { MediaCodecBuffers(codec) }
 
-    private var info = BufferInfo()
-
+    private var info = MediaCodec.BufferInfo()
 
     init {
         log.i("Encoder: ownsStart=$ownsCodecStart ownsStop=$ownsCodecStop")
@@ -159,7 +162,7 @@ class Encoder(
     }
 
     override fun release() {
-        log.i("release(): ownsStop=$ownsCodecStop dequeuedInputs=${dequeuedInputs} dequeuedOutputs=$dequeuedOutputs")
+        log.i("release(): ownsStop=$ownsCodecStop dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
         if (ownsCodecStop) {
             codec.stop()
         }

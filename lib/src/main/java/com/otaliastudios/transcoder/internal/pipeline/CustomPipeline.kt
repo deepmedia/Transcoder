@@ -25,7 +25,10 @@ class CustomPipeline private constructor(name: String, private val chain: List<A
             if (index < head) return@forEachIndexed
             val fresh = head == 0 || index != head
             state = executeStep(state, step, fresh) ?: run {
-                log.v("execute(): step ${step.name} (#$index/${chain.size}) is waiting. headState=$headState headIndex=$headIndex")
+                log.v(
+                    "execute(): step ${step.name} (#$index/${chain.size}) is waiting." +
+                        " headState=$headState headIndex=$headIndex"
+                )
                 return State.Wait
             }
             // log.v("execute(): executed ${step.name} (#$index/${chain.size}). result=$state")
@@ -56,7 +59,11 @@ class CustomPipeline private constructor(name: String, private val chain: List<A
 
     companion object {
         @Suppress("UNCHECKED_CAST")
-         fun build(name: String, builder: () -> Pipeline.Builder<*, EncoderChannel> = { Pipeline.Builder<EncoderData, EncoderChannel>() }): CustomPipeline {
+        fun build(
+            name: String,
+            builder: () -> Pipeline.Builder<*, EncoderChannel> =
+                { Pipeline.Builder<EncoderData, EncoderChannel>() }
+        ): CustomPipeline {
             return CustomPipeline(name, builder().steps as List<AnyStep>)
         }
     }

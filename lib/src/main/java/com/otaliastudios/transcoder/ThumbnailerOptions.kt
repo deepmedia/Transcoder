@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions", "MagicNumber")
+
 package com.otaliastudios.transcoder
 
 import android.content.Context
@@ -14,16 +16,15 @@ import com.otaliastudios.transcoder.source.FilePathDataSource
 import com.otaliastudios.transcoder.source.UriDataSource
 import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
 import java.io.FileDescriptor
-import java.util.concurrent.Future
 
 @Suppress("unused")
 class ThumbnailerOptions(
-        val dataSources: List<DataSource>,
-        val resizer: Resizer,
-        val rotation: Int,
-        val thumbnailRequests: List<ThumbnailRequest>,
-        val listener: ThumbnailerListener,
-        val listenerHandler: Handler
+    val dataSources: List<DataSource>,
+    val resizer: Resizer,
+    val rotation: Int,
+    val thumbnailRequests: List<ThumbnailRequest>,
+    val listener: ThumbnailerListener?,
+    val listenerHandler: Handler
 ) {
 
     class Builder {
@@ -40,14 +41,14 @@ class ThumbnailerOptions(
             dataSources.add(dataSource)
         }
 
-        fun addDataSource(fileDescriptor: FileDescriptor)
-                = addDataSource(FileDescriptorDataSource(fileDescriptor))
+        fun addDataSource(fileDescriptor: FileDescriptor) =
+            addDataSource(FileDescriptorDataSource(fileDescriptor))
 
-        fun addDataSource(filePath: String)
-                = addDataSource(FilePathDataSource(filePath))
+        fun addDataSource(filePath: String) =
+            addDataSource(FilePathDataSource(filePath))
 
-        fun addDataSource(context: Context, uri: Uri)
-                = addDataSource(UriDataSource(context, uri))
+        fun addDataSource(context: Context, uri: Uri) =
+            addDataSource(UriDataSource(context, uri))
 
         /**
          * Sets the video output strategy. If absent, this defaults to 320x240 images.
@@ -86,26 +87,21 @@ class ThumbnailerOptions(
             require(dataSources.isNotEmpty()) {
                 "At least one data source is required!"
             }
-            require(thumbnailRequests.isNotEmpty()) {
-                "At least one thumbnail request is required!"
-            }
-            val listener = requireNotNull(listener) {
-                "Listener can't be null."
-            }
+
             val listenerHandler = listenerHandler
-                    ?: Handler(Looper.myLooper() ?: Looper.getMainLooper())
+                ?: Handler(Looper.myLooper() ?: Looper.getMainLooper())
             val resizer = if (resizerSet) resizer else ExactResizer(320, 240)
             return ThumbnailerOptions(
-                    dataSources = dataSources.toList(),
-                    resizer = resizer,
-                    rotation = rotation,
-                    thumbnailRequests = thumbnailRequests.toList(),
-                    listener = listener,
-                    listenerHandler = listenerHandler
+                dataSources = dataSources.toList(),
+                resizer = resizer,
+                rotation = rotation,
+                thumbnailRequests = thumbnailRequests.toList(),
+                listener = listener,
+                listenerHandler = listenerHandler
             )
         }
 
-         fun thumbnails(): ThumbnailsEngine? {
+        fun thumbnails(): ThumbnailsEngine? {
             return ThumbnailsEngine.thumbnails(build())
         }
     }

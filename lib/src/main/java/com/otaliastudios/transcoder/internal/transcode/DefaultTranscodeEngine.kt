@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber", "LongParameterList")
+
 package com.otaliastudios.transcoder.internal.transcode
 
 import android.media.MediaFormat
@@ -9,10 +11,10 @@ import com.otaliastudios.transcoder.internal.Segment
 import com.otaliastudios.transcoder.internal.Segments
 import com.otaliastudios.transcoder.internal.Timer
 import com.otaliastudios.transcoder.internal.Tracks
-import com.otaliastudios.transcoder.internal.pipeline.EmptyPipeline
-import com.otaliastudios.transcoder.internal.pipeline.PassThroughPipeline
 import com.otaliastudios.transcoder.internal.pipeline.Pipeline
-import com.otaliastudios.transcoder.internal.pipeline.RegularPipeline
+import com.otaliastudios.transcoder.internal.pipeline.emptyPipeline
+import com.otaliastudios.transcoder.internal.pipeline.passThroughPipeline
+import com.otaliastudios.transcoder.internal.pipeline.regularPipeline
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
 import com.otaliastudios.transcoder.internal.utils.forcingEos
@@ -34,7 +36,7 @@ class DefaultTranscodeEngine(
     private val audioResampler: AudioResampler,
     interpolator: TimeInterpolator,
     private val pipelineFactory: ((TrackType, DataSink, Codecs, MediaFormat) -> Pipeline)?,
-    ) : TranscodeEngine() {
+) : TranscodeEngine() {
 
     private val log = Logger("TranscodeEngine")
 
@@ -76,16 +78,19 @@ class DefaultTranscodeEngine(
             timer.positionUs[type] > timer.totalDurationUs + 100L
         }
         val sink = dataSink.ignoringEos { index < sources.lastIndex }
-        if (pipelineFactory != null)
-            return pipelineFactory.invoke(type, sink, codecs,outputFormat)
+        if (pipelineFactory != null) {
+            return pipelineFactory.invoke(type, sink, codecs, outputFormat)
+        }
 
         return when (status) {
-            TrackStatus.ABSENT -> EmptyPipeline()
-            TrackStatus.REMOVING -> EmptyPipeline()
-            TrackStatus.PASS_THROUGH -> PassThroughPipeline(type, source, sink, interpolator)
-            TrackStatus.COMPRESSING -> RegularPipeline(type,
-                    source, sink, interpolator, outputFormat, codecs,
-                    videoRotation, audioStretcher, audioResampler)
+            TrackStatus.ABSENT -> emptyPipeline()
+            TrackStatus.REMOVING -> emptyPipeline()
+            TrackStatus.PASS_THROUGH -> passThroughPipeline(type, source, sink, interpolator)
+            TrackStatus.COMPRESSING -> regularPipeline(
+                type,
+                source, sink, interpolator, outputFormat, codecs,
+                videoRotation, audioStretcher, audioResampler
+            )
         }
     }
 
@@ -104,7 +109,8 @@ class DefaultTranscodeEngine(
      */
     override fun transcode(progress: (Double) -> Unit) {
         var loop = 0L
-        log.i("transcode(): about to start, " +
+        log.i(
+            "transcode(): about to start, " +
                 "durationUs=${timer.totalDurationUs}, " +
                 "audioUs=${timer.durationUs.audioOrNull()}, " +
                 "videoUs=${timer.durationUs.videoOrNull()}"
@@ -143,9 +149,8 @@ class DefaultTranscodeEngine(
         runCatching { codecs.release() }
     }
 
-
     companion object {
-        private val WAIT_MS = 10L
-        private val PROGRESS_LOOPS = 10L
+        private const val WAIT_MS = 10L
+        private const val PROGRESS_LOOPS = 10L
     }
 }

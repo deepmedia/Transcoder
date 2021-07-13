@@ -4,10 +4,10 @@ import android.util.Log
 import java.nio.ShortBuffer
 
 private data class Chunk(
-        val buffer: ShortBuffer,
-        val timeUs: Long,
-        val timeStretch: Double,
-        val release: () -> Unit
+    val buffer: ShortBuffer,
+    val timeUs: Long,
+    val timeStretch: Double,
+    val release: () -> Unit
 ) {
     companion object {
         val Eos = Chunk(ShortBuffer.allocate(0), 0, 0.0, {})
@@ -26,8 +26,9 @@ class ChunkQueue(private val sampleRate: Int, private val channels: Int) {
     fun isEmpty() = queue.isEmpty()
 
     fun enqueue(buffer: ShortBuffer, timeUs: Long, timeStretch: Double, release: () -> Unit) {
-        if (!buffer.hasRemaining())
+        if (!buffer.hasRemaining()) {
             Log.w("ChunkQueue", "enqueue: " + "buffer is empty")
+        }
 //        require(buffer.hasRemaining())
 
         queue.addLast(Chunk(buffer, timeUs, timeStretch, release))
@@ -48,9 +49,11 @@ class ChunkQueue(private val sampleRate: Int, private val channels: Int) {
         head.buffer.limit(limit)
         if (head.buffer.hasRemaining()) {
             val consumed = size - head.buffer.remaining()
-            queue.addFirst(head.copy(
+            queue.addFirst(
+                head.copy(
                     timeUs = shortsToUs(consumed, sampleRate, channels)
-            ))
+                )
+            )
         } else {
             // buffer consumed!
             head.release()
