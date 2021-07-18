@@ -57,10 +57,6 @@ data class RenderingData(
     val updateTime: () -> Unit
 )
 
-interface RenderingChannel : Channel {
-    fun setDimensions(point: Point)
-}
-
 private fun videoPipeline(
     source: DataSource,
     sink: DataSink,
