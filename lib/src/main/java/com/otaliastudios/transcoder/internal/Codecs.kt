@@ -1,3 +1,5 @@
+@file:Suppress("UnusedPrivateMember")
+
 package com.otaliastudios.transcoder.internal
 
 import android.media.MediaCodec

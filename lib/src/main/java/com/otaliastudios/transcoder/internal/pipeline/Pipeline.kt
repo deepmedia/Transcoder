@@ -83,5 +83,5 @@ class Pipeline private constructor(name: String, private val chain: List<AnyStep
 operator fun <CurrData : Any, CurrChannel : Channel, NewData : Any, NewChannel : Channel>
 Step<Unit, Channel, CurrData, CurrChannel>.plus(other: Step<CurrData, CurrChannel, NewData, NewChannel>):
     Pipeline.Builder<NewData, NewChannel> {
-        return Pipeline.Builder<CurrData, CurrChannel>(listOf(this)) + other
-    }
+    return Pipeline.Builder<CurrData, CurrChannel>(listOf(this)) + other
+}

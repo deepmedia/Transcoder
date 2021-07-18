@@ -38,7 +38,7 @@ class DecoderDropper(private val continuous: Boolean) {
             "validInputUs=[${closedRanges.joinToString {
                 "$it(deltaUs=${closedDeltas[it]})"
             }}] pendingRangeUs=$pendingRange"
-//        if (important) log.w(full) else log.v(full)
+        if (important) log.w(full) else log.v(full)
     }
 
     fun input(timeUs: Long, render: Boolean) {

@@ -2,7 +2,6 @@
 
 package com.otaliastudios.transcoder.internal.pipeline
 
-import android.graphics.Point
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.Codecs
