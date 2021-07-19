@@ -18,10 +18,11 @@ class Seeker(
     override fun step(state: State.Ok<Unit>, fresh: Boolean): State<Unit> {
         val position = fetchPosition()
         if (position != null && shouldSeek(position)) {
-            log.i("Seeking to next position $position")
+            log.i("Seeking to next position $position where currentReaderTime=${source.getPositionUs()}")
             source.seekTo(position)
+        } else {
+            log.i("Skipping seek for $position where currentReaderTime=${source.getPositionUs()}")
         }
-
         return state
     }
 }

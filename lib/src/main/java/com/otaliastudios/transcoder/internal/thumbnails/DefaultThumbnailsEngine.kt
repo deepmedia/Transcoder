@@ -27,6 +27,7 @@ import com.otaliastudios.transcoder.time.DefaultTimeInterpolator
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlin.math.ceil
 
 class DefaultThumbnailsEngine(
     private val dataSources: DataSources,
@@ -84,7 +85,9 @@ class DefaultThumbnailsEngine(
         val source = dataSources[type][index]
         return Pipeline.build("Thumbnails") {
             Seeker(source, fetchPosition) {
-                shouldSeek.also {
+                val nextSeek = ceil(source.getPositionUs().toDouble() / 1000000) * 1000000
+                val position = stubs.firstOrNull()?.positionUs ?: -1
+                !(position > source.getPositionUs() && position < nextSeek) && shouldSeek.also {
                     shouldSeek = false
                 }
                 //                log.i("Seeker state check: $it :$stubs")
