@@ -36,6 +36,7 @@ interface DecoderChannel : Channel {
 class Decoder(
     private val format: MediaFormat, // source.getTrackFormat(track)
     continuous: Boolean, // relevant if the source sends no-render chunks. should we compensate or not?
+    val shouldFlush: (() -> Boolean)? = null
 ) : QueuedStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(), ReaderChannel {
 
     companion object {
@@ -65,6 +66,8 @@ class Decoder(
     }
 
     override fun buffer(): Pair<ByteBuffer, Int>? {
+        if (shouldFlush?.invoke() == true)
+            codec.flush()
         val id = codec.dequeueInputBuffer(0)
         return if (id >= 0) {
             dequeuedInputs++

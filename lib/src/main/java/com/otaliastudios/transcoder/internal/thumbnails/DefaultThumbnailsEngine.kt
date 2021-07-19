@@ -35,6 +35,7 @@ class DefaultThumbnailsEngine(
 ) : ThumbnailsEngine() {
 
     private var shouldSeek = true
+    private var shouldFlush = false
     private var finish = false
     private val log = Logger("ThumbnailsEngine")
 
@@ -89,12 +90,17 @@ class DefaultThumbnailsEngine(
                 //                log.i("Seeker state check: $it :$stubs")
             } +
                 Reader(source, type) +
-                Decoder(source.getTrackFormat(type)!!, continuous = false) +
+                Decoder(source.getTrackFormat(type)!!, continuous = false) {
+                    shouldFlush.also {
+                        shouldFlush = false
+                    }
+                } +
                 VideoRenderer(source.orientation, rotation, outputFormat, flipY = true, true) {
                     stubs.firstOrNull()?.positionUs ?: -1
                 } +
                 VideoSnapshots(outputFormat, fetchPosition, snapshotAccuracyUs) { pos, bitmap ->
                     shouldSeek = true
+                    shouldFlush = true
                     val stub = stubs.removeFirst()
                     stub.actualLocalizedUs = pos
                     log.i(
@@ -149,7 +155,7 @@ class DefaultThumbnailsEngine(
         val positions = requests.flatMap { request ->
             val duration = timer.totalDurationUs
             request.locate(duration).map { it to request }
-        }.sortedBy { it.first }
+        }
         log.i("Creating pipeline #$index. absoluteUs=${positions.joinToString { it.first.toString() }}")
 
         stubs.addAll(
