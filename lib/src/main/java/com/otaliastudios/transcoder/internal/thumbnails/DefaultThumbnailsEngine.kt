@@ -85,13 +85,12 @@ class DefaultThumbnailsEngine(
         val source = dataSources[type][index]
         return Pipeline.build("Thumbnails") {
             Seeker(source, fetchPosition) {
-                val nextSeek = (ceil(source.getPositionUs().toDouble() / 1000000) * 1000000L).toLong()
+                val nextSeek = (ceil(source.getPositionUs().toDouble() / KEY_FRAME) * KEY_FRAME).toLong()
                 val position = stubs.firstOrNull()?.positionUs ?: -1
 
                 val seek = !(position > previousSnapshotUs && position < nextSeek) && shouldSeek
 
-                if (seek)
-                {
+                if (seek) {
                     shouldFlush = true
                     shouldSeek = false
                 }
@@ -186,5 +185,6 @@ class DefaultThumbnailsEngine(
         private const val WAIT_MS = 10L
         private const val PROGRESS_LOOPS = 10L
         private const val snapshotAccuracyUs = 500 * 1000L
+        private const val KEY_FRAME = 1000 * 1000L
     }
 }
