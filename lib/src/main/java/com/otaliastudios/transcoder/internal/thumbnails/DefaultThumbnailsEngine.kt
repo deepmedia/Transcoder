@@ -39,7 +39,7 @@ class DefaultThumbnailsEngine(
     private var shouldFlush = false
     private var finish = false
     private val log = Logger("ThumbnailsEngine")
-
+    private var previousSnapshotUs = 0L
     // Huge framerate triks the VideoRenderer into not dropping frames, which is important
     // for thumbnail requests that want to catch the very last frame.
     private val tracks = Tracks(
@@ -85,11 +85,17 @@ class DefaultThumbnailsEngine(
         val source = dataSources[type][index]
         return Pipeline.build("Thumbnails") {
             Seeker(source, fetchPosition) {
-                val nextSeek = ceil(source.getPositionUs().toDouble() / 1000000) * 1000000
+                val nextSeek = (ceil(source.getPositionUs().toDouble() / 1000000) * 1000000L).toLong()
                 val position = stubs.firstOrNull()?.positionUs ?: -1
-                !(position > source.getPositionUs() && position < nextSeek) && shouldSeek.also {
+
+                val seek = !(position > previousSnapshotUs && position < nextSeek) && shouldSeek
+
+                if (seek)
+                {
+                    shouldFlush = true
                     shouldSeek = false
                 }
+                seek
                 //                log.i("Seeker state check: $it :$stubs")
             } +
                 Reader(source, type) +
@@ -103,9 +109,9 @@ class DefaultThumbnailsEngine(
                 } +
                 VideoSnapshots(outputFormat, fetchPosition, snapshotAccuracyUs) { pos, bitmap ->
                     shouldSeek = true
-                    shouldFlush = true
                     val stub = stubs.removeFirst()
                     stub.actualLocalizedUs = pos
+                    previousSnapshotUs = pos
                     log.i(
                         "Got snapshot. positionUs=${stub.positionUs} " +
                             "localizedUs=${stub.localizedUs} " +
