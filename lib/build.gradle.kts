@@ -40,7 +40,7 @@ publisher {
     project.addDeveloper("natario1", "mat.iavarone@gmail.com")
     release.sources = Release.SOURCES_AUTO
     release.docs = Release.DOCS_AUTO
-    release.version = "0.10.3"
+    release.version = "0.10.4"
 
     directory()
 
