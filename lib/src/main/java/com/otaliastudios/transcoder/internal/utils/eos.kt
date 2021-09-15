@@ -44,3 +44,14 @@ private class EosForcingDataSource(
         return force() || source.isDrained
     }
 }
+fun DataSource.ignoringEOS(force: () -> Boolean): DataSource =
+    EosIgnoringDataSource(this, force)
+
+private class EosIgnoringDataSource(
+    private val source: DataSource,
+    private val force: () -> Boolean,
+) : DataSource by source {
+    override fun isDrained(): Boolean {
+        return force() && source.isDrained
+    }
+}
