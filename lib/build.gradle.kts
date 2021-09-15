@@ -12,10 +12,8 @@ plugins {
 android {
     setCompileSdkVersion(property("compileSdkVersion") as Int)
     defaultConfig {
-        setMinSdkVersion(property("minSdkVersion") as Int)
-        setTargetSdkVersion(property("targetSdkVersion") as Int)
-        versionCode = 1
-        versionName = "0.10.3"
+        minSdk = property("minSdkVersion") as Int
+        targetSdk = property("targetSdkVersion") as Int
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes["release"].isMinifyEnabled = false
@@ -23,12 +21,12 @@ android {
 
 
 dependencies {
-    api("com.otaliastudios.opengl:egloo:0.6.0")
-    api("androidx.annotation:annotation:1.1.0")
+    api("com.otaliastudios.opengl:egloo:0.6.1")
+    api("androidx.annotation:annotation:1.2.0")
 
-    androidTestImplementation("androidx.test:runner:1.3.0")
-    androidTestImplementation("androidx.test:rules:1.3.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.2")
+    androidTestImplementation("androidx.test:runner:1.4.0")
+    androidTestImplementation("androidx.test:rules:1.4.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.3")
     androidTestImplementation("org.mockito:mockito-android:2.28.2")
 }
 
@@ -42,6 +40,7 @@ publisher {
     project.addDeveloper("natario1", "mat.iavarone@gmail.com")
     release.sources = Release.SOURCES_AUTO
     release.docs = Release.DOCS_AUTO
+    release.version = "0.10.3"
 
     directory()
 
