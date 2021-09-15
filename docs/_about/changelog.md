@@ -9,6 +9,13 @@ New versions are released through GitHub, so the reference page is the [GitHub R
 > Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
 Companies can share a tiny part of their revenue and get private support hours in return. Thanks!
 
+### v0.10.4
+
+- Fix: fixed crash in specific conditions ([#140][140])
+- New: AssetFileDescriptorDataSource, can be used to transcode from AssetFileDescriptors ([#140][140])
+
+<https://github.com/natario1/Transcoder/compare/v0.10.3...v0.10.4>
+
 ### v0.10.3
 
 - Fix: error when merging many files, thanks to [@DamonChen117][DamonChen117] ([#134][134])
@@ -165,3 +172,4 @@ frames, the trim timestamp might be different than what was selected.
 [130]: https://github.com/natario1/Transcoder/pull/130
 [132]: https://github.com/natario1/Transcoder/pull/132
 [134]: https://github.com/natario1/Transcoder/pull/134
+[140]: https://github.com/natario1/Transcoder/pull/140

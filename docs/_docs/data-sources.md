@@ -24,12 +24,19 @@ using `addDataSource(context, uri)` in the transcoding builder.
 ##### FileDescriptorDataSource
 
 A data source backed by a file descriptor. Use `new FileDescriptorDataSource(descriptor)` or
-simply `addDataSource(descriptor)` in the transcoding builder.
+simply `addDataSource(descriptor)` in the transcoding builder. Note that it is the caller
+responsibility to close the file descriptor.
 
 ##### FilePathDataSource
 
 A data source backed by a file absolute path. Use `new FilePathDataSource(path)` or
 simply `addDataSource(path)` in the transcoding builder.
+
+##### AssetFileDescriptorDataSource
+
+A data source backed by Android's AssetFileDescriptor. Use `new AssetFileDescriptorDataSource(descriptor)`
+or simply `addDataSource(descriptor)` in the transcoding builder. Note that it is the caller
+responsibility to close the file descriptor.
 
 ### Track specific sources
 
