@@ -48,8 +48,8 @@ class DecoderDropper(private val continuous: Boolean) {
         if (render) {
             debug("INPUT: inputUs=$timeUs")
             // log.v("TDBG inputUs=$timeUs")
-            if (pendingRange == null) pendingRange = timeUs..Long.MAX_VALUE
-            else pendingRange = pendingRange!!.first..timeUs
+            pendingRange = if (pendingRange == null) timeUs..Long.MAX_VALUE
+            else pendingRange!!.first.coerceAtMost(timeUs)..timeUs
         } else {
             debug("INPUT: Got SKIPPING input! inputUs=$timeUs")
             if (pendingRange != null && pendingRange!!.last != Long.MAX_VALUE) {
