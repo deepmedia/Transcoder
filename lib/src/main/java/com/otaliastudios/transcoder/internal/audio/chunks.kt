@@ -25,8 +25,9 @@ internal class ChunkQueue(private val sampleRate: Int, private val channels: Int
     fun isEmpty() = queue.isEmpty()
 
     fun enqueue(buffer: ShortBuffer, timeUs: Long, timeStretch: Double, release: () -> Unit) {
-        require(buffer.hasRemaining())
-        queue.addLast(Chunk(buffer, timeUs, timeStretch, release))
+        if (buffer.hasRemaining()) {
+            queue.addLast(Chunk(buffer, timeUs, timeStretch, release))
+        }
     }
 
     fun enqueueEos() {
