@@ -23,7 +23,8 @@ interface WriterChannel : Channel {
 
 class Writer(
     private val sink: DataSink,
-    private val track: TrackType
+    private val track: TrackType,
+    private val processedTimeStamp: ((Long) -> Unit)? = null
 ) : Step<WriterData, WriterChannel, Unit, Channel>, WriterChannel {
 
     override val channel = this
@@ -48,6 +49,7 @@ class Writer(
             } else flags
         )
         sink.writeTrack(track, buffer, info)
+        if (!eos) processedTimeStamp?.invoke(timestamp)
         state.value.release()
         return if (eos) State.Eos(Unit) else State.Ok(Unit)
     }
