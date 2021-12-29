@@ -49,7 +49,7 @@ class Writer(
             } else flags
         )
         sink.writeTrack(track, buffer, info)
-        if (!eos) processedTimeStamp?.invoke(timestamp)
+        processedTimeStamp?.invoke(if (!eos) timestamp else -1)
         state.value.release()
         return if (eos) State.Eos(Unit) else State.Ok(Unit)
     }
