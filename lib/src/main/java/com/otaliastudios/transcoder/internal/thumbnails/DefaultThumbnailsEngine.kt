@@ -27,7 +27,6 @@ import com.otaliastudios.transcoder.time.DefaultTimeInterpolator
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlin.math.ceil
 
 class DefaultThumbnailsEngine(
     private val dataSources: DataSources,
@@ -84,18 +83,34 @@ class DefaultThumbnailsEngine(
     ): Pipeline {
         val source = dataSources[type][index]
         return Pipeline.build("Thumbnails") {
-            Seeker(source, fetchPosition) {
-                val nextSeek = (ceil(source.positionUs.toDouble() / KEY_FRAME) * KEY_FRAME).toLong()
-                val position = stubs.firstOrNull()?.positionUs ?: -1
+            Seeker(source) {
+                var seek = false
+                var seekUs = 0L
+                val current = source.positionUs
+                val requested = stubs.firstOrNull()?.positionUs ?: -1
+                val threshold = stubs.firstOrNull()?.request?.threshold() ?: 0L
+                val nextKeyFrameIndex = source.keyFrameTimestampsUs.indexOfFirst { it >= requested }
+                val nextKeyFrameUs =
+                    if (nextKeyFrameIndex == -1) -1L else source.keyFrameTimestampsUs[nextKeyFrameIndex]
+                val previousKeyFrameUs =
+                    if (nextKeyFrameIndex > 0) source.keyFrameTimestampsUs[nextKeyFrameIndex - 1] else 0
 
-                val seek = position !in (previousSnapshotUs + 1) until nextSeek && shouldSeek
+                if (nextKeyFrameUs == -1L || !shouldSeek || requested == -1L) // no keyframe found, so can't seek.
+                    return@Seeker Pair(seekUs, seek)
 
-                if (seek) {
-                    shouldFlush = true
-                    shouldSeek = false
-                }
-                seek
-                //                log.i("Seeker state check: $it :$stubs")
+                log.i(
+                    "seek: current ${source.positionUs}," +
+                        " requested $requested, threshold $threshold, nextKeyFrameUs $nextKeyFrameUs"
+                )
+                
+                val rightGap = nextKeyFrameUs - requested
+                val nextKeyFrameInThreshold = rightGap <= threshold
+                seek = nextKeyFrameInThreshold || previousKeyFrameUs > current || (current - requested > threshold)
+                seekUs = if (nextKeyFrameInThreshold) nextKeyFrameUs else previousKeyFrameUs
+
+                shouldFlush = seek
+                shouldSeek = false
+                Pair(seekUs, seek)
             } +
                 Reader(source, type) +
                 Decoder(source.getTrackFormat(type)!!, continuous = false) {
@@ -106,19 +121,21 @@ class DefaultThumbnailsEngine(
                 VideoRenderer(source.orientation, rotation, outputFormat, flipY = true, true) {
                     stubs.firstOrNull()?.positionUs ?: -1
                 } +
-                VideoSnapshots(outputFormat, fetchPosition, snapshotAccuracyUs) { pos, bitmap ->
-                    shouldSeek = true
-                    val stub = stubs.removeFirst()
-                    stub.actualLocalizedUs = pos
-                    previousSnapshotUs = pos
-                    log.i(
-                        "Got snapshot. positionUs=${stub.positionUs} " +
-                            "localizedUs=${stub.localizedUs} " +
-                            "actualLocalizedUs=${stub.actualLocalizedUs} " +
-                            "deltaUs=${stub.localizedUs - stub.actualLocalizedUs}"
-                    )
-                    val thumbnail = Thumbnail(stub.request, stub.positionUs, bitmap)
-                    progress(thumbnail)
+                VideoSnapshots(outputFormat, fetchPosition) { pos, bitmap ->
+                    val stub = stubs.removeFirstOrNull()
+                    if (stub != null) {
+                        shouldSeek = true
+                        stub.actualLocalizedUs = pos
+                        previousSnapshotUs = pos
+                        log.i(
+                            "Got snapshot. positionUs=${stub.positionUs} " +
+                                "localizedUs=${stub.localizedUs} " +
+                                "actualLocalizedUs=${stub.actualLocalizedUs} " +
+                                "deltaUs=${stub.localizedUs - stub.actualLocalizedUs}"
+                        )
+                        val thumbnail = Thumbnail(stub.request, stub.positionUs, bitmap)
+                        progress(thumbnail)
+                    }
                 }
         }
     }
@@ -156,6 +173,7 @@ class DefaultThumbnailsEngine(
         if (stub != null) {
             log.i("removePosition Match: $positionUs :$stubs")
             stubs.remove(stub)
+            shouldSeek = true
         }
     }
 
@@ -174,7 +192,10 @@ class DefaultThumbnailsEngine(
         )
     }
 
-    private val fetchPosition: () -> Long? = { stubs.firstOrNull()?.localizedUs }
+    private val fetchPosition: () -> VideoSnapshots.Request? = {
+        if (stubs.isEmpty()) null
+        else VideoSnapshots.Request(stubs.first().localizedUs, stubs.first().request.threshold())
+    }
 
     override fun cleanup() {
         runCatching { segments.release() }
@@ -182,9 +203,6 @@ class DefaultThumbnailsEngine(
     }
 
     companion object {
-        private const val WAIT_MS = 10L
-        private const val PROGRESS_LOOPS = 10L
-        private const val snapshotAccuracyUs = 500 * 1000L
-        private const val KEY_FRAME = 1000 * 1000L
+        private const val WAIT_MS = 5L
     }
 }

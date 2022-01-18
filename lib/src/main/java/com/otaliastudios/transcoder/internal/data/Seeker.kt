@@ -8,16 +8,16 @@ import com.otaliastudios.transcoder.source.DataSource
 
 class Seeker(
     private val source: DataSource,
-    private val fetchPosition: () -> Long?,
-    private val shouldSeek: (Long) -> Boolean
+    private val shouldSeek: () -> Pair<Long, Boolean>
 ) : BaseStep<Unit, Channel, Unit, Channel>() {
 
     private val log = Logger("Seeker")
     override val channel = Channel
 
     override fun step(state: State.Ok<Unit>, fresh: Boolean): State<Unit> {
-        val position = fetchPosition()
-        if (position != null && shouldSeek(position)) {
+        val shouldSeek = shouldSeek()
+        val position = shouldSeek.first
+        if (shouldSeek.second) {
             log.i("Seeking to next position $position where currentReaderTime=${source.getPositionUs()}")
             source.seekTo(position)
         } else {

@@ -17,12 +17,10 @@ import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.math.abs
 
 class VideoSnapshots(
     format: MediaFormat,
-    private val fetchRequest: () -> Long?,
-    private val accuracyUs: Long,
+    private val fetchRequest: () -> Request?,
     private val onSnapshot: (Long, Bitmap) -> Unit
 ) : BaseStep<Long, Channel, Long, Channel>() {
 
@@ -36,9 +34,10 @@ class VideoSnapshots(
     }
 
     override fun step(state: State.Ok<Long>, fresh: Boolean): State<Long> {
-        val expectedUs = fetchRequest() ?: return state
-
-        val deltaUs = abs(expectedUs - state.value)
+        val request = fetchRequest() ?: return state
+        val expectedUs = request.pts
+        val accuracyUs = request.threshold
+        val deltaUs = (expectedUs - state.value)
         if (deltaUs < accuracyUs || (state is State.Eos && expectedUs > state.value)) {
             log.i("Request MATCHED! expectedUs=$expectedUs actualUs=${state.value} deltaUs=$deltaUs")
             val buffer = ByteBuffer.allocateDirect(width * height * 4)
@@ -59,4 +58,5 @@ class VideoSnapshots(
         surface.release()
         core.release()
     }
+    data class Request(val pts: Long, val threshold: Long)
 }
