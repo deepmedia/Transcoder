@@ -20,15 +20,16 @@ import com.otaliastudios.transcoder.internal.video.VideoRenderer
 import com.otaliastudios.transcoder.internal.video.VideoSnapshots
 import com.otaliastudios.transcoder.resize.Resizer
 import com.otaliastudios.transcoder.source.DataSource
-import com.otaliastudios.transcoder.source.DefaultDataSource
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy
+import com.otaliastudios.transcoder.thumbnail.SingleThumbnailRequest
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
 import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import java.util.ArrayList
 
 class DefaultThumbnailsEngine(
     private val dataSources: DataSources,
@@ -77,29 +78,54 @@ class DefaultThumbnailsEngine(
 
     private val stubs = ArrayDeque<Stub>()
 
+    private inner class IgnoringEosDataSource(
+        private val source: DataSource,
+    ) : DataSource by source {
+        override fun requestKeyFrameTimestamps(): Long {
+            return source.requestKeyFrameTimestamps()
+        }
+        override fun getKeyFrameTimestampsUs(): ArrayList<Long> {
+            return source.keyFrameTimestampsUs
+        }
+
+        override fun isDrained(): Boolean {
+            if(source.isDrained) {
+                source.seekTo(stubs.firstOrNull()?.positionUs ?: -1)
+            }
+            return source.isDrained
+        }
+    }
+    private fun DataSource.ignoringEOS(): DataSource = IgnoringEosDataSource(this)
+
     private fun createPipeline(
         type: TrackType,
         index: Int,
         status: TrackStatus,
         outputFormat: MediaFormat
     ): Pipeline {
-        val source = dataSources[type][index]
+        val source = dataSources[type][index].ignoringEOS()
+
         return Pipeline.build("Thumbnails") {
             Seeker(source) {
                 var seek = false
-                var seekUs = 0L
+                val seekUs: Long
                 val current = source.positionUs
                 val requested = stubs.firstOrNull()?.positionUs ?: -1
                 val threshold = stubs.firstOrNull()?.request?.threshold() ?: 0L
                 val nextKeyFrameIndex = source.search(requested)
 
                 val nextKeyFrameUs =
-                    if (nextKeyFrameIndex == -1) -1L else source.keyFrameTimestampsUs[nextKeyFrameIndex]
+                    if (nextKeyFrameIndex == -1) Long.MAX_VALUE else source.keyFrameTimestampsUs[nextKeyFrameIndex]
                 val previousKeyFrameUs =
-                    if (nextKeyFrameIndex > 0) source.keyFrameTimestampsUs[nextKeyFrameIndex - 1] else 0
+                    if (nextKeyFrameIndex > 0) {
+                        source.keyFrameTimestampsUs[nextKeyFrameIndex - 1]
+                    }
+                    else {
+                        source.keyFrameTimestampsUs[source.keyFrameTimestampsUs.size - 1]
+                    }
 
-                if (nextKeyFrameUs == -1L || !shouldSeek || requested == -1L) // no keyframe found, so can't seek.
-                    return@Seeker Pair(seekUs, seek)
+                if (!shouldSeek || requested == -1L)
+                    return@Seeker Pair(requested, seek)
 
                 log.i(
                     "seek: current ${source.positionUs}," +
@@ -145,20 +171,35 @@ class DefaultThumbnailsEngine(
 
     private lateinit var progress: (Thumbnail) -> Unit
 
-    private fun DataSource.search(timestampUs: Long) : Int  {
-        if(keyFrameTimestampsUs.isEmpty())
+    private fun DataSource.search(timestampUs: Long) : Int {
+        if (keyFrameTimestampsUs.isEmpty())
             requestKeyFrameTimestamps()
 
         val searchIndex = keyFrameTimestampsUs.binarySearch(timestampUs)
 
         val nextKeyFrameIndex = when {
-                searchIndex >= 0 -> searchIndex
-                searchIndex == -keyFrameTimestampsUs.size -> {
-                    if (requestKeyFrameTimestamps() == -1L) -1
-                    else search(timestampUs)
+            searchIndex >= 0 -> searchIndex
+            searchIndex < 0 -> {
+                val index = -searchIndex - 1
+                when {
+                    index >= keyFrameTimestampsUs.size -> {
+                        val ts = requestKeyFrameTimestamps()
+                        if (ts == -1L) {
+                            -1
+                        } else {
+                            search(timestampUs)
+                        }
+                    }
+                    index < keyFrameTimestampsUs.size -> index
+                    else -> {
+                        -1 // will never reach here. kotlin is stupid
+                    }
                 }
-                else -> { -searchIndex - 1 } // searchIndex < 0
             }
+            else -> {
+                -1 // will never reach here. kotlin is stupid
+            }
+        }
 
         return nextKeyFrameIndex
     }
@@ -190,7 +231,8 @@ class DefaultThumbnailsEngine(
         if (positionUs == stubs.firstOrNull()?.positionUs) {
             return
         }
-        val stub = stubs.find { it.positionUs == positionUs }
+        val locatedTimestampUs = SingleThumbnailRequest(positionUs).locate(timer.durationUs.video)[0]
+        val stub = stubs.find { it.positionUs == locatedTimestampUs }
         if (stub != null) {
             log.i("removePosition Match: $positionUs :$stubs")
             stubs.remove(stub)
@@ -209,7 +251,7 @@ class DefaultThumbnailsEngine(
             positions.mapNotNull { (positionUs, request) ->
                 val localizedUs = timer.localize(TrackType.VIDEO, index, positionUs)
                 localizedUs?.let { Stub(request, positionUs, localizedUs) }
-            }.toMutableList()
+            }.toMutableList().sortedBy { it.positionUs }
         )
     }
 

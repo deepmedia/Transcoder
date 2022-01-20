@@ -96,17 +96,20 @@ public abstract class DefaultDataSource implements DataSource {
         return keyFrameTsUs;
     }
 
+    private Boolean lastKeyFrame = false;
     @Override
     public long requestKeyFrameTimestamps() {
 
-        int listSize = keyFrameTsUs.size();
-        if(listSize > 0) {
-            mExtractor.seekTo(keyFrameTsUs.get(listSize - 1) + 1, MediaExtractor.SEEK_TO_NEXT_SYNC);
+        if(lastKeyFrame) return  -1L;
+        if(keyFrameTsUs.size() > 0) {
+            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1, MediaExtractor.SEEK_TO_NEXT_SYNC);
         }
 
         long sampleTime = mExtractor.getSampleTime();
 
         if (sampleTime == -1) {
+            lastKeyFrame = true;
+            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             return sampleTime;
         }
         LOG.i("start:" + sampleTime);
@@ -116,7 +119,7 @@ public abstract class DefaultDataSource implements DataSource {
         int prefetchCount = 100;
         while (sampleTime >= 0L && sampleTime != lastSampleTime && count < prefetchCount) {
             if ((mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) > 0) {
-                if (!keyFrameTsUs.isEmpty() && sampleTime <= keyFrameTsUs.get(listSize - 1)) {
+                if (!keyFrameTsUs.isEmpty() && sampleTime <= keyFrameTsUs.get(keyFrameTsUs.size() - 1)) {
                     Collections.sort(keyFrameTsUs);
                 }
                 keyFrameTsUs.add(sampleTime);
