@@ -15,6 +15,7 @@ import com.otaliastudios.transcoder.internal.utils.MutableTrackMap;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -76,10 +77,6 @@ public abstract class DefaultDataSource implements DataSource {
         for (int i = 0; i < mExtractor.getTrackCount(); i++) mExtractor.unselectTrack(i);
         mInitialized = true;
 
-        selectTrack(TrackType.VIDEO);
-        keyFrameTsUs.clear();
-        getSyncFrameTimestamps();
-        releaseTrack(TrackType.VIDEO);
         // Debugging mOriginUs issues.
         /* LOG.v("initialize(): origin after unselect is" + mExtractor.getSampleTime());
         if (getTrackFormat(TrackType.VIDEO) != null) {
@@ -99,22 +96,38 @@ public abstract class DefaultDataSource implements DataSource {
         return keyFrameTsUs;
     }
 
-    private void getSyncFrameTimestamps() {
-        long lastSampleTime = -1L;
+    @Override
+    public long requestKeyFrameTimestamps() {
+
+        int listSize = keyFrameTsUs.size();
+        if(listSize > 0) {
+            mExtractor.seekTo(keyFrameTsUs.get(listSize - 1) + 1, MediaExtractor.SEEK_TO_NEXT_SYNC);
+        }
+
         long sampleTime = mExtractor.getSampleTime();
 
+        if (sampleTime == -1) {
+            return sampleTime;
+        }
         LOG.i("start:" + sampleTime);
 
-        while (sampleTime >= 0L && sampleTime != lastSampleTime) {
+        int count = 0;
+        long lastSampleTime = -1L;
+        int prefetchCount = 100;
+        while (sampleTime >= 0L && sampleTime != lastSampleTime && count < prefetchCount) {
             if ((mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) > 0) {
+                if (!keyFrameTsUs.isEmpty() && sampleTime <= keyFrameTsUs.get(listSize - 1)) {
+                    Collections.sort(keyFrameTsUs);
+                }
                 keyFrameTsUs.add(sampleTime);
             }
             mExtractor.seekTo(sampleTime + 1L, MediaExtractor.SEEK_TO_NEXT_SYNC);
             lastSampleTime = sampleTime;
             sampleTime = mExtractor.getSampleTime();
+            count++;
         }
-        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC);
         LOG.i("stop:" + keyFrameTsUs);
+        return sampleTime;
     }
 
 

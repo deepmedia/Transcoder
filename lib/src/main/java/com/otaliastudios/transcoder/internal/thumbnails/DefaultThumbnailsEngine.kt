@@ -19,6 +19,8 @@ import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.internal.video.VideoRenderer
 import com.otaliastudios.transcoder.internal.video.VideoSnapshots
 import com.otaliastudios.transcoder.resize.Resizer
+import com.otaliastudios.transcoder.source.DataSource
+import com.otaliastudios.transcoder.source.DefaultDataSource
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
@@ -89,7 +91,8 @@ class DefaultThumbnailsEngine(
                 val current = source.positionUs
                 val requested = stubs.firstOrNull()?.positionUs ?: -1
                 val threshold = stubs.firstOrNull()?.request?.threshold() ?: 0L
-                val nextKeyFrameIndex = source.keyFrameTimestampsUs.indexOfFirst { it >= requested }
+                val nextKeyFrameIndex = source.search(requested)
+
                 val nextKeyFrameUs =
                     if (nextKeyFrameIndex == -1) -1L else source.keyFrameTimestampsUs[nextKeyFrameIndex]
                 val previousKeyFrameUs =
@@ -141,6 +144,24 @@ class DefaultThumbnailsEngine(
     }
 
     private lateinit var progress: (Thumbnail) -> Unit
+
+    private fun DataSource.search(timestampUs: Long) : Int  {
+        if(keyFrameTimestampsUs.isEmpty())
+            requestKeyFrameTimestamps()
+
+        val searchIndex = keyFrameTimestampsUs.binarySearch(timestampUs)
+
+        val nextKeyFrameIndex = when {
+                searchIndex >= 0 -> searchIndex
+                searchIndex == -keyFrameTimestampsUs.size -> {
+                    if (requestKeyFrameTimestamps() == -1L) -1
+                    else search(timestampUs)
+                }
+                else -> { -searchIndex - 1 } // searchIndex < 0
+            }
+
+        return nextKeyFrameIndex
+    }
 
     override suspend fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit) {
         val segment = segments.next(TrackType.VIDEO)

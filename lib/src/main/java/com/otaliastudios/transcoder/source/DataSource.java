@@ -112,6 +112,8 @@ public interface DataSource {
      */
     void releaseTrack(@NonNull TrackType type);
 
+    default long requestKeyFrameTimestamps() { return -1;}
+
     default ArrayList<Long> getKeyFrameTimestampsUs() {
         return new ArrayList<>();
     }
@@ -134,5 +136,8 @@ public interface DataSource {
         public boolean keyframe;
         public long timeUs;
         public boolean render;
+    }
+    class KeyFrames {
+        public ArrayList<Long> keyFrameTimestampListUs;
     }
 }
