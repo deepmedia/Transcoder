@@ -14,6 +14,8 @@ import com.otaliastudios.transcoder.internal.utils.Logger;
 import com.otaliastudios.transcoder.internal.utils.MutableTrackMap;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -43,6 +45,7 @@ public abstract class DefaultDataSource implements DataSource {
     private long mDontRenderRangeStart = -1L;
     private long mDontRenderRangeEnd = -1L;
 
+    private final ArrayList<Long> keyFrameTsUs = new ArrayList<>();
     @Override
     public void initialize() {
         LOG.i("initialize(): initializing...");
@@ -87,6 +90,49 @@ public abstract class DefaultDataSource implements DataSource {
             mExtractor.unselectTrack(mIndex.getAudio());
         } */
     }
+
+    @Override
+    public ArrayList<Long> getKeyFrameTimestampsUs() {
+        return keyFrameTsUs;
+    }
+
+    private Boolean lastKeyFrame = false;
+    @Override
+    public long requestKeyFrameTimestamps() {
+
+        if(lastKeyFrame) return  -1L;
+        if(keyFrameTsUs.size() > 0) {
+            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1, MediaExtractor.SEEK_TO_NEXT_SYNC);
+        }
+
+        long sampleTime = mExtractor.getSampleTime();
+
+        if (sampleTime == -1) {
+            lastKeyFrame = true;
+            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            return sampleTime;
+        }
+        LOG.i("keyFrameStartTime:" + sampleTime);
+
+        int count = 0;
+        long lastSampleTime = -1L;
+        int prefetchCount = 100;
+        while (sampleTime >= 0L && sampleTime != lastSampleTime && count < prefetchCount) {
+            if ((mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) > 0) {
+                if (!keyFrameTsUs.isEmpty() && sampleTime <= keyFrameTsUs.get(keyFrameTsUs.size() - 1)) {
+                    Collections.sort(keyFrameTsUs);
+                }
+                keyFrameTsUs.add(sampleTime);
+            }
+            mExtractor.seekTo(sampleTime + 1L, MediaExtractor.SEEK_TO_NEXT_SYNC);
+            lastSampleTime = sampleTime;
+            sampleTime = mExtractor.getSampleTime();
+            count++;
+        }
+        LOG.i("keyFrameStopCount:" + keyFrameTsUs);
+        return sampleTime;
+    }
+
 
     @Override
     public void deinitialize() {
@@ -162,7 +208,7 @@ public abstract class DefaultDataSource implements DataSource {
             mExtractor.seekTo(mExtractor.getSampleTime(), MediaExtractor.SEEK_TO_CLOSEST_SYNC);
             LOG.v("seekTo(): seek workaround completed. (extractorUs=" + mExtractor.getSampleTime() + ")");
         } else {
-            mExtractor.seekTo(mOriginUs + desiredPositionUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            mExtractor.seekTo(desiredPositionUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
         }
         mDontRenderRangeStart = mExtractor.getSampleTime();
         mDontRenderRangeEnd = mOriginUs + desiredPositionUs;

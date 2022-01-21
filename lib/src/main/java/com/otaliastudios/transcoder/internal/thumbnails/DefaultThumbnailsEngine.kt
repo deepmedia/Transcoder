@@ -19,15 +19,17 @@ import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.internal.video.VideoRenderer
 import com.otaliastudios.transcoder.internal.video.VideoSnapshots
 import com.otaliastudios.transcoder.resize.Resizer
+import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy
+import com.otaliastudios.transcoder.thumbnail.SingleThumbnailRequest
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
 import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlin.math.ceil
+import java.util.ArrayList
 
 class DefaultThumbnailsEngine(
     private val dataSources: DataSources,
@@ -76,26 +78,69 @@ class DefaultThumbnailsEngine(
 
     private val stubs = ArrayDeque<Stub>()
 
+    private inner class IgnoringEosDataSource(
+        private val source: DataSource,
+    ) : DataSource by source {
+        override fun requestKeyFrameTimestamps(): Long {
+            return source.requestKeyFrameTimestamps()
+        }
+        override fun getKeyFrameTimestampsUs(): ArrayList<Long> {
+            return source.keyFrameTimestampsUs
+        }
+
+        override fun isDrained(): Boolean {
+            if(source.isDrained) {
+                source.seekTo(stubs.firstOrNull()?.positionUs ?: -1)
+            }
+            return source.isDrained
+        }
+    }
+    private fun DataSource.ignoringEOS(): DataSource = IgnoringEosDataSource(this)
+
     private fun createPipeline(
         type: TrackType,
         index: Int,
         status: TrackStatus,
         outputFormat: MediaFormat
     ): Pipeline {
-        val source = dataSources[type][index]
+        val source = dataSources[type][index].ignoringEOS()
+
         return Pipeline.build("Thumbnails") {
-            Seeker(source, fetchPosition) {
-                val nextSeek = (ceil(source.positionUs.toDouble() / KEY_FRAME) * KEY_FRAME).toLong()
-                val position = stubs.firstOrNull()?.positionUs ?: -1
+            Seeker(source) {
+                var seek = false
+                val requested = stubs.firstOrNull()?.positionUs ?: -1
 
-                val seek = position !in (previousSnapshotUs + 1) until nextSeek && shouldSeek
+                if (!shouldSeek || requested == -1L)
+                    return@Seeker Pair(requested, seek)
 
-                if (seek) {
-                    shouldFlush = true
-                    shouldSeek = false
-                }
-                seek
-                //                log.i("Seeker state check: $it :$stubs")
+                val seekUs: Long
+                val current = source.positionUs
+                val threshold = stubs.firstOrNull()?.request?.threshold() ?: 0L
+                val nextKeyFrameIndex = source.search(requested)
+
+                val nextKeyFrameUs =
+                    if (nextKeyFrameIndex == -1) Long.MAX_VALUE else source.keyFrameTimestampsUs[nextKeyFrameIndex]
+                val previousKeyFrameUs =
+                    if (nextKeyFrameIndex > 0) {
+                        source.keyFrameTimestampsUs[nextKeyFrameIndex - 1]
+                    }
+                    else {
+                        source.keyFrameTimestampsUs[source.keyFrameTimestampsUs.size - 1]
+                    }
+
+                log.i(
+                    "seek: current ${source.positionUs}," +
+                        " requested $requested, threshold $threshold, nextKeyFrameUs $nextKeyFrameUs"
+                )
+                
+                val rightGap = nextKeyFrameUs - requested
+                val nextKeyFrameInThreshold = rightGap <= threshold
+                seek = nextKeyFrameInThreshold || previousKeyFrameUs > current || (current - requested > threshold)
+                seekUs = if (nextKeyFrameInThreshold) nextKeyFrameUs else previousKeyFrameUs
+
+                shouldFlush = seek
+                shouldSeek = false
+                Pair(seekUs, seek)
             } +
                 Reader(source, type) +
                 Decoder(source.getTrackFormat(type)!!, continuous = false) {
@@ -106,24 +151,59 @@ class DefaultThumbnailsEngine(
                 VideoRenderer(source.orientation, rotation, outputFormat, flipY = true, true) {
                     stubs.firstOrNull()?.positionUs ?: -1
                 } +
-                VideoSnapshots(outputFormat, fetchPosition, snapshotAccuracyUs) { pos, bitmap ->
-                    shouldSeek = true
-                    val stub = stubs.removeFirst()
-                    stub.actualLocalizedUs = pos
-                    previousSnapshotUs = pos
-                    log.i(
-                        "Got snapshot. positionUs=${stub.positionUs} " +
-                            "localizedUs=${stub.localizedUs} " +
-                            "actualLocalizedUs=${stub.actualLocalizedUs} " +
-                            "deltaUs=${stub.localizedUs - stub.actualLocalizedUs}"
-                    )
-                    val thumbnail = Thumbnail(stub.request, stub.positionUs, bitmap)
-                    progress(thumbnail)
+                VideoSnapshots(outputFormat, fetchPosition) { pos, bitmap ->
+                    val stub = stubs.removeFirstOrNull()
+                    if (stub != null) {
+                        shouldSeek = true
+                        stub.actualLocalizedUs = pos
+                        previousSnapshotUs = pos
+                        log.i(
+                            "Got snapshot. positionUs=${stub.positionUs} " +
+                                "localizedUs=${stub.localizedUs} " +
+                                "actualLocalizedUs=${stub.actualLocalizedUs} " +
+                                "deltaUs=${stub.localizedUs - stub.actualLocalizedUs}"
+                        )
+                        val thumbnail = Thumbnail(stub.request, stub.positionUs, bitmap)
+                        progress(thumbnail)
+                    }
                 }
         }
     }
 
     private lateinit var progress: (Thumbnail) -> Unit
+
+    private fun DataSource.search(timestampUs: Long) : Int {
+        if (keyFrameTimestampsUs.isEmpty())
+            requestKeyFrameTimestamps()
+
+        val searchIndex = keyFrameTimestampsUs.binarySearch(timestampUs)
+
+        val nextKeyFrameIndex = when {
+            searchIndex >= 0 -> searchIndex
+            searchIndex < 0 -> {
+                val index = -searchIndex - 1
+                when {
+                    index >= keyFrameTimestampsUs.size -> {
+                        val ts = requestKeyFrameTimestamps()
+                        if (ts == -1L) {
+                            -1
+                        } else {
+                            search(timestampUs)
+                        }
+                    }
+                    index < keyFrameTimestampsUs.size -> index
+                    else -> {
+                        -1 // will never reach here. kotlin is stupid
+                    }
+                }
+            }
+            else -> {
+                -1 // will never reach here. kotlin is stupid
+            }
+        }
+
+        return nextKeyFrameIndex
+    }
 
     override suspend fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit) {
         val segment = segments.next(TrackType.VIDEO)
@@ -152,10 +232,12 @@ class DefaultThumbnailsEngine(
         if (positionUs == stubs.firstOrNull()?.positionUs) {
             return
         }
-        val stub = stubs.find { it.positionUs == positionUs }
+        val locatedTimestampUs = SingleThumbnailRequest(positionUs).locate(timer.durationUs.video)[0]
+        val stub = stubs.find { it.positionUs == locatedTimestampUs }
         if (stub != null) {
             log.i("removePosition Match: $positionUs :$stubs")
             stubs.remove(stub)
+            shouldSeek = true
         }
     }
 
@@ -170,11 +252,14 @@ class DefaultThumbnailsEngine(
             positions.mapNotNull { (positionUs, request) ->
                 val localizedUs = timer.localize(TrackType.VIDEO, index, positionUs)
                 localizedUs?.let { Stub(request, positionUs, localizedUs) }
-            }.toMutableList()
+            }.toMutableList().sortedBy { it.positionUs }
         )
     }
 
-    private val fetchPosition: () -> Long? = { stubs.firstOrNull()?.localizedUs }
+    private val fetchPosition: () -> VideoSnapshots.Request? = {
+        if (stubs.isEmpty()) null
+        else VideoSnapshots.Request(stubs.first().localizedUs, stubs.first().request.threshold())
+    }
 
     override fun cleanup() {
         runCatching { segments.release() }
@@ -182,9 +267,6 @@ class DefaultThumbnailsEngine(
     }
 
     companion object {
-        private const val WAIT_MS = 10L
-        private const val PROGRESS_LOOPS = 10L
-        private const val snapshotAccuracyUs = 500 * 1000L
-        private const val KEY_FRAME = 1000 * 1000L
+        private const val WAIT_MS = 5L
     }
 }

@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import com.otaliastudios.transcoder.common.TrackType;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 /**
  * Represents the source of input data.
@@ -111,6 +112,11 @@ public interface DataSource {
      */
     void releaseTrack(@NonNull TrackType type);
 
+    default long requestKeyFrameTimestamps() { return -1;}
+
+    default ArrayList<Long> getKeyFrameTimestampsUs() {
+        return new ArrayList<>();
+    }
     /**
      * Rewinds this source, moving it to its default state.
      * To be used again, tracks will be selected again.
@@ -130,5 +136,8 @@ public interface DataSource {
         public boolean keyframe;
         public long timeUs;
         public boolean render;
+    }
+    class KeyFrames {
+        public ArrayList<Long> keyFrameTimestampListUs;
     }
 }
