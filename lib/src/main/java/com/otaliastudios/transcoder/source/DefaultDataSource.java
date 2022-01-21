@@ -112,7 +112,7 @@ public abstract class DefaultDataSource implements DataSource {
             mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             return sampleTime;
         }
-        LOG.i("start:" + sampleTime);
+        LOG.i("keyFrameStartTime:" + sampleTime);
 
         int count = 0;
         long lastSampleTime = -1L;
@@ -129,7 +129,7 @@ public abstract class DefaultDataSource implements DataSource {
             sampleTime = mExtractor.getSampleTime();
             count++;
         }
-        LOG.i("stop:" + keyFrameTsUs);
+        LOG.i("keyFrameStopCount:" + keyFrameTsUs);
         return sampleTime;
     }
 
