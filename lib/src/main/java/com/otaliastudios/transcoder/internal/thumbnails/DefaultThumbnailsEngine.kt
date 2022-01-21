@@ -108,9 +108,13 @@ class DefaultThumbnailsEngine(
         return Pipeline.build("Thumbnails") {
             Seeker(source) {
                 var seek = false
+                val requested = stubs.firstOrNull()?.positionUs ?: -1
+
+                if (!shouldSeek || requested == -1L)
+                    return@Seeker Pair(requested, seek)
+
                 val seekUs: Long
                 val current = source.positionUs
-                val requested = stubs.firstOrNull()?.positionUs ?: -1
                 val threshold = stubs.firstOrNull()?.request?.threshold() ?: 0L
                 val nextKeyFrameIndex = source.search(requested)
 
@@ -123,9 +127,6 @@ class DefaultThumbnailsEngine(
                     else {
                         source.keyFrameTimestampsUs[source.keyFrameTimestampsUs.size - 1]
                     }
-
-                if (!shouldSeek || requested == -1L)
-                    return@Seeker Pair(requested, seek)
 
                 log.i(
                     "seek: current ${source.positionUs}," +
