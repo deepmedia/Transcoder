@@ -102,14 +102,14 @@ public abstract class DefaultDataSource implements DataSource {
 
         if(lastKeyFrame) return  -1L;
         if(keyFrameTsUs.size() > 0) {
-            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1, MediaExtractor.SEEK_TO_NEXT_SYNC);
+            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1001L, MediaExtractor.SEEK_TO_NEXT_SYNC);
         }
 
         long sampleTime = mExtractor.getSampleTime();
 
         if (sampleTime == -1) {
             lastKeyFrame = true;
-            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 1001L, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             return sampleTime;
         }
         LOG.i("keyFrameStartTime:" + sampleTime);
@@ -124,7 +124,7 @@ public abstract class DefaultDataSource implements DataSource {
                 }
                 keyFrameTsUs.add(sampleTime);
             }
-            mExtractor.seekTo(sampleTime + 1L, MediaExtractor.SEEK_TO_NEXT_SYNC);
+            mExtractor.seekTo(sampleTime + 1001L, MediaExtractor.SEEK_TO_NEXT_SYNC);
             lastSampleTime = sampleTime;
             sampleTime = mExtractor.getSampleTime();
             count++;
