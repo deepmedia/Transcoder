@@ -89,7 +89,7 @@ class DefaultThumbnailsEngine(
         }
 
         override fun isDrained(): Boolean {
-            if(source.isDrained) {
+            if (source.isDrained) {
                 source.seekTo(stubs.firstOrNull()?.positionUs ?: -1)
             }
             return source.isDrained
@@ -121,18 +121,16 @@ class DefaultThumbnailsEngine(
                 val nextKeyFrameUs =
                     if (nextKeyFrameIndex == -1) Long.MAX_VALUE else source.keyFrameTimestampsUs[nextKeyFrameIndex]
                 val previousKeyFrameUs =
-                    if (nextKeyFrameIndex > 0) {
-                        source.keyFrameTimestampsUs[nextKeyFrameIndex - 1]
-                    }
-                    else {
-                        source.keyFrameTimestampsUs[source.keyFrameTimestampsUs.size - 1]
-                    }
+                    source.keyFrameTimestampsUs[
+                        if (nextKeyFrameIndex > 0)
+                            nextKeyFrameIndex - 1 else (source.keyFrameTimestampsUs.size - 1)
+                    ]
 
                 log.i(
                     "seek: current ${source.positionUs}," +
                         " requested $requested, threshold $threshold, nextKeyFrameUs $nextKeyFrameUs"
                 )
-                
+
                 val rightGap = nextKeyFrameUs - requested
                 val nextKeyFrameInThreshold = rightGap <= threshold
                 seek = nextKeyFrameInThreshold || previousKeyFrameUs > current || (current - requested > threshold)
@@ -172,7 +170,7 @@ class DefaultThumbnailsEngine(
 
     private lateinit var progress: (Thumbnail) -> Unit
 
-    private fun DataSource.search(timestampUs: Long) : Int {
+    private fun DataSource.search(timestampUs: Long): Int {
         if (keyFrameTimestampsUs.isEmpty())
             requestKeyFrameTimestamps()
 

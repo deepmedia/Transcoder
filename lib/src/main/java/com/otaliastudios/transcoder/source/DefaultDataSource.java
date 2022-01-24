@@ -107,10 +107,10 @@ public abstract class DefaultDataSource implements DataSource {
 
         long sampleTime = mExtractor.getSampleTime();
 
-        if (sampleTime == -1) {
+        if (sampleTime == -1 || (keyFrameTsUs.size() > 0 && sampleTime == keyFrameTsUs.get(keyFrameTsUs.size() - 1))) {
             lastKeyFrame = true;
             mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 10001L, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-            return sampleTime;
+            return -1;
         }
         LOG.i("keyFrameStartTime:" + sampleTime);
 
