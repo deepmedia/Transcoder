@@ -129,16 +129,16 @@ public class DefaultDataSink implements DataSink {
         MediaFormat audioOutputFormat = mLastFormat.getOrNull(TrackType.AUDIO);
         boolean isVideoReady = videoOutputFormat != null || !isTranscodingVideo;
         boolean isAudioReady = audioOutputFormat != null || !isTranscodingAudio;
-        if (!isVideoReady || !isAudioReady) return;
+        if (!isVideoReady && !isAudioReady) return;
 
-        // If both video and audio are ready, we can go on.
+        // If each video and audio are ready, we can go on.
         // We will stop buffering data and we will start actually muxing it.
-        if (isTranscodingVideo) {
+        if (isVideoReady) {
             int videoIndex = mMuxer.addTrack(videoOutputFormat);
             mMuxerIndex.setVideo(videoIndex);
             LOG.v("Added track #" + videoIndex + " with " + videoOutputFormat.getString(MediaFormat.KEY_MIME) + " to muxer");
         }
-        if (isTranscodingAudio) {
+        if (isAudioReady) {
             int audioIndex = mMuxer.addTrack(audioOutputFormat);
             mMuxerIndex.setAudio(audioIndex);
             LOG.v("Added track #" + audioIndex + " with " + audioOutputFormat.getString(MediaFormat.KEY_MIME) + " to muxer");
@@ -150,7 +150,8 @@ public class DefaultDataSink implements DataSink {
 
     @Override
     public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
-        if (mMuxerStarted) {
+        Integer muxerIndex = mMuxerIndex.getOrNull(type);
+        if (mMuxerStarted && muxerIndex != null) {
             /* LOG.v("writeTrack(" + type + "): offset=" + bufferInfo.offset
                     + "\trealOffset=" + byteBuffer.position()
                     + "\tsize=" + bufferInfo.size
@@ -160,7 +161,7 @@ public class DefaultDataSink implements DataSink {
                     + "\teos=" + ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == MediaCodec.BUFFER_FLAG_END_OF_STREAM)
             );
              */
-            mMuxer.writeSampleData(mMuxerIndex.get(type), byteBuffer, bufferInfo);
+            mMuxer.writeSampleData(muxerIndex, byteBuffer, bufferInfo);
         } else {
             enqueue(type, byteBuffer, bufferInfo);
         }
