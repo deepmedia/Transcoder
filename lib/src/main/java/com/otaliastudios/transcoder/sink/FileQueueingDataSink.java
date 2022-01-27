@@ -16,7 +16,7 @@ import com.otaliastudios.transcoder.internal.utils.Logger;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+//import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,14 +51,14 @@ public class FileQueueingDataSink implements DataSink {
 
     private final static Logger LOG = new Logger("FileQueueingDataSink");
 
-    // We must be able to handle potentially big buffers (e.g. first keyframe) in the queue.
-    // Got crashes with 152kb - let's use 256kb. TODO use a dynamic queue instead
-    private final static int BUFFER_SIZE = 256 * 1024;
+//    // We must be able to handle potentially big buffers (e.g. first keyframe) in the queue.
+//    // Got crashes with 152kb - let's use 256kb. TODO use a dynamic queue instead
+//    private final static int BUFFER_SIZE = 256 * 1024;
 
     private boolean mMuxerStarted = false;
     private final MediaMuxer mMuxer;
     private final List<QueuedSample> mQueue = new ArrayList<>();
-    private ByteBuffer mQueueBuffer;
+//    private ByteBuffer mQueueBuffer;
     private final MutableTrackMap<TrackStatus> mStatus = mutableTrackMapOf(null);
     private final MutableTrackMap<MediaFormat> mLastFormat = mutableTrackMapOf(null);
     private final MutableTrackMap<Integer> mMuxerIndex = mutableTrackMapOf(null);
@@ -176,18 +176,18 @@ public class FileQueueingDataSink implements DataSink {
     private void enqueue(@NonNull TrackType type,
                          @NonNull ByteBuffer buffer,
                          @NonNull MediaCodec.BufferInfo bufferInfo) {
-        if (mQueueBuffer == null) {
-            mQueueBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE).order(ByteOrder.nativeOrder());
-        }
-        LOG.v("enqueue(" + type + "): offset=" + bufferInfo.offset
-                + "\trealOffset=" + buffer.position()
-                + "\tsize=" + bufferInfo.size
-                + "\trealSize=" + buffer.remaining()
-                + "\tavailable=" + mQueueBuffer.remaining()
-                + "\ttotal=" + BUFFER_SIZE);
+//        if (mQueueBuffer == null) {
+//            mQueueBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE).order(ByteOrder.nativeOrder());
+//        }
+//        LOG.v("enqueue(" + type + "): offset=" + bufferInfo.offset
+//                + "\trealOffset=" + buffer.position()
+//                + "\tsize=" + bufferInfo.size
+//                + "\trealSize=" + buffer.remaining()
+//                + "\tavailable=" + mQueueBuffer.remaining()
+//                + "\ttotal=" + BUFFER_SIZE);
         buffer.limit(bufferInfo.offset + bufferInfo.size);
         buffer.position(bufferInfo.offset);
-        mQueueBuffer.put(buffer);
+//        mQueueBuffer.put(buffer);
         mQueue.add(new QueuedSample(type, bufferInfo));
     }
 
@@ -197,19 +197,19 @@ public class FileQueueingDataSink implements DataSink {
      */
     private void drainQueue() {
         if (mQueue.isEmpty()) return;
-        mQueueBuffer.flip();
-        LOG.i("Output format determined, writing pending data into the muxer. "
-                + "samples:" + mQueue.size() + " "
-                + "bytes:" + mQueueBuffer.limit());
+//        mQueueBuffer.flip();
+//        LOG.i("Output format determined, writing pending data into the muxer. "
+//                + "samples:" + mQueue.size() + " "
+//                + "bytes:" + mQueueBuffer.limit());
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         int offset = 0;
         for (QueuedSample sample : mQueue) {
             bufferInfo.set(offset, sample.mSize, sample.mTimeUs, sample.mFlags);
-            writeTrack(sample.mType, mQueueBuffer, bufferInfo);
+//            writeTrack(sample.mType, mQueueBuffer, bufferInfo);
             offset += sample.mSize;
         }
         mQueue.clear();
-        mQueueBuffer = null;
+//        mQueueBuffer = null;
     }
 
     @Override
