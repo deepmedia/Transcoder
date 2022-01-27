@@ -57,6 +57,7 @@ public class FileQueueingDataSink implements DataSink {
 
     private boolean mMuxerStarted = false;
     private final MediaMuxer mMuxer;
+    private final String mCacheDirectoryPath;
     private final List<QueuedSample> mQueue = new ArrayList<>();
 //    private ByteBuffer mQueueBuffer;
     private final MutableTrackMap<TrackStatus> mStatus = mutableTrackMapOf(null);
@@ -64,29 +65,31 @@ public class FileQueueingDataSink implements DataSink {
     private final MutableTrackMap<Integer> mMuxerIndex = mutableTrackMapOf(null);
     private final DefaultDataSinkChecks mMuxerChecks = new DefaultDataSinkChecks();
 
-    public FileQueueingDataSink(@NonNull String outputFilePath) {
-        this(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+    public FileQueueingDataSink(@NonNull String outputFilePath, @NonNull String cacheDirectoryPath) {
+        this(outputFilePath, cacheDirectoryPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
     }
 
     @SuppressWarnings("WeakerAccess")
-    public FileQueueingDataSink(@NonNull String outputFilePath, int format) {
+    public FileQueueingDataSink(@NonNull String outputFilePath, @NonNull String cacheDirectoryPath, int format) {
         try {
             mMuxer = new MediaMuxer(outputFilePath, format);
+            mCacheDirectoryPath = cacheDirectoryPath;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public FileQueueingDataSink(@NonNull FileDescriptor fileDescriptor) {
-        this(fileDescriptor, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+    public FileQueueingDataSink(@NonNull FileDescriptor fileDescriptor, @NonNull String cacheDirectoryPath) {
+        this(fileDescriptor, cacheDirectoryPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @SuppressWarnings("WeakerAccess")
-    public FileQueueingDataSink(@NonNull FileDescriptor fileDescriptor, int format) {
+    public FileQueueingDataSink(@NonNull FileDescriptor fileDescriptor, @NonNull String cacheDirectoryPath, int format) {
         try {
             mMuxer = new MediaMuxer(fileDescriptor, format);
+            mCacheDirectoryPath = cacheDirectoryPath;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
