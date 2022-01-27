@@ -13,6 +13,7 @@ import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.utils.MutableTrackMap;
 import com.otaliastudios.transcoder.internal.utils.Logger;
 
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -188,6 +189,9 @@ public class FileQueueingDataSink implements DataSink {
 //                + "\trealSize=" + buffer.remaining()
 //                + "\tavailable=" + mQueueBuffer.remaining()
 //                + "\ttotal=" + BUFFER_SIZE);
+
+        createCacheDirIfNeeded();
+
         buffer.limit(bufferInfo.offset + bufferInfo.size);
         buffer.position(bufferInfo.offset);
 //        mQueueBuffer.put(buffer);
@@ -227,5 +231,10 @@ public class FileQueueingDataSink implements DataSink {
         } catch (Exception e) {
             LOG.w("Failed to release the muxer.", e);
         }
+    }
+
+    private void createCacheDirIfNeeded() {
+        File directory = new File(mCacheDirectoryPath);
+        if (!directory.exists()) directory.mkdir();
     }
 }
