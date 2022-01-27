@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -42,14 +43,14 @@ public class MultiDataSink implements DataSink {
     }
 
     @Override
-    public void setTrackFormat(@NonNull TrackType type, @NonNull MediaFormat format) {
+    public void setTrackFormat(@NonNull TrackType type, @NonNull MediaFormat format) throws IOException {
         for (DataSink sink : sinks) {
             sink.setTrackFormat(type, format);
         }
     }
 
     @Override
-    public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
+    public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) throws IOException {
         int position = byteBuffer.position();
         int limit = byteBuffer.limit();
         for (DataSink sink : sinks) {

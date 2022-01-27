@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -53,7 +54,7 @@ public interface DataSink {
      * @param format the track format
      */
     void setTrackFormat(@NonNull TrackType type,
-                        @NonNull MediaFormat format);
+                        @NonNull MediaFormat format) throws IOException;
 
     /**
      * Called by the transcoding pipeline to write data into this sink.
@@ -63,7 +64,7 @@ public interface DataSink {
      */
     void writeTrack(@NonNull TrackType type,
                     @NonNull ByteBuffer byteBuffer,
-                    @NonNull MediaCodec.BufferInfo bufferInfo);
+                    @NonNull MediaCodec.BufferInfo bufferInfo) throws IOException;
 
     /**
      * Called when transcoders have stopped writing.

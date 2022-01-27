@@ -21,6 +21,8 @@ import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.sink.DataSink;
+import com.otaliastudios.transcoder.sink.FileQueueingDataSink;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.TrimDataSource;
 import com.otaliastudios.transcoder.source.UriDataSource;
@@ -294,7 +296,8 @@ public class TranscoderActivity extends AppCompatActivity implements
         mTranscodeStartTime = SystemClock.uptimeMillis();
         setIsTranscoding(true);
         LOG.e("Building transcoding options...");
-        TranscoderOptions.Builder builder = Transcoder.into(mTranscodeOutputFile.getAbsolutePath());
+        DataSink dataSink = new FileQueueingDataSink(mTranscodeOutputFile.getAbsolutePath(), this.getFilesDir().getAbsolutePath());
+        TranscoderOptions.Builder builder = Transcoder.into(dataSink);
         List<DataSource> sources = ArraysKt.map(uris, uri -> new UriDataSource(this, uri));
         sources.set(0, new TrimDataSource(sources.get(0), mTrimStartUs, mTrimEndUs));
         if (mAudioReplacementUri == null) {

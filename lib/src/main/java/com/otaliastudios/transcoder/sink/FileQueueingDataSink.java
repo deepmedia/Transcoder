@@ -15,11 +15,20 @@ import com.otaliastudios.transcoder.internal.utils.Logger;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 //import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static com.otaliastudios.transcoder.internal.utils.TrackMapKt.mutableTrackMapOf;
 
@@ -37,13 +46,16 @@ public class FileQueueingDataSink implements DataSink {
      */
     private static class QueuedSample {
         private final TrackType mType;
+        private final String mPath;
         private final int mSize;
         private final long mTimeUs;
         private final int mFlags;
 
         private QueuedSample(@NonNull TrackType type,
+                             @NonNull String path,
                              @NonNull MediaCodec.BufferInfo bufferInfo) {
             mType = type;
+            mPath = path;
             mSize = bufferInfo.size;
             mTimeUs = bufferInfo.presentationTimeUs;
             mFlags = bufferInfo.flags;
@@ -114,7 +126,7 @@ public class FileQueueingDataSink implements DataSink {
     }
 
     @Override
-    public void setTrackFormat(@NonNull TrackType type, @NonNull MediaFormat format) {
+    public void setTrackFormat(@NonNull TrackType type, @NonNull MediaFormat format) throws IOException {
         LOG.i("setTrackFormat(" + type + ") format=" + format);
         boolean shouldValidate = mStatus.get(type) == TrackStatus.COMPRESSING;
         if (shouldValidate) {
@@ -124,7 +136,7 @@ public class FileQueueingDataSink implements DataSink {
         maybeStart();
     }
 
-    private void maybeStart() {
+    private void maybeStart() throws IOException {
         if (mMuxerStarted) return;
         boolean isTranscodingVideo = mStatus.get(TrackType.VIDEO).isTranscoding();
         boolean isTranscodingAudio = mStatus.get(TrackType.AUDIO).isTranscoding();
@@ -152,7 +164,7 @@ public class FileQueueingDataSink implements DataSink {
     }
 
     @Override
-    public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
+    public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) throws IOException {
         if (mMuxerStarted) {
             /* LOG.v("writeTrack(" + type + "): offset=" + bufferInfo.offset
                     + "\trealOffset=" + byteBuffer.position()
@@ -179,7 +191,7 @@ public class FileQueueingDataSink implements DataSink {
      */
     private void enqueue(@NonNull TrackType type,
                          @NonNull ByteBuffer buffer,
-                         @NonNull MediaCodec.BufferInfo bufferInfo) {
+                         @NonNull MediaCodec.BufferInfo bufferInfo) throws IOException {
 //        if (mQueueBuffer == null) {
 //            mQueueBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE).order(ByteOrder.nativeOrder());
 //        }
@@ -192,17 +204,18 @@ public class FileQueueingDataSink implements DataSink {
 
         createCacheDirIfNeeded();
 
-        buffer.limit(bufferInfo.offset + bufferInfo.size);
-        buffer.position(bufferInfo.offset);
+//        buffer.limit(bufferInfo.offset + bufferInfo.size);
+//        buffer.position(bufferInfo.offset);
+        String cacheFilePath = writeBufferToFile(buffer);
 //        mQueueBuffer.put(buffer);
-        mQueue.add(new QueuedSample(type, bufferInfo));
+        mQueue.add(new QueuedSample(type, cacheFilePath, bufferInfo));
     }
 
     /**
      * Writes all enqueued samples into the muxer, now that it is
      * open and running.
      */
-    private void drainQueue() {
+    private void drainQueue() throws IOException {
         if (mQueue.isEmpty()) return;
 //        mQueueBuffer.flip();
 //        LOG.i("Output format determined, writing pending data into the muxer. "
@@ -211,11 +224,17 @@ public class FileQueueingDataSink implements DataSink {
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         int offset = 0;
         for (QueuedSample sample : mQueue) {
-            bufferInfo.set(offset, sample.mSize, sample.mTimeUs, sample.mFlags);
-//            writeTrack(sample.mType, mQueueBuffer, bufferInfo);
+            bufferInfo.set(0, sample.mSize, sample.mTimeUs, sample.mFlags);
+            ByteBuffer buffer = readBuffer(sample.mPath);
+//            buffer.limit(bufferInfo.offset + bufferInfo.size);
+            buffer.position(0);
+
+//            buffer.flip();
+            writeTrack(sample.mType, buffer, bufferInfo);
             offset += sample.mSize;
         }
         mQueue.clear();
+        deleteCacheDirIfNeeded();
 //        mQueueBuffer = null;
     }
 
@@ -228,6 +247,7 @@ public class FileQueueingDataSink implements DataSink {
     public void release() {
         try {
             mMuxer.release();
+            deleteCacheDirIfNeeded();
         } catch (Exception e) {
             LOG.w("Failed to release the muxer.", e);
         }
@@ -236,5 +256,34 @@ public class FileQueueingDataSink implements DataSink {
     private void createCacheDirIfNeeded() {
         File directory = new File(mCacheDirectoryPath);
         if (!directory.exists()) directory.mkdir();
+    }
+
+    private void deleteCacheDirIfNeeded() {
+        File directory = new File(mCacheDirectoryPath);
+        directory.deleteOnExit();
+    }
+
+    private String writeBufferToFile(@NonNull ByteBuffer buffer) throws IOException {
+        String filePath = mCacheDirectoryPath + "/" + UUID.randomUUID();
+        File file = new File(filePath);
+        file.createNewFile();
+
+        FileChannel fc = new FileOutputStream(filePath).getChannel();
+        fc.write(buffer);
+        fc.close();
+
+        return filePath;
+    }
+
+    private ByteBuffer readBuffer(@NonNull String filePath) {
+        try {
+            FileChannel fc = new FileInputStream(filePath).getChannel();
+            ByteBuffer buf = ByteBuffer.allocate((int) fc.size());
+            fc.read(buf);
+            fc.close();
+            return buf;
+        } catch (IOException e) {
+            return null;
+        }
     }
 }
