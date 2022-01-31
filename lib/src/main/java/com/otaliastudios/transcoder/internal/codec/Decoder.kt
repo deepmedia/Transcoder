@@ -41,6 +41,7 @@ class Decoder(
 
     companion object {
         private val ID = trackMapOf(AtomicInteger(0), AtomicInteger(0))
+        private const val timeoutUs = 2000L
     }
 
     private val log = Logger("Decoder(${format.trackType},${ID[format.trackType].getAndIncrement()})")
@@ -94,7 +95,7 @@ class Decoder(
     }
 
     override fun drain(): State<DecoderData> {
-        val result = codec.dequeueOutputBuffer(info, 0)
+        val result = codec.dequeueOutputBuffer(info, timeoutUs)
         return when (result) {
             INFO_TRY_AGAIN_LATER -> {
                 log.i("drain(): got INFO_TRY_AGAIN_LATER, waiting.")
