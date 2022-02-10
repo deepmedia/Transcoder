@@ -25,10 +25,13 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
         chain.forEachIndexed { index, step ->
             if (index < head) return@forEachIndexed
             val fresh = head == 0 || index != head
-            state = executeStep(state, step, fresh) ?: run {
-                log.v("execute(): step ${step.name} (#$index/${chain.size}) is waiting. headState=$headState headIndex=$headIndex")
-                return State.Wait
+
+            when(val okOrWaitState = executeStep(state, step, fresh)) {
+                is State.Wait -> return State.Wait(okOrWaitState.withSleep)
+                is State.Ok -> state = okOrWaitState
+                is State.Retry -> throw RuntimeException("Unexpected")
             }
+
             // log.v("execute(): executed ${step.name} (#$index/${chain.size}). result=$state")
             if (state is State.Eos) {
                 log.i("execute(): EOS from ${step.name} (#$index/${chain.size}).")
@@ -47,12 +50,12 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
         chain.forEach { it.release() }
     }
 
-    private fun executeStep(previous: State.Ok<Any>, step: AnyStep, fresh: Boolean): State.Ok<Any>? {
+    private fun executeStep(previous: State.Ok<Any>, step: AnyStep, fresh: Boolean): State<Any> {
         val state = step.step(previous, fresh)
         return when (state) {
             is State.Ok -> state
             is State.Retry -> executeStep(previous, step, fresh = false)
-            is State.Wait -> null
+            is State.Wait -> state
         }
     }
 

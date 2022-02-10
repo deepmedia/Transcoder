@@ -64,11 +64,11 @@ internal class AudioEngine(
     override fun drain(): State<EncoderData> {
         if (chunks.isEmpty()) {
             log.i("drain(): no chunks, waiting...")
-            return State.Wait
+            return State.Wait(true)
         }
         val (outBytes, outId) = next.buffer() ?: return run {
             log.i("drain(): no next buffer, waiting...")
-            State.Wait
+            State.Wait(true)
         }
         val outBuffer = outBytes.asShortBuffer()
         return chunks.drain(

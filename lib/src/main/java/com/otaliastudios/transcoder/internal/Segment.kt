@@ -24,6 +24,14 @@ internal class Segment(
         return state == null || state !is State.Eos
     }
 
+    fun needsSleep(): Boolean {
+        when(val s = state ?: return false) {
+            is State.Ok -> return false
+            is State.Retry -> return false
+            is State.Wait -> return s.withSleep
+        }
+    }
+
     fun release() {
         pipeline.release()
     }

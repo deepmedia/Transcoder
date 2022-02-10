@@ -102,7 +102,7 @@ internal class VideoRenderer(
                 State.Ok(state.value.timeUs)
             } else {
                 state.value.release(false)
-                State.Wait
+                State.Wait(false)
             }
         }
     }

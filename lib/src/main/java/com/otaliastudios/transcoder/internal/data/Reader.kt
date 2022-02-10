@@ -28,7 +28,7 @@ internal class Reader(
         val buffer = next.buffer()
         if (buffer == null) {
             log.v("Returning State.Wait because buffer is null.")
-            return State.Wait
+            return State.Wait(true)
         } else {
             return action(buffer.first, buffer.second)
         }
@@ -46,7 +46,7 @@ internal class Reader(
             }
         } else if (!source.canReadTrack(track)) {
             log.i("Returning State.Wait because source can't read $track right now.")
-            State.Wait
+            State.Wait(false)
         } else {
             nextBufferOrWait { byteBuffer, id ->
                 chunk.buffer = byteBuffer
