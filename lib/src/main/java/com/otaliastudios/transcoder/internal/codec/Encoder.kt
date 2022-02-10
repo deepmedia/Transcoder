@@ -118,7 +118,7 @@ internal class Encoder(
                     State.Eos(WriterData(buffer, 0L, 0) {})
                 } else {
                     log.i("Can't dequeue output buffer: INFO_TRY_AGAIN_LATER")
-                    State.Wait
+                    State.Wait(true)
                 }
             }
             INFO_OUTPUT_FORMAT_CHANGED -> {
