@@ -123,7 +123,10 @@ internal class DefaultTranscodeEngine(
             }
 
             if (!advanced) {
-                Thread.sleep(WAIT_MS)
+                val needsSleep = (audio?.needsSleep() ?: false) or (video?.needsSleep() ?: false)
+                if (needsSleep) {
+                    Thread.sleep(WAIT_MS)
+                }
             }
 
             if (++loop % PROGRESS_LOOPS == 0L) {
