@@ -120,9 +120,13 @@ internal class DefaultTranscodeEngine(
             } else if (completed) {
                 progress(1.0)
                 break
-            } else if (!advanced) {
+            }
+
+            if (!advanced) {
                 Thread.sleep(WAIT_MS)
-            } else if (++loop % PROGRESS_LOOPS == 0L) {
+            }
+
+            if (++loop % PROGRESS_LOOPS == 0L) {
                 val audioProgress = timer.progress.audio
                 val videoProgress = timer.progress.video
                 log.v("transcode(): got progress, video=$videoProgress audio=$audioProgress")
