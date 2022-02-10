@@ -117,7 +117,8 @@ internal class DefaultTranscodeEngine(
             log.v("transcode(): executed step=$loop advanced=$advanced completed=$completed")
             if (Thread.interrupted()) {
                 throw InterruptedException()
-            } else if (completed) {
+            }
+            if (completed) {
                 progress(1.0)
                 break
             }
@@ -129,7 +130,7 @@ internal class DefaultTranscodeEngine(
                 }
             }
 
-            if (++loop % PROGRESS_LOOPS == 0L) {
+            if (advanced && ++loop % PROGRESS_LOOPS == 0L) {
                 val audioProgress = timer.progress.audio
                 val videoProgress = timer.progress.video
                 log.v("transcode(): got progress, video=$videoProgress audio=$audioProgress")
