@@ -60,7 +60,6 @@ public class TranscoderOptions {
     private TranscoderListener listener;
     private Handler listenerHandler;
 
-    @NonNull
     public TranscoderListener getListener() {
         return listener;
     }
@@ -341,9 +340,7 @@ public class TranscoderOptions {
 
         @NonNull
         public TranscoderOptions build() {
-            if (listener == null) {
-                throw new IllegalStateException("listener can't be null");
-            }
+
             if (audioDataSources.isEmpty() && videoDataSources.isEmpty()) {
                 throw new IllegalStateException("we need at least one data source");
             }
