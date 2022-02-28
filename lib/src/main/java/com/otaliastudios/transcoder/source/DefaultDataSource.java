@@ -45,7 +45,7 @@ public abstract class DefaultDataSource implements DataSource {
     private long mDontRenderRangeStart = -1L;
     private long mDontRenderRangeEnd = -1L;
 
-    private final ArrayList<Long> keyFrameTsUs = new ArrayList<>();
+    private final ArrayList<Long> keyFrameTimestamps = new ArrayList<>();
     @Override
     public void initialize() {
         LOG.i("initialize(): initializing...");
@@ -92,8 +92,8 @@ public abstract class DefaultDataSource implements DataSource {
     }
 
     @Override
-    public ArrayList<Long> getKeyFrameTimestampsUs() {
-        return keyFrameTsUs;
+    public ArrayList<Long> getKeyFrameTimestamps() {
+        return keyFrameTimestamps;
     }
 
     private Boolean lastKeyFrame = false;
@@ -101,15 +101,15 @@ public abstract class DefaultDataSource implements DataSource {
     public long requestKeyFrameTimestamps() {
 
         if(lastKeyFrame) return  -1L;
-        if(keyFrameTsUs.size() > 0) {
-            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 10001L, MediaExtractor.SEEK_TO_NEXT_SYNC);
+        if(keyFrameTimestamps.size() > 0) {
+            mExtractor.seekTo(keyFrameTimestamps.get(keyFrameTimestamps.size() - 1) + 10001L, MediaExtractor.SEEK_TO_NEXT_SYNC);
         }
 
         long sampleTime = mExtractor.getSampleTime();
 
-        if (sampleTime == -1 || (keyFrameTsUs.size() > 0 && sampleTime == keyFrameTsUs.get(keyFrameTsUs.size() - 1))) {
+        if (sampleTime == -1 || (keyFrameTimestamps.size() > 0 && sampleTime == keyFrameTimestamps.get(keyFrameTimestamps.size() - 1))) {
             lastKeyFrame = true;
-            mExtractor.seekTo(keyFrameTsUs.get(keyFrameTsUs.size() - 1) + 10001L, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            mExtractor.seekTo(keyFrameTimestamps.get(keyFrameTimestamps.size() - 1) + 10001L, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             return -1;
         }
         LOG.i("keyFrameStartTime:" + sampleTime);
@@ -119,17 +119,17 @@ public abstract class DefaultDataSource implements DataSource {
         int prefetchCount = 100;
         while (sampleTime >= 0L && sampleTime != lastSampleTime && count < prefetchCount) {
             if ((mExtractor.getSampleFlags() & MediaExtractor.SAMPLE_FLAG_SYNC) > 0) {
-                if (!keyFrameTsUs.isEmpty() && sampleTime <= keyFrameTsUs.get(keyFrameTsUs.size() - 1)) {
-                    Collections.sort(keyFrameTsUs);
+                if (!keyFrameTimestamps.isEmpty() && sampleTime <= keyFrameTimestamps.get(keyFrameTimestamps.size() - 1)) {
+                    Collections.sort(keyFrameTimestamps);
                 }
-                keyFrameTsUs.add(sampleTime);
+                keyFrameTimestamps.add(sampleTime);
             }
             mExtractor.seekTo(sampleTime + 10001L, MediaExtractor.SEEK_TO_NEXT_SYNC);
             lastSampleTime = sampleTime;
             sampleTime = mExtractor.getSampleTime();
             count++;
         }
-        LOG.i("keyFrameStopCount:" + keyFrameTsUs);
+        LOG.i("keyFrameStopCount:" + keyFrameTimestamps);
         return sampleTime;
     }
 

@@ -114,9 +114,10 @@ public interface DataSource {
 
     default long requestKeyFrameTimestamps() { return -1;}
 
-    default ArrayList<Long> getKeyFrameTimestampsUs() {
+    default ArrayList<Long> getKeyFrameTimestamps() {
         return new ArrayList<>();
     }
+
     /**
      * Rewinds this source, moving it to its default state.
      * To be used again, tracks will be selected again.
