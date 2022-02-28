@@ -253,8 +253,26 @@ class DefaultThumbnailsEngine(
             positions.mapNotNull { (positionUs, request) ->
                 val localizedUs = timer.localize(TrackType.VIDEO, index, positionUs)
                 localizedUs?.let { Stub(request, positionUs, localizedUs) }
-            }.toMutableList().sortedBy { it.positionUs }
+//            }.toMutableList().sortedBy { it.positionUs }
+            }.toMutableList().reorder(dataSources[TrackType.VIDEO][0])
         )
+    }
+
+    private fun  List<Stub>.reorder(source: DataSource): Collection<Stub> {
+        val bucketListMap = LinkedHashMap<Long, ArrayList<Stub>>()
+        val finalList = ArrayList<Stub>()
+
+        forEach {
+            val nextKeyFrameIndex = source.search(it.positionUs)
+            val previousKeyFrameUs = source.keyFrameAt(nextKeyFrameIndex - 1) { source.lastKeyFrame() }
+
+            val list = bucketListMap.getOrPut(previousKeyFrameUs) { ArrayList<Stub>() }
+            list.add(it)
+        }
+        bucketListMap.forEach {
+            finalList.addAll(it.value.sortedBy { it.positionUs })
+        }
+        return finalList
     }
 
     private val fetchPosition: () -> VideoSnapshots.Request? = {
