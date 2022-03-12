@@ -96,13 +96,16 @@ public class DataSourceWrapper implements DataSource {
 
     @Override
     public boolean isInitialized() {
-        return mSource.isInitialized();
+        return mSource != null && mSource.isInitialized();
     }
 
     @Override
     public void initialize() {
         // Make it easier for subclasses to put their logic in initialize safely.
-        if (!mSource.isInitialized()) {
+        if (!isInitialized()) {
+            if (mSource == null) {
+                throw new NullPointerException("DataSourceWrapper's source is not set!");
+            }
             mSource.initialize();
         }
     }
