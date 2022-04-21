@@ -6,7 +6,7 @@ import io.deepmedia.tools.publisher.sonatype.Sonatype
 plugins {
     id("com.android.library")
     id("kotlin-android")
-    id("io.deepmedia.tools.publisher")
+//    id("io.deepmedia.tools.publisher")
 }
 
 android {
@@ -32,6 +32,7 @@ dependencies {
     androidTestImplementation("org.mockito:mockito-android:2.28.2")
 }
 
+/*
 publisher {
     project.description = "Accelerated video transcoding using Android MediaCodec API without native code (no LGPL/patent issues)."
     project.artifact = "transcoder"
@@ -61,3 +62,4 @@ publisher {
         signing.password = "SIGNING_PASSWORD"
     }
 }
+*/
