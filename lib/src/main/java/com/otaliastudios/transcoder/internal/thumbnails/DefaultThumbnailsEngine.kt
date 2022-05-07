@@ -5,8 +5,8 @@ package com.otaliastudios.transcoder.internal.thumbnails
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.CustomSegments
 import com.otaliastudios.transcoder.internal.DataSources
-import com.otaliastudios.transcoder.internal.Segments
 import com.otaliastudios.transcoder.internal.Timer
 import com.otaliastudios.transcoder.internal.Tracks
 import com.otaliastudios.transcoder.internal.codec.Decoder
@@ -60,7 +60,7 @@ class DefaultThumbnailsEngine(
         true
     )
 
-    private val segments = Segments(dataSources, tracks, ::createPipeline, false)
+    private val segments = CustomSegments(dataSources, tracks, ::createPipeline)
 
     private val timer = Timer(DefaultTimeInterpolator(), dataSources, tracks, segments.currentIndex)
 
@@ -109,7 +109,9 @@ class DefaultThumbnailsEngine(
         outputFormat: MediaFormat
     ): Pipeline {
         val source = dataSources[type][index].ignoringEOS()
-
+        if(VERBOSE) {
+            log.i("Creating pipeline #$index. absoluteUs=${stubs.joinToString { it.toString() }}")
+        }
         return Pipeline.build("Thumbnails") {
             Seeker(source) {
                 var seek = false
@@ -219,19 +221,57 @@ class DefaultThumbnailsEngine(
         return nextKeyFrameIndex
     }
 
-    override suspend fun queueThumbnails(list: List<ThumbnailRequest>) {
-        val segment = segments.next(TrackType.VIDEO)
-        segment?.let {
-            this.updatePositions(list, it.index)
+    override  fun addDataSource(dataSource: DataSource) {
+        dataSources.addVideoDataSource(dataSource)
+        tracks.updateTracksInfo()
+        if (tracks.active.has(TrackType.VIDEO)) {
+            dataSource.selectTrack(TrackType.VIDEO)
         }
-        while (currentCoroutineContext().isActive) {
-            val advanced = segments.next(TrackType.VIDEO)?.advance() ?: false
-            val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
-            if (completed || stubs.isEmpty()) {
-                log.i("loop broken $stubs")
-                break
-            } else if (!advanced) {
-                delay(WAIT_MS)
+    }
+
+    override fun removeDataSource(dataSourceId: String) {
+        dataSources.removeVideoDataSource(dataSourceId)
+        tracks.updateTracksInfo()
+    }
+
+    override suspend fun queueThumbnails(list: List<ThumbnailRequest>) {
+
+        val map = list.groupBy { it.sourceId() }
+
+        map.forEach { entry ->
+            val positions = entry.value.flatMap { request ->
+                val duration = timer.totalDurationUs
+                request.locate(duration).map { it to request }
+            }.sortedBy { it.first }
+            val index = dataSources[TrackType.VIDEO].indexOfFirst { it.mediaId() == entry.key }
+            if (index >= 0) {
+                stubs.addAll(
+                    positions.map { (positionUs, request) ->
+                        Stub(request, positionUs, positionUs)
+                    }.toMutableList().reorder(dataSources[TrackType.VIDEO][index])
+                )
+            }
+            if (VERBOSE) {
+                log.i("Updating pipeline positions for segment Index#$index absoluteUs=${positions.joinToString { it.first.toString() }}, and stubs $stubs")
+            }
+        }
+
+        if (stubs.isNotEmpty()) {
+            while (currentCoroutineContext().isActive) {
+                val segment =
+                    stubs.firstOrNull()?.request?.sourceId()?.let { segments.getSegment(it) }
+                if (VERBOSE) {
+                    log.i("loop advancing for $segment")
+                }
+                val advanced = segment?.advance() ?: false
+                // avoid calling hasNext if we advanced.
+                val completed = !advanced && !segments.hasNext()
+                if (completed || stubs.isEmpty()) {
+                    log.i("loop broken $stubs")
+                    break
+                } else if (!advanced) {
+                    delay(WAIT_MS)
+                }
             }
         }
     }
@@ -241,33 +281,17 @@ class DefaultThumbnailsEngine(
         segments.release()
     }
 
-    override suspend fun removePosition(positionUs: Long) {
-        if (positionUs == stubs.firstOrNull()?.positionUs) {
+    override suspend fun removePosition(source: String, positionUs: Long) {
+        if (stubs.firstOrNull()?.request?.sourceId() == source && positionUs == stubs.firstOrNull()?.positionUs) {
             return
         }
         val locatedTimestampUs = SingleThumbnailRequest(positionUs).locate(timer.durationUs.video)[0]
-        val stub = stubs.find { it.positionUs == locatedTimestampUs }
+        val stub = stubs.find {it.request.sourceId() == source &&  it.positionUs == locatedTimestampUs }
         if (stub != null) {
             log.i("removePosition Match: $positionUs :$stubs")
             stubs.remove(stub)
             shouldSeek = true
         }
-    }
-
-    private fun updatePositions(requests: List<ThumbnailRequest>, index: Int) {
-        val positions = requests.flatMap { request ->
-            val duration = timer.totalDurationUs
-            request.locate(duration).map { it to request }
-        }
-        log.i("Creating pipeline #$index. absoluteUs=${positions.joinToString { it.first.toString() }}")
-
-        stubs.addAll(
-            positions.mapNotNull { (positionUs, request) ->
-                val localizedUs = timer.localize(TrackType.VIDEO, index, positionUs)
-                localizedUs?.let { Stub(request, positionUs, localizedUs) }
-//            }.toMutableList().sortedBy { it.positionUs }
-            }.toMutableList().reorder(dataSources[TrackType.VIDEO][0])
-        )
     }
 
     private fun  List<Stub>.reorder(source: DataSource): Collection<Stub> {

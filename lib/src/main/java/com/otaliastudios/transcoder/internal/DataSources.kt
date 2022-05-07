@@ -28,20 +28,21 @@ class DataSources constructor(
         audioSources.init()
     }
 
-    private val videoSources: List<DataSource> = run {
-        val valid = videoSources.count { it.getTrackFormat(TrackType.VIDEO) != null }
-        when (valid) {
-            0 -> listOf<DataSource>().also { videoSources.deinit() }
-            videoSources.size -> videoSources
-            else -> videoSources // Tracks will crash
+    private var videoSources: List<DataSource> = updateVideoSources(videoSources)
+        set(value) {
+            field = updateVideoSources(value)
         }
-    }
 
-    private val audioSources: List<DataSource> = run {
-        val valid = audioSources.count { it.getTrackFormat(TrackType.AUDIO) != null }
-        when (valid) {
-            0 -> listOf<DataSource>().also { audioSources.deinit() }
-            audioSources.size -> audioSources
+    private var audioSources: List<DataSource> = updateAudioSources(audioSources)
+        set(value) {
+            field = updateAudioSources(value)
+        }
+
+    private fun updateAudioSources(sources: List<DataSource>) : List<DataSource> {
+        val valid = sources.count { it.getTrackFormat(TrackType.AUDIO) != null }
+        return when (valid) {
+            0 -> listOf<DataSource>().also { sources.deinit() }
+            sources.size -> sources
             else -> {
                 // Some tracks do not have audio, while some do. Replace with BlankAudio.
                 audioSources.map { source ->
@@ -52,6 +53,55 @@ class DataSources constructor(
         }
     }
 
+    private fun updateVideoSources(sources: List<DataSource>): List<DataSource> {
+        val valid = sources.count { it.getTrackFormat(TrackType.VIDEO) != null }
+        return when (valid) {
+            0 -> listOf<DataSource>().also { sources.deinit() }
+            sources.size -> sources
+            else -> sources // Tracks will crash
+        }
+    }
+
+    fun addDataSource(dataSource: DataSource) {
+        addVideoDataSource(dataSource)
+        addAudioDataSource(dataSource)
+    }
+
+    fun addVideoDataSource(dataSource: DataSource) {
+        dataSource.init()
+        if (dataSource.getTrackFormat(TrackType.VIDEO) != null && dataSource !in videoSources) {
+            videoSources = videoSources + dataSource
+        }
+    }
+    fun addAudioDataSource(dataSource: DataSource) {
+        dataSource.init()
+        if (dataSource.getTrackFormat(TrackType.AUDIO) != null) {
+            audioSources = audioSources + dataSource
+        }
+    }
+
+    fun removeDataSource(dataSourceId: String) {
+        removeAudioDataSource(dataSourceId)
+        removeVideoDataSource(dataSourceId)
+    }
+
+    fun removeVideoDataSource(dataSourceId: String) {
+        val source = videoSources.find { it.mediaId() == dataSourceId }
+        if (source?.getTrackFormat(TrackType.VIDEO) != null) {
+            videoSources = videoSources - source
+            source.releaseTrack(TrackType.VIDEO)
+        }
+        source?.deinit()
+    }
+
+    fun removeAudioDataSource(dataSourceId: String) {
+        val source = audioSources.find { it.mediaId() == dataSourceId }
+        if (source?.getTrackFormat(TrackType.AUDIO) != null) {
+            audioSources = audioSources - source
+            source.releaseTrack(TrackType.AUDIO)
+        }
+        source?.deinit()
+    }
     override fun get(type: TrackType) = when (type) {
         TrackType.AUDIO -> audioSources
         TrackType.VIDEO -> videoSources
