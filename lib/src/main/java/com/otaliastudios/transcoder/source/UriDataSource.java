@@ -32,4 +32,9 @@ public class UriDataSource extends DefaultDataSource {
     protected void initializeRetriever(@NonNull MediaMetadataRetriever retriever) {
         retriever.setDataSource(context, uri);
     }
+
+    @Override
+    public String mediaId() {
+        return uri.toString();
+    }
 }

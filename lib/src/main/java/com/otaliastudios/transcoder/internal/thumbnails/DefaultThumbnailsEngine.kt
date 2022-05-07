@@ -75,7 +75,7 @@ class DefaultThumbnailsEngine(
     ) {
         var actualLocalizedUs: Long = localizedUs
         override fun toString(): String {
-            return positionUs.toString()
+            return request.sourceId() + ":" + positionUs.toString()
         }
     }
 
@@ -90,6 +90,8 @@ class DefaultThumbnailsEngine(
         override fun getKeyFrameTimestamps() = source.keyFrameTimestamps
 
         override fun getSeekThreshold() = source.seekThreshold
+
+        override fun mediaId() = source.mediaId()
 
         override fun isDrained(): Boolean {
             if (source.isDrained) {
