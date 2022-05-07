@@ -84,9 +84,9 @@ class ThumbnailerOptions(
         }
 
         fun build(): ThumbnailerOptions {
-            require(dataSources.isNotEmpty()) {
-                "At least one data source is required!"
-            }
+//            require(dataSources.isNotEmpty()) {
+//                "At least one data source is required!"
+//            }
 
             val listenerHandler = listenerHandler
                 ?: Handler(Looper.myLooper() ?: Looper.getMainLooper())

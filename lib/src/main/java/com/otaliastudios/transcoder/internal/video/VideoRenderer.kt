@@ -57,10 +57,10 @@ class VideoRenderer(
 
         // Just a sanity check that the rotation coming from DataSource is not different from
         // the one found in the DataSource's MediaFormat for video.
-        val sourceRotation = runCatching { sourceFormat.getInteger(KEY_ROTATION_DEGREES) }.getOrElse { 0 }
-        if (sourceRotation != this.sourceRotation) {
-            error("Unexpected difference in rotation. DataSource=${this.sourceRotation}, MediaFormat=$sourceRotation")
-        }
+//        val sourceRotation = runCatching { sourceFormat.getInteger(KEY_ROTATION_DEGREES) }.getOrElse { 0 }
+//        if (sourceRotation != this.sourceRotation) {
+//            error("Unexpected difference in rotation. DataSource=${this.sourceRotation}, MediaFormat=$sourceRotation")
+//        }
 
         // Decoded video is rotated automatically starting from Android 5.0. Turn it off here because we
         // don't want to work on the rotated one, we apply rotation at rendering time.
@@ -68,7 +68,7 @@ class VideoRenderer(
         sourceFormat.setInteger(KEY_ROTATION_DEGREES, 0)
 
         // Instead, apply the source rotation, plus the extra user rotation, to the renderer.
-        val rotation = (sourceRotation + extraRotation) % 360
+        val rotation = (this.sourceRotation + extraRotation) % 360
         frameDrawer.setRotation(rotation)
 
         // Depending on the rotation, we must also pass scale to the drawer due to how GL works.

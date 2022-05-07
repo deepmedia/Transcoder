@@ -166,7 +166,9 @@ class DefaultThumbnailsEngine(
                         )
                         val thumbnail = Thumbnail(stub.request, stub.positionUs, bitmap)
                         val callbackStatus = progress.trySend(thumbnail)
-                        log.i("Callback Send Status ${callbackStatus.isSuccess}")
+                        if (VERBOSE) {
+                            log.i("Callback Send Status ${callbackStatus.isSuccess}")
+                        }
                     }
                 }
         }
