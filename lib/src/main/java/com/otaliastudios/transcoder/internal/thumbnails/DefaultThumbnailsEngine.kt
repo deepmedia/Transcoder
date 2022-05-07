@@ -26,8 +26,11 @@ import com.otaliastudios.transcoder.thumbnail.SingleThumbnailRequest
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
 import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
 import java.util.ArrayList
 
@@ -81,12 +84,10 @@ class DefaultThumbnailsEngine(
     private inner class IgnoringEosDataSource(
         private val source: DataSource,
     ) : DataSource by source {
-        override fun requestKeyFrameTimestamps(): Long {
-            return source.requestKeyFrameTimestamps()
-        }
-        override fun getKeyFrameTimestamps(): ArrayList<Long> {
-            return source.keyFrameTimestamps
-        }
+
+        override fun requestKeyFrameTimestamps() = source.requestKeyFrameTimestamps()
+
+        override fun getKeyFrameTimestamps() = source.keyFrameTimestamps
 
         override fun getSeekThreshold() = source.seekThreshold
 
@@ -164,21 +165,22 @@ class DefaultThumbnailsEngine(
                                 "deltaUs=${stub.localizedUs - stub.actualLocalizedUs}"
                         )
                         val thumbnail = Thumbnail(stub.request, stub.positionUs, bitmap)
-                        progress(thumbnail)
+                        val callbackStatus = progress.trySend(thumbnail)
+                        log.i("Callback Send Status ${callbackStatus.isSuccess}")
                     }
                 }
         }
     }
 
-    private lateinit var progress: (Thumbnail) -> Unit
+    private val progress = Channel<Thumbnail>(Channel.BUFFERED)
 
-    private fun DataSource.lastKeyFrame(): Long {
-        return keyFrameAt(keyFrameTimestamps.size - 1)
-    }
 
-    private inline fun DataSource.keyFrameAt(index: Int, defaultValue: ((Int)-> Long) = {_ -> -1}): Long {
-        return keyFrameTimestamps.getOrElse(index, defaultValue)
-    }
+    private fun DataSource.lastKeyFrame() = keyFrameAt(keyFrameTimestamps.size - 1)
+
+    override val progressFlow: Flow<Thumbnail> = progress.receiveAsFlow()
+
+    private inline fun DataSource.keyFrameAt(index: Int, defaultValue: ((Int)-> Long) = {_ -> -1}) =
+        keyFrameTimestamps.getOrElse(index, defaultValue)
 
     private fun DataSource.search(timestampUs: Long): Int {
         if (keyFrameTimestamps.isEmpty())
@@ -213,12 +215,11 @@ class DefaultThumbnailsEngine(
         return nextKeyFrameIndex
     }
 
-    override suspend fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit) {
+    override suspend fun queueThumbnails(list: List<ThumbnailRequest>) {
         val segment = segments.next(TrackType.VIDEO)
         segment?.let {
             this.updatePositions(list, it.index)
         }
-        this.progress = progress
         while (currentCoroutineContext().isActive) {
             val advanced = segments.next(TrackType.VIDEO)?.advance() ?: false
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.

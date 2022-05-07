@@ -7,10 +7,13 @@ import com.otaliastudios.transcoder.internal.DataSources
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
 import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
+import kotlinx.coroutines.flow.Flow
 
 abstract class ThumbnailsEngine {
 
-    abstract suspend fun queueThumbnails(list: List<ThumbnailRequest>, progress: (Thumbnail) -> Unit)
+    abstract val progressFlow: Flow<Thumbnail>
+
+    abstract suspend fun queueThumbnails(list: List<ThumbnailRequest>)
 
     abstract suspend fun removePosition(positionUs: Long)
 
@@ -43,24 +46,5 @@ abstract class ThumbnailsEngine {
             return engine
         }
     }
-    suspend fun queue(list: List<ThumbnailRequest>) {
-        engine?.queueThumbnails(list) {
-            dispatcher.dispatchThumbnail(it)
-        }
 
-        try {
-            dispatcher.dispatchCompletion()
-        } catch (e: Exception) {
-            if (e.isInterrupted()) {
-                log.i("Transcode canceled.", e)
-                dispatcher.dispatchCancel()
-            } else {
-                log.e("Unexpected error while transcoding.", e)
-                dispatcher.dispatchFailure(e)
-                throw e
-            }
-        } finally {
-            engine?.cleanup()
-        }
-    }
 }
