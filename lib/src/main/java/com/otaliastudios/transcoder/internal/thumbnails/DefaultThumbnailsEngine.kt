@@ -88,6 +88,8 @@ class DefaultThumbnailsEngine(
             return source.keyFrameTimestamps
         }
 
+        override fun getSeekThreshold() = source.seekThreshold
+
         override fun isDrained(): Boolean {
             if (source.isDrained) {
                 source.seekTo(stubs.firstOrNull()?.positionUs ?: -1)
@@ -121,15 +123,20 @@ class DefaultThumbnailsEngine(
                 val nextKeyFrameUs = source.keyFrameAt(nextKeyFrameIndex) { Long.MAX_VALUE }
                 val previousKeyFrameUs = source.keyFrameAt(nextKeyFrameIndex - 1) { source.lastKeyFrame() }
 
-                log.i(
-                    "seek: current ${source.positionUs}," +
-                        " requested $requested, threshold $threshold, nextKeyFrameUs $nextKeyFrameUs"
-                )
 
                 val rightGap = nextKeyFrameUs - requested
                 val nextKeyFrameInThreshold = rightGap <= threshold
                 seek = nextKeyFrameInThreshold || previousKeyFrameUs > current || (current - requested > threshold)
-                seekUs = if (nextKeyFrameInThreshold) nextKeyFrameUs else previousKeyFrameUs
+                seekUs =
+                    (if (nextKeyFrameInThreshold) nextKeyFrameUs else previousKeyFrameUs) + source.seekThreshold
+
+                if (VERBOSE) {
+                    log.i(
+                        "seek: current ${source.positionUs}," +
+                                " requested $requested, threshold $threshold, nextKeyFrameUs $nextKeyFrameUs," +
+                                " nextKeyFrameInThreshold:$nextKeyFrameInThreshold, seekUs: $seekUs, flushing : $seek"
+                    )
+                }
 
                 shouldFlush = seek
                 shouldSeek = false
@@ -287,5 +294,6 @@ class DefaultThumbnailsEngine(
 
     companion object {
         private const val WAIT_MS = 5L
+        private const val VERBOSE = false
     }
 }

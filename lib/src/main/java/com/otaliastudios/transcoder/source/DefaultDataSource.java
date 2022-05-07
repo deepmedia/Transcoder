@@ -46,6 +46,8 @@ public abstract class DefaultDataSource implements DataSource {
     private long mDontRenderRangeEnd = -1L;
 
     private final ArrayList<Long> keyFrameTimestamps = new ArrayList<>();
+    private final long SEEK_THRESHOLD = 10001L; // 10ms because extractor doesn't seek accurately
+    private final boolean VERBOSE = false;
     @Override
     public void initialize() {
         LOG.i("initialize(): initializing...");
@@ -102,14 +104,14 @@ public abstract class DefaultDataSource implements DataSource {
 
         if(lastKeyFrame) return  -1L;
         if(keyFrameTimestamps.size() > 0) {
-            mExtractor.seekTo(keyFrameTimestamps.get(keyFrameTimestamps.size() - 1) + 10001L, MediaExtractor.SEEK_TO_NEXT_SYNC);
+            mExtractor.seekTo(keyFrameTimestamps.get(keyFrameTimestamps.size() - 1) + SEEK_THRESHOLD, MediaExtractor.SEEK_TO_NEXT_SYNC);
         }
 
         long sampleTime = mExtractor.getSampleTime();
 
         if (sampleTime == -1 || (keyFrameTimestamps.size() > 0 && sampleTime == keyFrameTimestamps.get(keyFrameTimestamps.size() - 1))) {
             lastKeyFrame = true;
-            mExtractor.seekTo(keyFrameTimestamps.get(keyFrameTimestamps.size() - 1) + 10001L, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            mExtractor.seekTo(keyFrameTimestamps.get(keyFrameTimestamps.size() - 1) + SEEK_THRESHOLD, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             return -1;
         }
         LOG.i("keyFrameStartTime:" + sampleTime);
@@ -124,7 +126,7 @@ public abstract class DefaultDataSource implements DataSource {
                 }
                 keyFrameTimestamps.add(sampleTime);
             }
-            mExtractor.seekTo(sampleTime + 10001L, MediaExtractor.SEEK_TO_NEXT_SYNC);
+            mExtractor.seekTo(sampleTime + SEEK_THRESHOLD, MediaExtractor.SEEK_TO_NEXT_SYNC);
             lastSampleTime = sampleTime;
             sampleTime = mExtractor.getSampleTime();
             count++;
@@ -133,6 +135,11 @@ public abstract class DefaultDataSource implements DataSource {
         return sampleTime;
     }
 
+
+    @Override
+    public long getSeekThreshold() {
+        return SEEK_THRESHOLD;
+    }
 
     @Override
     public void deinitialize() {
@@ -189,13 +196,15 @@ public abstract class DefaultDataSource implements DataSource {
     public long seekTo(long desiredPositionUs) {
         boolean hasVideo = mSelectedTracks.contains(TrackType.VIDEO);
         boolean hasAudio = mSelectedTracks.contains(TrackType.AUDIO);
-        LOG.i("seekTo(): seeking to " + (mOriginUs + desiredPositionUs)
-                + " originUs=" + mOriginUs
-                + " extractorUs=" + mExtractor.getSampleTime()
-                + " externalUs=" + desiredPositionUs
-                + " hasVideo=" + hasVideo
-                + " hasAudio=" + hasAudio);
         if (hasVideo && hasAudio) {
+            if (VERBOSE) {
+                LOG.i("seekTo(): seeking to " + (mOriginUs + desiredPositionUs)
+                        + " originUs=" + mOriginUs
+                        + " extractorUs=" + mExtractor.getSampleTime()
+                        + " externalUs=" + desiredPositionUs
+                        + " hasVideo=" + hasVideo
+                        + " hasAudio=" + hasAudio);
+            }
             // Special case: audio can be moved to any timestamp, but video will only stop in
             // sync frames. MediaExtractor is not smart enough to sync the two tracks at the
             // video sync frame, so we must take care of this with the following trick.
@@ -208,6 +217,14 @@ public abstract class DefaultDataSource implements DataSource {
             mExtractor.seekTo(mExtractor.getSampleTime(), MediaExtractor.SEEK_TO_CLOSEST_SYNC);
             LOG.v("seekTo(): seek workaround completed. (extractorUs=" + mExtractor.getSampleTime() + ")");
         } else {
+            if (VERBOSE) {
+                LOG.i("seekTo(): seeking to " + (desiredPositionUs)
+                        + " originUs=" + mOriginUs
+                        + " extractorUs=" + mExtractor.getSampleTime()
+                        + " externalUs=" + desiredPositionUs
+                        + " hasVideo=" + hasVideo
+                        + " hasAudio=" + hasAudio);
+            }
             mExtractor.seekTo(desiredPositionUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
         }
         mDontRenderRangeStart = mExtractor.getSampleTime();
