@@ -18,6 +18,7 @@ class CustomSegments(
 
     private val log = Logger("Segments")
     private var currentSegment: Segment? = null
+    private var currentSegmentMapKey: String? = null
     val currentIndex = mutableTrackMapOf(-1, -1)
     private val segmentMap = mutableMapOf<String, Segment?>()
 
@@ -43,14 +44,15 @@ class CustomSegments(
 
     fun getSegment(id: String): Segment? {
         return segmentMap.getOrPut(id) {
-            destroySegment(id)
+            destroySegment()
             tryCreateSegment(id).also {
                 currentSegment = it
+                currentSegmentMapKey = id
             }
         }
     }
 
-    fun release() = destroySegment()
+    fun release() = destroySegment(true)
 
     private fun tryCreateSegment(id: String): Segment? {
         val index = sources[TrackType.VIDEO].indexOfFirst { it.mediaId() == id }
@@ -74,19 +76,19 @@ class CustomSegments(
         return Segment(TrackType.VIDEO, index, pipeline)
     }
 
-    private fun destroySegment(id: String? = null) {
+    private fun destroySegment(releaseAll: Boolean = false) {
         currentSegment?.let {
             it.release()
             val source = sources[it.type][it.index]
             if (tracks.active.has(it.type)) {
                 source.releaseTrack(it.type)
             }
-        }
-        if (id == null) {
-            segmentMap.clear()
-        }
-        else {
-            segmentMap[id] = null
+            currentSegmentMapKey?.let {
+                segmentMap[it] = null
+            }
+            if(releaseAll) {
+                segmentMap.clear()
+            }
         }
     }
     private fun DataSource.init() = if (!isInitialized) initialize() else Unit
