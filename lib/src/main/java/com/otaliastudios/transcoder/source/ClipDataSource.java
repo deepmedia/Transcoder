@@ -15,7 +15,7 @@ public class ClipDataSource extends DataSourceWrapper {
     public ClipDataSource(@NonNull DataSource source, long clipStartUs, long clipEndUs) {
         super(new TrimDataSource(source,
                 clipStartUs,
-                getSourceDurationUs(source) - clipEndUs));
+                Math.max(getSourceDurationUs(source) - clipEndUs, 0L)));
     }
 
     private static long getSourceDurationUs(@NonNull DataSource source) {
