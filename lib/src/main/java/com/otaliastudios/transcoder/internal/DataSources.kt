@@ -62,18 +62,24 @@ class DataSources constructor(
         }
     }
 
+    private fun existsInSources(dataSource: DataSource, sources: List<DataSource>): Boolean {
+        return (sources.find { it.mediaId() == dataSource.mediaId() }) != null
+    }
+
     fun addDataSource(dataSource: DataSource) {
         addVideoDataSource(dataSource)
         addAudioDataSource(dataSource)
     }
 
     fun addVideoDataSource(dataSource: DataSource) {
+        if (existsInSources(dataSource, videoSources)) return
         dataSource.init()
         if (dataSource.getTrackFormat(TrackType.VIDEO) != null && dataSource !in videoSources) {
             videoSources = videoSources + dataSource
         }
     }
     fun addAudioDataSource(dataSource: DataSource) {
+        if (existsInSources(dataSource, audioSources)) return
         dataSource.init()
         if (dataSource.getTrackFormat(TrackType.AUDIO) != null) {
             audioSources = audioSources + dataSource
