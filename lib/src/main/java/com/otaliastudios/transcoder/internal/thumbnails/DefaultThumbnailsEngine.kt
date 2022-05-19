@@ -221,7 +221,10 @@ class DefaultThumbnailsEngine(
         return nextKeyFrameIndex
     }
 
-    override  fun addDataSource(dataSource: DataSource) {
+    override fun addDataSource(dataSource: DataSource) {
+        if (dataSources.getVideoSources().find { it.mediaId() == dataSource.mediaId() } != null) {
+            return // dataSource already exists
+        }
         dataSources.addVideoDataSource(dataSource)
         tracks.updateTracksInfo()
         if (tracks.active.has(TrackType.VIDEO)) {
