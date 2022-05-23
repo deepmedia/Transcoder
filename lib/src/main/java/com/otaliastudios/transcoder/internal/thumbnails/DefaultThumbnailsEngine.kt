@@ -290,6 +290,7 @@ class DefaultThumbnailsEngine(
             stubs.removeAll{
                 it.request.sourceId() == source
             }
+            return
         }
         if (stubs.firstOrNull()?.request?.sourceId() == source && positionUs == stubs.firstOrNull()?.positionUs) {
             return
