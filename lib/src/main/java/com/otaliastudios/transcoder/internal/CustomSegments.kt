@@ -52,6 +52,18 @@ class CustomSegments(
         }
     }
 
+    fun releaseSegment(id: String) {
+        val segment = segmentMap[id]
+        segment?.let {
+            it.release()
+            val source = sources[it.type][it.index]
+            if (tracks.active.has(it.type)) {
+                source.releaseTrack(it.type)
+            }
+            segmentMap[id] = null
+        }
+    }
+
     fun release() = destroySegment(true)
 
     private fun tryCreateSegment(id: String): Segment? {

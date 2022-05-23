@@ -233,6 +233,7 @@ class DefaultThumbnailsEngine(
     }
 
     override fun removeDataSource(dataSourceId: String) {
+        segments.releaseSegment(dataSourceId)
         dataSources.removeVideoDataSource(dataSourceId)
         tracks.updateTracksInfo()
     }
@@ -285,6 +286,11 @@ class DefaultThumbnailsEngine(
     }
 
     override suspend fun removePosition(source: String, positionUs: Long) {
+        if (positionUs < 0) {
+            stubs.removeAll{
+                it.request.sourceId() == source
+            }
+        }
         if (stubs.firstOrNull()?.request?.sourceId() == source && positionUs == stubs.firstOrNull()?.positionUs) {
             return
         }
@@ -320,6 +326,7 @@ class DefaultThumbnailsEngine(
     }
 
     override fun cleanup() {
+        runCatching { stubs.clear() }
         runCatching { segments.release() }
         runCatching { dataSources.release() }
     }
