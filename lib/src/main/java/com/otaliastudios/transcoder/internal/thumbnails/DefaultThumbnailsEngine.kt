@@ -26,9 +26,11 @@ import com.otaliastudios.transcoder.thumbnail.SingleThumbnailRequest
 import com.otaliastudios.transcoder.thumbnail.Thumbnail
 import com.otaliastudios.transcoder.thumbnail.ThumbnailRequest
 import com.otaliastudios.transcoder.time.DefaultTimeInterpolator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
@@ -267,7 +269,14 @@ class DefaultThumbnailsEngine(
                 if (VERBOSE) {
                     log.i("loop advancing for $segment")
                 }
-                val advanced = segment?.advance() ?: false
+                val advanced = try {
+                    segment?.advance() ?: false
+                } catch (e: Exception) {
+                    if (e !is CancellationException) {
+                        currentCoroutineContext().ensureActive()
+                    }
+                    throw e
+                }
                 // avoid calling hasNext if we advanced.
                 val completed = !advanced && !segments.hasNext()
                 if (completed || stubs.isEmpty()) {
