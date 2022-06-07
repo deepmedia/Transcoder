@@ -143,10 +143,11 @@ class Encoder(
                     val isEos = info.flags and BUFFER_FLAG_END_OF_STREAM != 0
                     val flags = info.flags and BUFFER_FLAG_END_OF_STREAM.inv()
                     val buffer = buffers.getOutputBuffer(result)
-                    val timeUs = info.presentationTimeUs
+                    val timeUs = if (info.presentationTimeUs < 0) 0 else info.presentationTimeUs
                     if (isEos && timeUs == 0L) {
                         info.offset = 0
                         info.size = 0
+                        info.presentationTimeUs = 0
                     }
                     buffer.clear()
                     buffer.limit(info.offset + info.size)
