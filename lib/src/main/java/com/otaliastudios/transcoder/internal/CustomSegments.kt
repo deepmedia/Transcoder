@@ -60,7 +60,10 @@ class CustomSegments(
             if (tracks.active.has(it.type)) {
                 source.releaseTrack(it.type)
             }
-            segmentMap[id] = null
+            segmentMap.remove(id)
+            if(currentSegment == segment) {
+                currentSegment = null
+            }
         }
     }
 
@@ -96,7 +99,7 @@ class CustomSegments(
                 source.releaseTrack(it.type)
             }
             currentSegmentMapKey?.let {
-                segmentMap[it] = null
+                segmentMap.remove(it)
             }
             if(releaseAll) {
                 segmentMap.clear()
