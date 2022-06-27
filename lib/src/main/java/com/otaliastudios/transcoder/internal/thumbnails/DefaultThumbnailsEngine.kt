@@ -150,7 +150,7 @@ class DefaultThumbnailsEngine(
                 Pair(seekUs, seek)
             } +
                 Reader(source, type) +
-                Decoder(source.getTrackFormat(type)!!, continuous = false) {
+                Decoder(source.getTrackFormat(type)!!, continuous = false, useSwFor4K = true) {
                     shouldFlush.also {
                         shouldFlush = false
                     }

@@ -1,13 +1,11 @@
 package com.otaliastudios.transcoder.internal.codec
 
 import android.media.MediaCodec
-import android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM
-import android.media.MediaCodec.BUFFER_FLAG_SYNC_FRAME
-import android.media.MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED
-import android.media.MediaCodec.INFO_OUTPUT_FORMAT_CHANGED
-import android.media.MediaCodec.INFO_TRY_AGAIN_LATER
-import android.media.MediaCodec.createDecoderByType
+import android.media.MediaCodec.*
+import android.media.MediaCodecInfo
+import android.media.MediaCodecList
 import android.media.MediaFormat
+import android.os.Build
 import android.view.Surface
 import com.otaliastudios.transcoder.common.trackType
 import com.otaliastudios.transcoder.internal.data.ReaderChannel
@@ -36,6 +34,7 @@ interface DecoderChannel : Channel {
 class Decoder(
     private val format: MediaFormat, // source.getTrackFormat(track)
     continuous: Boolean, // relevant if the source sends no-render chunks. should we compensate or not?
+    useSwFor4K: Boolean = false,
     val shouldFlush: (() -> Boolean)? = null
 ) : QueuedStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(), ReaderChannel {
 
@@ -48,7 +47,64 @@ class Decoder(
     private val log = Logger("Decoder(${format.trackType},${ID[format.trackType].getAndIncrement()})")
     override val channel = this
 
-    private val codec = createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+    private val codec = createDecoderByType(format, useSwFor4K && format.is4K())
+
+    @Suppress("MagicNumber")
+    private fun MediaFormat.is4K(): Boolean {
+        val width = format.getInteger(MediaFormat.KEY_WIDTH)
+        val height = format.getInteger(MediaFormat.KEY_HEIGHT)
+        return width * height > 2120 * 2120
+    }
+
+    private fun MediaCodecInfo.isHardwareAcceleratedCompat() : Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            isHardwareAccelerated
+        } else {
+            val codecName = name.lowercase()
+            val isSoftware = (codecName.startsWith("omx.google.")
+                    || codecName.startsWith("omx.ffmpeg.")
+                    || (codecName.startsWith("omx.sec.") && codecName.contains(".sw."))
+                    || codecName == "omx.qcom.video.decoder.hevcswvdec"
+                    || codecName.startsWith("c2.android.")
+                    || codecName.startsWith("c2.google.")
+                    || (!codecName.startsWith("omx.") && !codecName.startsWith("c2.")))
+
+            if (isSoftware) {
+                log.i("sw codec: $name")
+            }
+            !isSoftware
+        }
+    }
+
+    private fun createDecoderByType(format: MediaFormat, useSoftware: Boolean = false): MediaCodec {
+        val mime = format.getString(MediaFormat.KEY_MIME)!!
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val allCodecs = MediaCodecList(MediaCodecList.ALL_CODECS)
+
+            var codecName: String? = null
+            for (info in allCodecs.codecInfos) {
+                if (info.isEncoder || (info.isHardwareAcceleratedCompat() && useSoftware)) {
+                    // log.e("Rejecting codec: ${info.name}")
+                    continue
+                }
+                try {
+                    val caps = info.getCapabilitiesForType(mime)
+                    if (caps != null && caps.isFormatSupported(format)) {
+                        codecName = info.name
+                        break
+                    } else {
+                        // log.e("Rejecting decoder: ${info.name}")
+                    }
+                } catch (e: IllegalArgumentException) {
+                    log.e("Unsupported codec type: $mime")
+                }
+            }
+            log.i("Using codec: $codecName for format: $format")
+            return createByCodecName(codecName!!)
+        }
+        return createDecoderByType(mime)
+    }
+
     private val buffers by lazy { MediaCodecBuffers(codec) }
     private var info = MediaCodec.BufferInfo()
     private val dropper = DecoderDropper(continuous)
