@@ -18,4 +18,14 @@ public class PassThroughAudioResampler implements AudioResampler {
         }
         outputBuffer.put(inputBuffer);
     }
+
+    @Override
+    public void createStream(int inputSampleRate, int outputSampleRate, int numChannels) {
+        // do nothing
+    }
+
+    @Override
+    public void destroyStream() {
+        // do nothing
+    }
 }

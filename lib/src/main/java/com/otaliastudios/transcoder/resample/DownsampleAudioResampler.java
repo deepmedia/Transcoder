@@ -44,4 +44,14 @@ public class DownsampleAudioResampler implements AudioResampler {
             }
         }
     }
+
+    @Override
+    public void createStream(int inputSampleRate, int outputSampleRate, int numChannels) {
+        // do nothing
+    }
+
+    @Override
+    public void destroyStream() {
+        // do nothing
+    }
 }

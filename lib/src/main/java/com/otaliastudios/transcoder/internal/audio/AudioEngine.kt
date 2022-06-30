@@ -53,12 +53,14 @@ class AudioEngine(
         this.rawFormat = rawFormat
         remixer = AudioRemixer[rawFormat.channels, targetFormat.channels]
         chunks = ChunkQueue(rawFormat.sampleRate, rawFormat.channels)
+        resampler.createStream(rawFormat.sampleRate, targetFormat.sampleRate, targetFormat.channels)
     }
 
     override fun enqueueEos(data: DecoderData) {
         log.i("enqueueEos()")
         data.release(false)
         chunks.enqueueEos()
+        resampler.destroyStream()
     }
 
     override fun enqueue(data: DecoderData) {

@@ -22,6 +22,17 @@ public interface AudioResampler {
      */
     void resample(@NonNull final ShortBuffer inputBuffer, int inputSampleRate, @NonNull final ShortBuffer outputBuffer, int outputSampleRate, int channels);
 
+    /**
+     * createStream() and destroyStream() only to be implemented on Resamplers
+     * following a stream approach for continuous input buffers. Not for static one shot methods
+     * to resample.
+     * @param inputSampleRate the input sample rate
+     * @param outputSampleRate the output sample rate
+     * @param numChannels the number of channels
+     */
+    void createStream(int inputSampleRate, int outputSampleRate, int numChannels);
+    void destroyStream();
+
     AudioResampler DOWNSAMPLE = new DownsampleAudioResampler();
 
     AudioResampler UPSAMPLE = new UpsampleAudioResampler();

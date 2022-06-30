@@ -20,4 +20,14 @@ public class DefaultAudioResampler implements AudioResampler {
             PASSTHROUGH.resample(inputBuffer, inputSampleRate, outputBuffer, outputSampleRate, channels);
         }
     }
+
+    @Override
+    public void createStream(int inputSampleRate, int outputSampleRate, int numChannels) {
+        // do nothing
+    }
+
+    @Override
+    public void destroyStream() {
+        // do nothing
+    }
 }
