@@ -101,7 +101,7 @@ class ThumbnailerOptions(
             )
         }
 
-        fun thumbnails(): ThumbnailsEngine? {
+        fun thumbnails(): ThumbnailsEngine {
             return ThumbnailsEngine.thumbnails(build())
         }
     }

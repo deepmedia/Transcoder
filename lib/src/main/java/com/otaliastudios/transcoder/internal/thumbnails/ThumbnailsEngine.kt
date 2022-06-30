@@ -37,15 +37,14 @@ abstract class ThumbnailsEngine {
             }
         }
 
-        var engine: ThumbnailsEngine? = null
         private lateinit var dispatcher: ThumbnailsDispatcher
 
         @JvmStatic
-        fun thumbnails(options: ThumbnailerOptions): ThumbnailsEngine? {
+        fun thumbnails(options: ThumbnailerOptions): ThumbnailsEngine {
             log.i("thumbnails(): called...")
             dispatcher = ThumbnailsDispatcher(options)
 
-            engine = DefaultThumbnailsEngine(
+            val engine = DefaultThumbnailsEngine(
                 dataSources = DataSources(options),
                 rotation = options.rotation,
                 resizer = options.resizer
