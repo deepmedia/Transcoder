@@ -100,7 +100,9 @@ class Decoder(
                 }
             }
             log.i("Using codec: $codecName for format: $format")
-            return createByCodecName(codecName!!)
+            if (codecName != null) {
+                return createByCodecName(codecName)
+            }
         }
         return createDecoderByType(mime)
     }
