@@ -9,6 +9,14 @@ New versions are released through GitHub, so the reference page is the [GitHub R
 > Starting from 0.7.0, you can now [support development](https://github.com/sponsors/natario1) through the GitHub Sponsors program. 
 Companies can share a tiny part of their revenue and get private support hours in return. Thanks!
 
+### v0.10.5
+
+- Fix: Honor buffer.hasRemaining() and otherwise release the buffer. ([#182][182])
+- Fix: Call progress even when not advenced. ([#170][170])
+- Fix: FilePathDataSource crash before initialize. ([#160][160])
+
+<https://github.com/natario1/Transcoder/compare/v0.10.4...v0.10.5>
+
 ### v0.10.4
 
 - Fix: fixed crash in specific conditions ([#140][140])
@@ -173,3 +181,6 @@ frames, the trim timestamp might be different than what was selected.
 [132]: https://github.com/natario1/Transcoder/pull/132
 [134]: https://github.com/natario1/Transcoder/pull/134
 [140]: https://github.com/natario1/Transcoder/pull/140
+[160]: https://github.com/natario1/Transcoder/pull/160
+[170]: https://github.com/natario1/Transcoder/pull/170
+[182]: https://github.com/natario1/Transcoder/pull/182
