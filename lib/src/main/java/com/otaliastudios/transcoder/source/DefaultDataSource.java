@@ -66,12 +66,6 @@ public abstract class DefaultDataSource implements DataSource {
             }
         }
 
-        // Fetch the start timestamp. Only way to do this is select tracks.
-        // This is very important to have a timebase e.g. for seeks that happen before any read.
-        for (int i = 0; i < mExtractor.getTrackCount(); i++) mExtractor.selectTrack(i);
-        mOriginUs = mExtractor.getSampleTime();
-        LOG.v("initialize(): found origin=" + mOriginUs);
-        for (int i = 0; i < mExtractor.getTrackCount(); i++) mExtractor.unselectTrack(i);
         mInitialized = true;
 
         // Debugging mOriginUs issues.
@@ -141,6 +135,8 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public long seekTo(long desiredPositionUs) {
+        initializeMOriginUsIfNotYet();
+
         boolean hasVideo = mSelectedTracks.contains(TrackType.VIDEO);
         boolean hasAudio = mSelectedTracks.contains(TrackType.AUDIO);
         LOG.i("seekTo(): seeking to " + (mOriginUs + desiredPositionUs)
@@ -193,6 +189,9 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public void readTrack(@NonNull Chunk chunk) {
+        // Must be called if not to seek.
+        initializeMOriginUsIfNotYet();
+
         int index = mExtractor.getSampleTrackIndex();
 
         int position = chunk.buffer.position();
@@ -236,7 +235,7 @@ public abstract class DefaultDataSource implements DataSource {
 
     @Override
     public long getPositionUs() {
-        if (!isInitialized()) return 0;
+        if (!isInitializedOriginUs()) return 0;
 
         // Return the fastest track.
         // This ensures linear behavior over time: if a track is behind the other,
@@ -288,5 +287,15 @@ public abstract class DefaultDataSource implements DataSource {
     public MediaFormat getTrackFormat(@NonNull TrackType type) {
         LOG.i("getTrackFormat(" + type + ")");
         return mFormat.getOrNull(type);
+    }
+
+    private boolean isInitializedOriginUs() {
+        return mOriginUs != Long.MIN_VALUE;
+    }
+
+    private void initializeMOriginUsIfNotYet() {
+        if (!isInitializedOriginUs()) {
+            mOriginUs = mExtractor.getSampleTime();
+        }
     }
 }
