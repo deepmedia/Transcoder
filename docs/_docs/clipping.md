@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/clipping
 title: "Clipping and trimming"
 description: "How to clip each segment individually on both ends"
 order: 2

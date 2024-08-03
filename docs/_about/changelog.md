@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/changelog
 title: "Changelog"
 order: 3
 ---

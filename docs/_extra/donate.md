@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder
 title: "Donate"
 order: 2
 ---

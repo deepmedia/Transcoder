@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/install
 title: "Install"
 description: "Integrate in your project"
 order: 1

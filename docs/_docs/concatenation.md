@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/concatenation
 title: "Concatenation"
 description: "How to concatenate video segments"
 order: 3

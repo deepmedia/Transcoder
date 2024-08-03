@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/advanced-options
 title: "Advanced Options"
 description: "Advanced transcoding options"
 order: 7

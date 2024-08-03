@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/install
 title: "Getting Started"
 description: "Simple guide to transcode your first video"
 order: 2

@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/track-strategies
 title: "Track Strategies"
 description: "Per-track transcoding options"
 order: 6

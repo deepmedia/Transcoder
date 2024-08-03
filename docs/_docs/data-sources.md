@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/data-sources
 title: "Data Sources"
 description: "Sources of media data"
 order: 1

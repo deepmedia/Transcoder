@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/validators
 title: "Validators"
 description: "Validate or abort the transcoding process"
 order: 5

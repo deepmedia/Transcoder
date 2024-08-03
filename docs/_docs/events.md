@@ -1,5 +1,6 @@
 ---
-layout: page
+layout: redirect
+redirect_to: https://opensource.deepmedia.io/transcoder/events
 title: "Transcoding Events"
 description: "Listening to transcoding events"
 order: 4
