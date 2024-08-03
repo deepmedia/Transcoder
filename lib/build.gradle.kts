@@ -11,6 +11,9 @@ android {
         minSdk = 18
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    testOptions {
+        targetSdk = 23
+    }
 }
 
 kotlin {

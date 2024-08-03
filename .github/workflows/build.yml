@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        EMULATOR_API: [21, 23, 29]
+        EMULATOR_API: [23, 25, 29]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -56,4 +56,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: emulator_tests_${{ matrix.EMULATOR_API }}
-          path: ./lib/build/outputs/code_coverage/debugAndroidTest/connected
+          path: ./lib/build/reports/androidTests/connected/debug/
