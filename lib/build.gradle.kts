@@ -1,36 +1,33 @@
-import io.deepmedia.tools.publisher.common.GithubScm
-import io.deepmedia.tools.publisher.common.License
-import io.deepmedia.tools.publisher.common.Release
-import io.deepmedia.tools.publisher.sonatype.Sonatype
-
 plugins {
-    id("com.android.library")
-    id("kotlin-android")
-    id("io.deepmedia.tools.publisher")
+    id("com.android.library") version "8.2.2"
+    kotlin("android") version "2.0.0"
+    // id("io.deepmedia.tools.deployer") version "0.13.0-rc1"
 }
 
 android {
-    setCompileSdkVersion(property("compileSdkVersion") as Int)
+    namespace = "com.otaliastudios.transcoder"
+    compileSdk = 34
     defaultConfig {
-        minSdk = property("minSdkVersion") as Int
-        targetSdk = property("targetSdkVersion") as Int
+        minSdk = 18
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    buildTypes["release"].isMinifyEnabled = false
 }
 
+kotlin {
+    jvmToolchain(17)
+}
 
 dependencies {
     api("com.otaliastudios.opengl:egloo:0.6.1")
-    api("androidx.annotation:annotation:1.2.0")
+    api("androidx.annotation:annotation:1.8.1")
 
-    androidTestImplementation("androidx.test:runner:1.4.0")
-    androidTestImplementation("androidx.test:rules:1.4.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.3")
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("org.mockito:mockito-android:2.28.2")
 }
 
-publisher {
+/* publisher {
     project.description = "Accelerated video transcoding using Android MediaCodec API without native code (no LGPL/patent issues)."
     project.artifact = "transcoder"
     project.group = "com.otaliastudios"
@@ -59,4 +56,4 @@ publisher {
         signing.key = "SIGNING_KEY"
         signing.password = "SIGNING_PASSWORD"
     }
-}
+} */

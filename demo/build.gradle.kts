@@ -1,22 +1,16 @@
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
+    id("com.android.application") version "8.2.2"
+    kotlin("android") version "2.0.0"
 }
 
 android {
-    setCompileSdkVersion(property("compileSdkVersion") as Int)
-
+    namespace = "com.otaliastudios.transcoder.demo"
+    compileSdk = 34
     defaultConfig {
-        applicationId = "com.otaliastudios.transcoder.demo"
-        minSdk = property("minSdkVersion") as Int
-        targetSdk = property("targetSdkVersion") as Int
+        minSdk = 18
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
     }
 }
 

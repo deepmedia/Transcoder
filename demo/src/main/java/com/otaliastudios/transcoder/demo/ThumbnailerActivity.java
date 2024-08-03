@@ -35,6 +35,8 @@ import com.otaliastudios.transcoder.source.UriDataSource;
 import com.otaliastudios.transcoder.thumbnail.Thumbnail;
 import com.otaliastudios.transcoder.thumbnail.UniformThumbnailRequest;
 
+import com.otaliastudios.transcoder.demo.R;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -142,30 +144,27 @@ public class ThumbnailerActivity extends AppCompatActivity implements
             builder.addDataSource(source);
         }
 
-        float aspectRatio;
-        switch (mVideoAspectGroup.getCheckedRadioButtonId()) {
-            case R.id.aspect_169: aspectRatio = 16F / 9F; break;
-            case R.id.aspect_43: aspectRatio = 4F / 3F; break;
-            case R.id.aspect_square: aspectRatio = 1F; break;
-            default: aspectRatio = 0F;
-        }
+        float aspectRatio = 0F;
+        int aspectRatioId = mVideoAspectGroup.getCheckedRadioButtonId();
+        if (aspectRatioId == R.id.aspect_169) aspectRatio = 16F / 9F;
+        else if (aspectRatioId == R.id.aspect_43) aspectRatio = 4F / 3F;
+        else if (aspectRatioId == R.id.aspect_square) aspectRatio = 1F;
         if (aspectRatio > 0) {
             builder.addResizer(new AspectRatioResizer(aspectRatio));
         }
-        float fraction;
-        switch (mVideoResolutionGroup.getCheckedRadioButtonId()) {
-            case R.id.resolution_half: fraction = 0.5F; break;
-            case R.id.resolution_third: fraction = 1F / 3F; break;
-            default: fraction = 1F;
-        }
+
+        float fraction = 1F;
+        int fractionId = mVideoResolutionGroup.getCheckedRadioButtonId();
+        if (fractionId == R.id.resolution_half) fraction = 0.5F;
+        else if (fractionId == R.id.resolution_third) fraction = 1F / 3F;
         builder.addResizer(new FractionResizer(fraction));
-        int rotation;
-        switch (mVideoRotationGroup.getCheckedRadioButtonId()) {
-            case R.id.rotation_90: rotation = 90; break;
-            case R.id.rotation_180: rotation = 180; break;
-            case R.id.rotation_270: rotation = 270; break;
-            default: rotation = 0;
-        }
+
+
+        int rotation = 0;
+        int rotationId = mVideoRotationGroup.getCheckedRadioButtonId();
+        if (rotationId == R.id.rotation_90) rotation = 90;
+        else if (rotationId == R.id.rotation_180) rotation = 180;
+        else if (rotationId == R.id.rotation_270) rotation = 270;
         builder.setRotation(rotation);
 
         // Launch the transcoding operation.
