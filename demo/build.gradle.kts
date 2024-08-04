@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application") version "8.2.2"
-    kotlin("android") version "2.0.0"
+    id("com.android.application")
+    kotlin("android")
 }
 
 android {
@@ -16,6 +16,6 @@ android {
 
 dependencies {
     implementation(project(":lib"))
-    implementation("com.google.android.material:material:1.4.0")
-    implementation("androidx.appcompat:appcompat:1.3.1")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
 }
