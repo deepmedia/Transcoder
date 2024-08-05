@@ -159,24 +159,21 @@ public class TranscoderActivity extends AppCompatActivity implements
     }
 
     private void syncParameters() {
-        int channels;
-        switch (mAudioChannelsGroup.getCheckedRadioButtonId()) {
-            case R.id.channels_mono: channels = 1; break;
-            case R.id.channels_stereo: channels = 2; break;
-            default: channels = DefaultAudioStrategy.CHANNELS_AS_INPUT;
-        }
-        int sampleRate;
-        switch (mAudioSampleRateGroup.getCheckedRadioButtonId()) {
-            case R.id.sampleRate_32: sampleRate = 32000; break;
-            case R.id.sampleRate_48: sampleRate = 48000; break;
-            default: sampleRate = DefaultAudioStrategy.SAMPLE_RATE_AS_INPUT;
-        }
-        boolean removeAudio;
-        switch (mAudioReplaceGroup.getCheckedRadioButtonId()) {
-            case R.id.replace_remove: removeAudio = true; break;
-            case R.id.replace_yes: removeAudio = false; break;
-            default: removeAudio = false;
-        }
+        int channels = DefaultAudioStrategy.CHANNELS_AS_INPUT;
+        int channelsId = mAudioChannelsGroup.getCheckedRadioButtonId();
+        if (channelsId == R.id.channels_mono) channels = 1;
+        else if (channelsId == R.id.channels_stereo) channels = 2;
+
+        int sampleRate = DefaultAudioStrategy.SAMPLE_RATE_AS_INPUT;
+        int sampleRateId = mAudioSampleRateGroup.getCheckedRadioButtonId();
+        if (sampleRateId == R.id.sampleRate_32) sampleRate = 32000;
+        else if (sampleRateId == R.id.sampleRate_48) sampleRate = 48000;
+
+        boolean removeAudio = false;
+        int removeAudioId = mAudioReplaceGroup.getCheckedRadioButtonId();
+        if (removeAudioId == R.id.replace_remove) removeAudio = true;
+        else if (removeAudioId == R.id.replace_yes) removeAudio = false;
+
         if (removeAudio) {
             mTranscodeAudioStrategy = new RemoveTrackStrategy();
         } else {
@@ -186,26 +183,23 @@ public class TranscoderActivity extends AppCompatActivity implements
                     .build();
         }
 
-        int frames;
-        switch (mVideoFramesGroup.getCheckedRadioButtonId()) {
-            case R.id.frames_24: frames = 24; break;
-            case R.id.frames_30: frames = 30; break;
-            case R.id.frames_60: frames = 60; break;
-            default: frames = DefaultVideoStrategy.DEFAULT_FRAME_RATE;
-        }
-        float fraction;
-        switch (mVideoResolutionGroup.getCheckedRadioButtonId()) {
-            case R.id.resolution_half: fraction = 0.5F; break;
-            case R.id.resolution_third: fraction = 1F / 3F; break;
-            default: fraction = 1F;
-        }
-        float aspectRatio;
-        switch (mVideoAspectGroup.getCheckedRadioButtonId()) {
-            case R.id.aspect_169: aspectRatio = 16F / 9F; break;
-            case R.id.aspect_43: aspectRatio = 4F / 3F; break;
-            case R.id.aspect_square: aspectRatio = 1F; break;
-            default: aspectRatio = 0F;
-        }
+        int frames = DefaultVideoStrategy.DEFAULT_FRAME_RATE;
+        int framesId = mVideoFramesGroup.getCheckedRadioButtonId();
+        if (framesId == R.id.frames_24) frames = 24;
+        else if (framesId == R.id.frames_30) frames = 30;
+        else if (framesId == R.id.frames_60) frames = 60;
+
+        float fraction = 1F;
+        int fractionId = mVideoResolutionGroup.getCheckedRadioButtonId();
+        if (fractionId == R.id.resolution_half) fraction = 0.5F;
+        else if (fractionId == R.id.resolution_third) fraction = 1F / 3F;
+
+        float aspectRatio = 0F;
+        int aspectRatioId = mVideoAspectGroup.getCheckedRadioButtonId();
+        if (aspectRatioId == R.id.aspect_169) aspectRatio = 16F / 9F;
+        else if (aspectRatioId == R.id.aspect_43) aspectRatio = 4F / 3F;
+        else if (aspectRatioId == R.id.aspect_square) aspectRatio = 1F;
+
         mTranscodeVideoStrategy = new DefaultVideoStrategy.Builder()
                 .addResizer(aspectRatio > 0 ? new AspectRatioResizer(aspectRatio) : new PassThroughResizer())
                 .addResizer(new FractionResizer(fraction))
@@ -275,20 +269,16 @@ public class TranscoderActivity extends AppCompatActivity implements
             return;
         }
 
-        int rotation;
-        switch (mVideoRotationGroup.getCheckedRadioButtonId()) {
-            case R.id.rotation_90: rotation = 90; break;
-            case R.id.rotation_180: rotation = 180; break;
-            case R.id.rotation_270: rotation = 270; break;
-            default: rotation = 0;
-        }
+        int rotation = 0;
+        int rotationId = mVideoRotationGroup.getCheckedRadioButtonId();
+        if (rotationId == R.id.rotation_90) rotation = 90;
+        else if (rotationId == R.id.rotation_180) rotation = 180;
+        else if (rotationId == R.id.rotation_270) rotation = 270;
 
-        float speed;
-        switch (mSpeedGroup.getCheckedRadioButtonId()) {
-            case R.id.speed_05x: speed = 0.5F; break;
-            case R.id.speed_2x: speed = 2F; break;
-            default: speed = 1F;
-        }
+        float speed = 1F;
+        int speedId = mSpeedGroup.getCheckedRadioButtonId();
+        if (speedId == R.id.speed_05x) speed = 0.5F;
+        else if (speedId == R.id.speed_2x) speed = 2F;
 
         // Launch the transcoding operation.
         mTranscodeStartTime = SystemClock.uptimeMillis();

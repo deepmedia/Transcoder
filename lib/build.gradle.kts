@@ -1,62 +1,102 @@
-import io.deepmedia.tools.publisher.common.GithubScm
-import io.deepmedia.tools.publisher.common.License
-import io.deepmedia.tools.publisher.common.Release
-import io.deepmedia.tools.publisher.sonatype.Sonatype
-
 plugins {
     id("com.android.library")
-    id("kotlin-android")
-    id("io.deepmedia.tools.publisher")
+    kotlin("android")
+    id("io.deepmedia.tools.deployer") version "0.14.0-alpha1"
+    id("org.jetbrains.dokka") version "1.9.20"
 }
 
 android {
-    setCompileSdkVersion(property("compileSdkVersion") as Int)
+    namespace = "com.otaliastudios.transcoder"
+    compileSdk = 34
     defaultConfig {
-        minSdk = property("minSdkVersion") as Int
-        targetSdk = property("targetSdkVersion") as Int
+        minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    buildTypes["release"].isMinifyEnabled = false
+    testOptions {
+        targetSdk = 23
+    }
+    publishing {
+        singleVariant("release")
+    }
 }
 
+kotlin {
+    jvmToolchain(17)
+}
 
 dependencies {
     api("com.otaliastudios.opengl:egloo:0.6.1")
-    api("androidx.annotation:annotation:1.2.0")
+    api("androidx.annotation:annotation:1.8.1")
 
-    androidTestImplementation("androidx.test:runner:1.4.0")
-    androidTestImplementation("androidx.test:rules:1.4.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.3")
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("org.mockito:mockito-android:2.28.2")
+
+    dokkaPlugin("org.jetbrains.dokka:android-documentation-plugin:1.9.20")
 }
 
-publisher {
-    project.description = "Accelerated video transcoding using Android MediaCodec API without native code (no LGPL/patent issues)."
-    project.artifact = "transcoder"
-    project.group = "com.otaliastudios"
-    project.url = "https://github.com/natario1/Transcoder"
-    project.scm = GithubScm("natario1", "Transcoder")
-    project.addLicense(License.APACHE_2_0)
-    project.addDeveloper("natario1", "mat.iavarone@gmail.com")
-    release.sources = Release.SOURCES_AUTO
-    release.docs = Release.DOCS_AUTO
-    release.version = "0.10.5"
+val javadocs = tasks.register<Jar>("dokkaJavadocJar") {
+    dependsOn(tasks.dokkaJavadoc)
+    from(tasks.dokkaJavadoc.flatMap { it.outputDirectory })
+    archiveClassifier.set("javadoc")
+}
 
-    directory()
+deployer {
+    verbose = true
 
-    sonatype {
-        auth.user = "SONATYPE_USER"
-        auth.password = "SONATYPE_PASSWORD"
-        signing.key = "SIGNING_KEY"
-        signing.password = "SIGNING_PASSWORD"
+    content {
+        component {
+            fromSoftwareComponent("release")
+            kotlinSources()
+            docs(javadocs)
+        }
     }
 
-    sonatype("snapshot") {
-        repository = Sonatype.OSSRH_SNAPSHOT_1
+    projectInfo {
+        groupId = "com.otaliastudios"
+        artifactId = "transcoder"
+        release.version = "0.10.5"
+        release.tag = "v0.10.5"
+        description = "Accelerated video compression and transcoding on Android using MediaCodec APIs (no FFMPEG/LGPL licensing issues). Supports cropping to any dimension, concatenation, audio processing and much more."
+        url = "https://github.com/deepmedia/Transcoder"
+        scm.fromGithub("deepmedia", "Transcoder")
+        license(apache2)
+        developer("natario1", "mattia@deepmedia.io", "DeepMedia", "https://deepmedia.io")
+    }
+
+    signing {
+        key = secret("SIGNING_KEY")
+        password = secret("SIGNING_PASSWORD")
+    }
+
+    // use "deployLocal" to deploy to local maven repository
+    localSpec {
+        directory.set(rootProject.layout.buildDirectory.get().dir("inspect"))
+    }
+
+    // use "deployNexus" to deploy to OSSRH / maven central
+    nexusSpec {
+        auth.user = secret("SONATYPE_USER")
+        auth.password = secret("SONATYPE_PASSWORD")
+        syncToMavenCentral = true
+    }
+
+    // use "deployNexusSnapshot" to deploy to sonatype snapshots repo
+    nexusSpec("snapshot") {
+        auth.user = secret("SONATYPE_USER")
+        auth.password = secret("SONATYPE_PASSWORD")
+        repositoryUrl = ossrhSnapshots1
         release.version = "latest-SNAPSHOT"
-        auth.user = "SONATYPE_USER"
-        auth.password = "SONATYPE_PASSWORD"
-        signing.key = "SIGNING_KEY"
-        signing.password = "SIGNING_PASSWORD"
+    }
+
+    // use "deployGithub" to deploy to github packages
+    githubSpec {
+        repository = "Transcoder"
+        owner = "deepmedia"
+        auth {
+            user = secret("GHUB_USER")
+            token = secret("GHUB_PERSONAL_ACCESS_TOKEN")
+        }
     }
 }

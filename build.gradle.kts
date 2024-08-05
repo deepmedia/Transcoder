@@ -1,30 +1,5 @@
-buildscript {
-
-    extra["minSdkVersion"] = 18
-    extra["compileSdkVersion"] = 31
-    extra["targetSdkVersion"] = 31
-    
-    repositories {
-        google()
-        mavenCentral()
-        jcenter()
-    }
-
-    dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.30")
-        classpath("com.android.tools.build:gradle:7.0.2")
-        classpath("io.deepmedia.tools:publisher:0.6.0")
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        jcenter()
-    }
-}
-
-tasks.register("clean", Delete::class) {
-    delete(buildDir)
+plugins {
+    kotlin("android") version "2.0.0" apply false
+    id("com.android.library") version "8.2.2" apply false
+    id("com.android.application") version "8.2.2" apply false
 }
