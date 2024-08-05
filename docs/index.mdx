@@ -1,0 +1,81 @@
+---
+title: Intro
+docs:
+ - install
+ - changelog
+ - data-sources
+ - clipping
+ - concatenation
+ - events
+ - validators
+ - track-strategies
+ - advanced-options
+---
+
+# Intro
+
+The Transcoder library transcodes and compresses video files into the MP4 format, with audio support, using hardware-accelerated
+Android codecs available on the device. Works on API 18+ and supports the following set of features:
+
+- Fast transcoding to AAC/AVC
+- Hardware accelerated
+- Convenient, fluent API
+- Thumbnails support
+- [Concatenate](concatenation) multiple video and audio tracks
+- [Clip or trim](clipping) video segments
+- Configure [output size](track-strategies#video-size), with automatic cropping
+- Configure [output rotation](advanced-options#video-rotation)
+- Configure [output speed](advanced-options#video-speed)
+- Configure [output frame rate](track-strategies#other-options)
+- Configure [output audio channels](track-strategies#audio-strategies) and sample rate
+- [Override timestamp](advanced-options#time-interpolation) of frames, for example to slow down parts of the video
+- [Error handling](events)
+- Configurable [validators](validators) to e.g. avoid transcoding if the source is already compressed enough
+- Configurable video and audio [strategies](track-strategies)
+
+> This project started as a fork of [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder).
+With respect to the source project, which misses most of the functionality listed above,
+we have also fixed a huge number of bugs and are much less conservative when choosing options
+that might not be supported. The source project will always throw - for example, accepting only 16:9,
+AVC Baseline Profile videos - we prefer to try and let the codec fail if it wants to.
+
+## Minimal example
+
+```kotlin
+Transcoder.into(filePath)
+    .addDataSource(context, uri) // or...
+    .addDataSource(filePath) // or...
+    .addDataSource(fileDescriptor) // or...
+    .addDataSource(dataSource)
+    .setListener(object : TranscoderListener {
+         override fun onTranscodeProgress(progress: Double) = Unit
+         override fun onTranscodeCompleted(successCode: Int) = Unit
+         override fun onTranscodeCanceled() = Unit
+         override fun onTranscodeFailed(exception: Throwable) = Unit
+    }).transcode()
+```
+
+Please keep reading the documentation to learn about [install instructions](install), configuration options and APIs.
+
+
+## License
+
+This project is licensed under Apache 2.0. It consists of improvements over
+the [ypresto/android-transcoder](https://github.com/ypresto/android-transcoder)
+project which was licensed under Apache 2.0 as well:
+
+```
+Copyright (C) 2014-2016 Yuya Tanaka
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

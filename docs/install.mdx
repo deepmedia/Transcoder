@@ -1,0 +1,37 @@
+---
+title: Install
+---
+
+# Installation
+
+Transcoder is publicly hosted on the [Maven Central](https://repo1.maven.org/maven2/com/otaliastudios/)
+repository, where you can download the AAR package. To fetch with Gradle, assuming that `mavenCentral()` is already
+one of your repository sources, simply declare a new dependency:
+
+```kotlin
+dependencies {
+    api("com.otaliastudios:transcoder:LATEST_VERSION")
+}
+```
+
+Replace `LATEST_VERSION` with the latest version number, {version}.
+
+## Snapshots
+
+We regularly push development snapshots of the library at `https://s01.oss.sonatype.org/content/repositories/snapshots/`
+on each push to main. To use snapshots, add the url as a maven repository and depend on `latest-SNAPSHOT`:
+
+```kotlin
+// settings.gradle.kts
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven(url = "https://s01.oss.sonatype.org/content/repositories/snapshots/")
+    }
+}
+
+// build.gradle.kts
+dependencies {
+    implementation("com.otaliastudios:transcoder:latest-SNAPSHOT")
+}
+```

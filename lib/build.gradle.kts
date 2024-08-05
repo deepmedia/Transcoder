@@ -58,7 +58,7 @@ deployer {
         artifactId = "transcoder"
         release.version = "0.10.5"
         release.tag = "v0.10.5"
-        description = "Accelerated video transcoding using Android MediaCodec API without native code (no LGPL/patent issues)."
+        description = "Accelerated video compression and transcoding on Android using MediaCodec APIs (no FFMPEG/LGPL licensing issues). Supports cropping to any dimension, concatenation, audio processing and much more."
         url = "https://github.com/deepmedia/Transcoder"
         scm.fromGithub("deepmedia", "Transcoder")
         license(apache2)
