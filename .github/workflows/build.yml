@@ -23,7 +23,7 @@ jobs:
         run: ./gradlew demo:assembleDebug lib:deployLocal
   ANDROID_EMULATOR_TESTS:
     name: Emulator Tests
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
