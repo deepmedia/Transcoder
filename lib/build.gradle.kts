@@ -1,7 +1,7 @@
 plugins {
     id("com.android.library")
     kotlin("android")
-    id("io.deepmedia.tools.deployer") version "0.14.0-local-alpha1"
+    id("io.deepmedia.tools.deployer") version "0.14.0-alpha1"
     id("org.jetbrains.dokka") version "1.9.20"
 }
 
