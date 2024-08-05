@@ -24,6 +24,10 @@ jobs:
   ANDROID_EMULATOR_TESTS:
     name: Emulator Tests
     runs-on: ubuntu-latest
+    # Temporary workaround for deployer issue
+    env:
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
     strategy:
       fail-fast: false
       matrix:
