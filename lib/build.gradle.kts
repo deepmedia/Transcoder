@@ -9,7 +9,7 @@ android {
     namespace = "com.otaliastudios.transcoder"
     compileSdk = 34
     defaultConfig {
-        minSdk = 18
+        minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     testOptions {
