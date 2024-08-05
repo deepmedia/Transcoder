@@ -5,4 +5,4 @@ ADB_TAGS="$ADB_TAGS VideoDecoderOutput:I VideoFrameDropper:I"
 ADB_TAGS="$ADB_TAGS AudioEngine:I"
 adb logcat -c
 adb logcat $ADB_TAGS *:E -v color &
-./gradlew lib:connectedCheck
+./gradlew lib:connectedCheck --stacktrace
