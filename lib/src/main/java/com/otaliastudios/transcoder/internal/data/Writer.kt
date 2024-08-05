@@ -39,14 +39,16 @@ internal class Writer(
     override fun step(state: State.Ok<WriterData>, fresh: Boolean): State<Unit> {
         val (buffer, timestamp, flags) = state.value
         val eos = state is State.Eos
-        info.set(
-                buffer.position(),
-                buffer.remaining(),
-                timestamp,
-                if (eos) {
-                    flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM
-                } else flags
-        )
+        if (eos) {
+            info.set(0, 0, 0, flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+        } else {
+            info.set(
+                    buffer.position(),
+                    buffer.remaining(),
+                    timestamp,
+                    flags
+            )
+        }
         sink.writeTrack(track, buffer, info)
         state.value.release()
         return if (eos) State.Eos(Unit) else State.Ok(Unit)
