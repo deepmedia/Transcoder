@@ -100,9 +100,7 @@ public class DefaultDataSink implements DataSink {
 
     @Override
     public void setLocation(double latitude, double longitude) {
-        if (Build.VERSION.SDK_INT >= 19) {
-            mMuxer.setLocation((float) latitude, (float) longitude);
-        }
+        mMuxer.setLocation((float) latitude, (float) longitude);
     }
 
     @Override

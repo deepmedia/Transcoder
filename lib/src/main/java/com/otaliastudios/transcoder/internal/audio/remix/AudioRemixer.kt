@@ -24,7 +24,7 @@ internal interface AudioRemixer {
     companion object {
         internal operator fun get(inputChannels: Int, outputChannels: Int): AudioRemixer = when {
             inputChannels !in setOf(1, 2) -> error("Input channel count not supported: $inputChannels")
-            outputChannels !in setOf(1, 2) -> error("Input channel count not supported: $inputChannels")
+            outputChannels !in setOf(1, 2) -> error("Output channel count not supported: $inputChannels")
             inputChannels < outputChannels -> UpMixAudioRemixer()
             inputChannels > outputChannels -> DownMixAudioRemixer()
             else -> PassThroughAudioRemixer()
