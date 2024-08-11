@@ -61,10 +61,10 @@ internal class DefaultTranscodeEngine(
     }
 
     private fun createPipeline(
-            type: TrackType,
-            index: Int,
-            status: TrackStatus,
-            outputFormat: MediaFormat
+        type: TrackType,
+        index: Int,
+        status: TrackStatus,
+        outputFormat: MediaFormat
     ): Pipeline {
         log.w("createPipeline($type, $index, $status), format=$outputFormat")
         val interpolator = timer.interpolator(type, index)
