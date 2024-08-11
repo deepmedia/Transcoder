@@ -38,9 +38,14 @@ internal class Writer(
 
     override fun step(state: State.Ok<WriterData>, fresh: Boolean): State<Unit> {
         val (buffer, timestamp, flags) = state.value
+        // Note: flags does NOT include BUFFER_FLAG_END_OF_STREAM. That's passed via State.Eos.
         val eos = state is State.Eos
         if (eos) {
-            info.set(0, 0, 0, flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+            // Note: it may happen that at this point, buffer has some data. but creating an extra writeTrack() call
+            // can cause some crashes that were not properly debugged, probably related to wrong timestamp.
+            // I think if we could ensure that timestamp is valid (> previous, > 0) and buffer.hasRemaining(), there should
+            // be an extra call here. See #159. Reluctant to do so without a repro test.
+            info.set(0, 0, 0, flags or MediaCodec.BUFFER_FLAG_END_OF_STREAM)
         } else {
             info.set(
                     buffer.position(),
