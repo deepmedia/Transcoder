@@ -26,18 +26,26 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
             if (index < head) return@forEachIndexed
             val fresh = head == 0 || index != head
 
-            when(val okOrWaitState = executeStep(state, step, fresh)) {
-                is State.Wait -> return State.Wait(okOrWaitState.withSleep)
-                is State.Ok -> state = okOrWaitState
-                is State.Retry -> throw RuntimeException("Unexpected")
+            fun executeStep(fresh: Boolean): State.Wait<Any>? {
+                return when (val newState = step.step(state, fresh)) {
+                    is State.Eos -> {
+                        state = newState
+                        log.i("execute(): EOS from ${step.name} (#$index/${chain.size}).")
+                        headState = newState
+                        headIndex = index + 1
+                        null
+                    }
+                    is State.Ok -> {
+                        state = newState
+                        null
+                    }
+                    is State.Retry -> executeStep(fresh = false)
+                    is State.Wait -> return newState
+                }
             }
 
-            // log.v("execute(): executed ${step.name} (#$index/${chain.size}). result=$state")
-            if (state is State.Eos) {
-                log.i("execute(): EOS from ${step.name} (#$index/${chain.size}).")
-                headState = state
-                headIndex = index + 1
-            }
+            val wait = executeStep(fresh)
+            if (wait != null) return State.Wait(wait.sleep)
         }
         return when {
             chain.isEmpty() -> State.Eos(Unit)
@@ -48,15 +56,6 @@ internal class Pipeline private constructor(name: String, private val chain: Lis
 
     fun release() {
         chain.forEach { it.release() }
-    }
-
-    private fun executeStep(previous: State.Ok<Any>, step: AnyStep, fresh: Boolean): State<Any> {
-        val state = step.step(previous, fresh)
-        return when (state) {
-            is State.Ok -> state
-            is State.Retry -> executeStep(previous, step, fresh = false)
-            is State.Wait -> state
-        }
     }
 
     companion object {
