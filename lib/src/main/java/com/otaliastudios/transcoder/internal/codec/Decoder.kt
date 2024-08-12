@@ -62,7 +62,7 @@ internal class Decoder(
     }
 
     override fun buffer(): Pair<ByteBuffer, Int>? {
-        val id = codec.dequeueInputBuffer(0)
+        val id = codec.dequeueInputBuffer(100)
         return if (id >= 0) {
             dequeuedInputs++
             buffers.getInputBuffer(id) to id
@@ -88,7 +88,7 @@ internal class Decoder(
     }
 
     override fun drain(): State<DecoderData> {
-        val result = codec.dequeueOutputBuffer(info, 0)
+        val result = codec.dequeueOutputBuffer(info, 100)
         return when (result) {
             INFO_TRY_AGAIN_LATER -> {
                 log.i("drain(): got INFO_TRY_AGAIN_LATER, waiting.")
@@ -116,6 +116,7 @@ internal class Decoder(
                     }
                     if (isEos) State.Eos(data) else State.Ok(data)
                 } else {
+                    // frame was dropped, no need to sleep
                     codec.releaseOutputBuffer(result, false)
                     State.Wait(false)
                 }.also {

@@ -134,7 +134,7 @@ internal class DefaultThumbnailsEngine(
     }
 
     companion object {
-        private val WAIT_MS = 10L
+        private val WAIT_MS = 2L
         private val PROGRESS_LOOPS = 10L
     }
 }

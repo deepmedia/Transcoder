@@ -63,10 +63,12 @@ internal class AudioEngine(
 
     override fun drain(): State<EncoderData> {
         if (chunks.isEmpty()) {
+            // nothing was enqueued
             log.i("drain(): no chunks, waiting...")
-            return State.Wait(true)
+            return State.Wait(false)
         }
         val (outBytes, outId) = next.buffer() ?: return run {
+            // dequeueInputBuffer failed
             log.i("drain(): no next buffer, waiting...")
             State.Wait(true)
         }

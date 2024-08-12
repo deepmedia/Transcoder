@@ -13,8 +13,8 @@ internal sealed class State<out T> {
     }
 
     // couldn't run, but might in the future
-    class Wait<T>(val withSleep: Boolean) : State<T>() {
-        override fun toString() = "State.Wait(withSleep: $withSleep)"
+    class Wait<T>(val sleep: Boolean) : State<T>() {
+        override fun toString() = "State.Wait($sleep)"
     }
 
     // call again as soon as possible

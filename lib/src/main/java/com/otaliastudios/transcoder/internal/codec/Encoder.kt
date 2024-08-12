@@ -73,7 +73,7 @@ internal class Encoder(
     }
 
     override fun buffer(): Pair<ByteBuffer, Int>? {
-        val id = codec.dequeueInputBuffer(0)
+        val id = codec.dequeueInputBuffer(100)
         return if (id >= 0) {
             dequeuedInputs++
             buffers.getInputBuffer(id) to id
@@ -107,7 +107,7 @@ internal class Encoder(
     }
 
     override fun drain(): State<WriterData> {
-        val timeoutUs = if (eosReceivedButNotEnqueued) 5000L else 0L
+        val timeoutUs = if (eosReceivedButNotEnqueued) 5000L else 100L
         return when (val result = codec.dequeueOutputBuffer(info, timeoutUs)) {
             INFO_TRY_AGAIN_LATER -> {
                 if (eosReceivedButNotEnqueued) {

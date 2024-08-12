@@ -27,6 +27,7 @@ internal class Reader(
     private inline fun nextBufferOrWait(action: (ByteBuffer, Int) -> State<ReaderData>): State<ReaderData> {
         val buffer = next.buffer()
         if (buffer == null) {
+            // dequeueInputBuffer failed
             log.v("Returning State.Wait because buffer is null.")
             return State.Wait(true)
         } else {
