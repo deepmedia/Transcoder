@@ -11,7 +11,7 @@ internal class Segment(
         private val pipeline: Pipeline,
 ) {
 
-    private val log = Logger("Segment($type,$index)")
+    // private val log = Logger("Segment($type,$index)")
     private var state: State<Unit>? = null
 
     fun advance(): Boolean {
@@ -20,7 +20,7 @@ internal class Segment(
     }
 
     fun canAdvance(): Boolean {
-        log.v("canAdvance(): state=$state")
+        // log.v("canAdvance(): state=$state")
         return state == null || state !is State.Eos
     }
 

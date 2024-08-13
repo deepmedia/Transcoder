@@ -8,7 +8,6 @@ import com.otaliastudios.transcoder.common.trackType
 import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.data.WriterChannel
 import com.otaliastudios.transcoder.internal.data.WriterData
-import com.otaliastudios.transcoder.internal.media.MediaCodecBuffers
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
 import com.otaliastudios.transcoder.internal.pipeline.State
@@ -37,7 +36,7 @@ internal class Encoder(
         override val surface: Surface?,
         ownsCodecStart: Boolean,
         private val ownsCodecStop: Boolean,
-) : QueuedStep<EncoderData, EncoderChannel, WriterData, WriterChannel>(), EncoderChannel {
+) : QueuedStep<EncoderData, EncoderChannel, WriterData, WriterChannel>("Encoder"), EncoderChannel {
 
     constructor(codecs: Codecs, type: TrackType) : this(
             codecs.encoders[type].first,
@@ -55,12 +54,10 @@ internal class Encoder(
     private var dequeuedInputs by observable(0) { _, _, _ -> printDequeued() }
     private var dequeuedOutputs by observable(0) { _, _, _ -> printDequeued() }
     private fun printDequeued() {
-        log.v("dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
+        // log.v("dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
     }
 
     override val channel = this
-
-    private val buffers by lazy { MediaCodecBuffers(codec) }
 
     private var info = BufferInfo()
 
@@ -76,7 +73,8 @@ internal class Encoder(
         val id = codec.dequeueInputBuffer(100)
         return if (id >= 0) {
             dequeuedInputs++
-            buffers.getInputBuffer(id) to id
+            val buf = checkNotNull(codec.getInputBuffer(id)) { "inputBuffer($id) should not be null." }
+            buf to id
         } else {
             log.i("buffer() failed. dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
             null
@@ -127,7 +125,6 @@ internal class Encoder(
                 State.Retry
             }
             INFO_OUTPUT_BUFFERS_CHANGED -> {
-                buffers.onOutputBuffersChanged()
                 State.Retry
             }
             else -> {
@@ -139,7 +136,7 @@ internal class Encoder(
                     dequeuedOutputs++
                     val isEos = info.flags and BUFFER_FLAG_END_OF_STREAM != 0
                     val flags = info.flags and BUFFER_FLAG_END_OF_STREAM.inv()
-                    val buffer = buffers.getOutputBuffer(result)
+                    val buffer = checkNotNull(codec.getOutputBuffer(result)) { "outputBuffer($result) should not be null." }
                     val timeUs = info.presentationTimeUs
                     buffer.clear()
                     buffer.limit(info.offset + info.size)

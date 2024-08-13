@@ -27,6 +27,7 @@ internal class Writer(
 ) : Step<WriterData, WriterChannel, Unit, Channel>, WriterChannel {
 
     override val channel = this
+    override val name: String = "Writer"
 
     private val log = Logger("Writer")
     private val info = MediaCodec.BufferInfo()

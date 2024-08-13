@@ -1,7 +1,7 @@
 package com.otaliastudios.transcoder.internal.codec
 
 import com.otaliastudios.transcoder.common.TrackType
-import com.otaliastudios.transcoder.internal.pipeline.DataStep
+import com.otaliastudios.transcoder.internal.pipeline.TransformStep
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.time.TimeInterpolator
 import java.nio.ByteBuffer
@@ -17,7 +17,7 @@ internal class DecoderTimerData(
 internal class DecoderTimer(
         private val track: TrackType,
         private val interpolator: TimeInterpolator,
-) : DataStep<DecoderData, DecoderChannel>() {
+) : TransformStep<DecoderData, DecoderChannel>("DecoderTimer") {
 
     private var lastTimeUs: Long? = null
     private var lastRawTimeUs: Long? = null
