@@ -99,12 +99,11 @@ public class MediaFormatProvider {
             throw new RuntimeException("Can't decode this track", e);
         }
         decoder.start();
-        MediaCodecBuffers buffers = new MediaCodecBuffers(decoder);
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         DataSource.Chunk chunk = new DataSource.Chunk();
         MediaFormat result = null;
         while (result == null) {
-            result = decodeOnce(type, source, chunk, decoder, buffers, info);
+            result = decodeOnce(type, source, chunk, decoder, info);
         }
         source.deinitialize();
         source.initialize();
@@ -116,18 +115,16 @@ public class MediaFormatProvider {
                                    @NonNull DataSource source,
                                    @NonNull DataSource.Chunk chunk,
                                    @NonNull MediaCodec decoder,
-                                   @NonNull MediaCodecBuffers buffers,
                                    @NonNull MediaCodec.BufferInfo info) {
         // First drain then feed.
-        MediaFormat format = drainOnce(decoder, buffers, info);
+        MediaFormat format = drainOnce(decoder, info);
         if (format != null) return format;
-        feedOnce(type, source, chunk, decoder, buffers);
+        feedOnce(type, source, chunk, decoder);
         return null;
     }
 
     @Nullable
     private MediaFormat drainOnce(@NonNull MediaCodec decoder,
-                                  @NonNull MediaCodecBuffers buffers,
                                   @NonNull MediaCodec.BufferInfo info) {
         int result = decoder.dequeueOutputBuffer(info, 0);
         switch (result) {
@@ -136,8 +133,7 @@ public class MediaFormatProvider {
             case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
                 return decoder.getOutputFormat();
             case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
-                buffers.onOutputBuffersChanged();
-                return drainOnce(decoder, buffers, info);
+                return drainOnce(decoder, info);
             default: // Drop this data immediately.
                 decoder.releaseOutputBuffer(result, false);
                 return null;
@@ -147,14 +143,13 @@ public class MediaFormatProvider {
     private void feedOnce(@NonNull TrackType type,
                           @NonNull DataSource source,
                           @NonNull DataSource.Chunk chunk,
-                          @NonNull MediaCodec decoder,
-                          @NonNull MediaCodecBuffers buffers) {
+                          @NonNull MediaCodec decoder) {
         if (!source.canReadTrack(type)) {
             throw new RuntimeException("This should never happen!");
         }
         final int result = decoder.dequeueInputBuffer(0);
         if (result < 0) return;
-        chunk.buffer = buffers.getInputBuffer(result);
+        chunk.buffer = decoder.getInputBuffer(result);
         source.readTrack(chunk);
         decoder.queueInputBuffer(result,
                 chunk.buffer.position(),
