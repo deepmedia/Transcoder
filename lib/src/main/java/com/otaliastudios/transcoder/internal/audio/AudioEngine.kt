@@ -22,7 +22,7 @@ internal class AudioEngine(
         private val stretcher: AudioStretcher,
         private val resampler: AudioResampler,
         private val targetFormat: MediaFormat
-): QueuedStep<DecoderData, DecoderChannel, EncoderData, EncoderChannel>(), DecoderChannel {
+): QueuedStep<DecoderData, DecoderChannel, EncoderData, EncoderChannel>("AudioEngine"), DecoderChannel {
 
     companion object {
         private val ID = AtomicInteger(0)
@@ -43,9 +43,10 @@ internal class AudioEngine(
 
     override fun handleRawFormat(rawFormat: MediaFormat) {
         log.i("handleRawFormat($rawFormat)")
+        check(!::rawFormat.isInitialized) { "handleRawFormat called twice: ${this.rawFormat} => $rawFormat"}
         this.rawFormat = rawFormat
         remixer = AudioRemixer[rawFormat.channels, targetFormat.channels]
-        chunks = ChunkQueue(rawFormat.sampleRate, rawFormat.channels)
+        chunks = ChunkQueue(log, rawFormat.sampleRate, rawFormat.channels)
     }
 
     override fun enqueueEos(data: DecoderData) {
@@ -57,6 +58,7 @@ internal class AudioEngine(
     override fun enqueue(data: DecoderData) {
         val stretch = (data as? DecoderTimerData)?.timeStretch ?: 1.0
         chunks.enqueue(data.buffer.asShortBuffer(), data.timeUs, stretch) {
+            log.v("drain(): releasing input data (decoder's outputBuffer)")
             data.release(false)
         }
     }
@@ -114,6 +116,7 @@ internal class AudioEngine(
             outBytes.clear()
             outBytes.limit(outBuffer.limit() * BYTES_PER_SHORT)
             outBytes.position(outBuffer.position() * BYTES_PER_SHORT)
+            log.v("drain(): passing buffer $outId to encoder...")
             State.Ok(EncoderData(outBytes, outId, timeUs))
         }
     }
