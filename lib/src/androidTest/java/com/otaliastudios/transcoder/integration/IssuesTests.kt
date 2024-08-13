@@ -7,10 +7,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.otaliastudios.transcoder.Transcoder
 import com.otaliastudios.transcoder.TranscoderListener
 import com.otaliastudios.transcoder.TranscoderOptions
+import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.source.AssetFileDescriptorDataSource
 import com.otaliastudios.transcoder.source.ClipDataSource
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource
+import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -64,9 +66,11 @@ class IssuesTests {
     }
 
 
-    @Test
+    @Test(timeout = 3000)
     fun issue137() = with(Helper(137)) {
         transcode {
+            // addDataSource(ClipDataSource(input("main.mp3"), 0L, 200_000L))
+
             addDataSource(ClipDataSource(input("main.mp3"), 0L, 1000_000L))
             addDataSource(input("0.amr"))
             addDataSource(ClipDataSource(input("main.mp3"), 2000_000L, 3000_000L))
@@ -85,6 +89,15 @@ class IssuesTests {
             addDataSource(input("7.amr"))
             addDataSource(ClipDataSource(input("main.mp3"), 16000_000L, 17000_000L))
             addDataSource(input("8.amr"))
+        }
+        Unit
+    }
+
+    @Test(timeout = 3000)
+    fun issue184() = with(Helper(184)) {
+        transcode {
+            addDataSource(TrackType.VIDEO, input("transcode.3gp"))
+            setVideoTrackStrategy(DefaultVideoStrategy.exact(400, 400).build())
         }
         Unit
     }
