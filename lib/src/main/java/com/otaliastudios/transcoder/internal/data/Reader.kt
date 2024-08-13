@@ -16,11 +16,10 @@ internal interface ReaderChannel : Channel {
 }
 
 internal class Reader(
-        private val source: DataSource,
-        private val track: TrackType
+    private val source: DataSource,
+    private val track: TrackType
 ) : BaseStep<Unit, Channel, ReaderData, ReaderChannel>("Reader") {
 
-    private val log = Logger("Reader")
     override val channel = Channel
     private val chunk = DataSource.Chunk()
 
@@ -35,7 +34,7 @@ internal class Reader(
         }
     }
 
-    override fun step(state: State.Ok<Unit>, fresh: Boolean): State<ReaderData> {
+    override fun advance(state: State.Ok<Unit>): State<ReaderData> {
         return if (source.isDrained) {
             log.i("Source is drained! Returning Eos as soon as possible.")
             nextBufferOrWait { byteBuffer, id ->

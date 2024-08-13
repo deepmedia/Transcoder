@@ -15,14 +15,14 @@ internal class DecoderTimerData(
 ) : DecoderData(buffer, timeUs, release)
 
 internal class DecoderTimer(
-        private val track: TrackType,
-        private val interpolator: TimeInterpolator,
+    private val track: TrackType,
+    private val interpolator: TimeInterpolator,
 ) : TransformStep<DecoderData, DecoderChannel>("DecoderTimer") {
 
     private var lastTimeUs: Long? = null
     private var lastRawTimeUs: Long? = null
 
-    override fun step(state: State.Ok<DecoderData>, fresh: Boolean): State<DecoderData> {
+    override fun advance(state: State.Ok<DecoderData>): State<DecoderData> {
         if (state is State.Eos) return state
         require(state.value !is DecoderTimerData) {
             "Can't apply DecoderTimer twice."
@@ -42,11 +42,11 @@ internal class DecoderTimer(
         lastRawTimeUs = rawTimeUs
 
         return State.Ok(DecoderTimerData(
-                buffer = state.value.buffer,
-                rawTimeUs = rawTimeUs,
-                timeUs = timeUs,
-                timeStretch = timeStretch,
-                release = state.value.release
+            buffer = state.value.buffer,
+            rawTimeUs = rawTimeUs,
+            timeUs = timeUs,
+            timeStretch = timeStretch,
+            release = state.value.release
         ))
     }
 }

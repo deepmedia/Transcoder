@@ -6,17 +6,17 @@ internal interface Channel {
 }
 
 internal interface Step<
-        Input: Any,
-        InputChannel: Channel,
-        Output: Any,
-        OutputChannel: Channel
+    Input: Any,
+    InputChannel: Channel,
+    Output: Any,
+    OutputChannel: Channel
 > {
     val name: String
     val channel: InputChannel
 
     fun initialize(next: OutputChannel) = Unit
 
-    fun step(state: State.Ok<Input>, fresh: Boolean): State<Output>
+    fun advance(state: State.Ok<Input>): State<Output>
 
     fun release() = Unit
 }

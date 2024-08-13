@@ -36,7 +36,12 @@ internal class Encoder(
         override val surface: Surface?,
         ownsCodecStart: Boolean,
         private val ownsCodecStop: Boolean,
-) : QueuedStep<EncoderData, EncoderChannel, WriterData, WriterChannel>("Encoder"), EncoderChannel {
+) : QueuedStep<EncoderData, EncoderChannel, WriterData, WriterChannel>(
+    when (surface) {
+        null -> "AudioEncoder"
+        else -> "VideoEncoder"
+    }
+), EncoderChannel {
 
     constructor(codecs: Codecs, type: TrackType) : this(
             codecs.encoders[type].first,
@@ -45,12 +50,7 @@ internal class Encoder(
             codecs.ownsEncoderStop[type]
     )
 
-    companion object {
-        private val ID = trackMapOf(AtomicInteger(0), AtomicInteger(0))
-    }
-
     private val type = if (surface != null) TrackType.VIDEO else TrackType.AUDIO
-    private val log = Logger("Encoder(${type},${ID[type].getAndIncrement()})")
     private var dequeuedInputs by observable(0) { _, _, _ -> printDequeued() }
     private var dequeuedOutputs by observable(0) { _, _, _ -> printDequeued() }
     private fun printDequeued() {

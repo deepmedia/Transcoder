@@ -20,13 +20,12 @@ import java.nio.ByteOrder
 import kotlin.math.abs
 
 internal class VideoSnapshots(
-        format: MediaFormat,
-        requests: List<Long>,
-        private val accuracyUs: Long,
-        private val onSnapshot: (Long, Bitmap) -> Unit
+    format: MediaFormat,
+    requests: List<Long>,
+    private val accuracyUs: Long,
+    private val onSnapshot: (Long, Bitmap) -> Unit
 ) : BaseStep<Long, Channel, Long, Channel>("VideoSnapshots") {
 
-    private val log = Logger("VideoSnapshots")
     override val channel = Channel
     private val requests = requests.toMutableList()
     private val width = format.getInteger(KEY_WIDTH)
@@ -36,8 +35,8 @@ internal class VideoSnapshots(
         it.makeCurrent()
     }
 
-    override fun step(state: State.Ok<Long>, fresh: Boolean): State<Long> {
-        if (requests.isEmpty() || !fresh) return state
+    override fun advance(state: State.Ok<Long>): State<Long> {
+        if (requests.isEmpty()) return state
 
         val expectedUs = requests.first()
         val deltaUs = abs(expectedUs - state.value)

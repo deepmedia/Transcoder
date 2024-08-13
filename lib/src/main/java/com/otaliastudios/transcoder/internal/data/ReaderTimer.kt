@@ -9,7 +9,7 @@ internal class ReaderTimer(
         private val track: TrackType,
         private val interpolator: TimeInterpolator
 ) : TransformStep<ReaderData, ReaderChannel>("ReaderTimer") {
-    override fun step(state: State.Ok<ReaderData>, fresh: Boolean): State<ReaderData> {
+    override fun advance(state: State.Ok<ReaderData>): State<ReaderData> {
         if (state is State.Eos) return state
         state.value.chunk.timeUs = interpolator.interpolate(track, state.value.chunk.timeUs)
         return state

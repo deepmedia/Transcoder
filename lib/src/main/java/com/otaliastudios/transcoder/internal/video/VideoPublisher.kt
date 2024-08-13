@@ -5,15 +5,15 @@ import com.otaliastudios.opengl.core.EglCore
 import com.otaliastudios.opengl.surface.EglWindowSurface
 import com.otaliastudios.transcoder.internal.codec.EncoderChannel
 import com.otaliastudios.transcoder.internal.codec.EncoderData
+import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.pipeline.Step
 
 
-internal class VideoPublisher: Step<Long, Channel, EncoderData, EncoderChannel> {
+internal class VideoPublisher: BaseStep<Long, Channel, EncoderData, EncoderChannel>("VideoPublisher") {
 
     override val channel = Channel
-    override val name: String = "VideoPublisher"
 
     private val core = EglCore(EGL14.EGL_NO_CONTEXT, EglCore.FLAG_RECORDABLE)
     private lateinit var surface: EglWindowSurface
@@ -24,7 +24,7 @@ internal class VideoPublisher: Step<Long, Channel, EncoderData, EncoderChannel> 
         surface.makeCurrent()
     }
 
-    override fun step(state: State.Ok<Long>, fresh: Boolean): State<EncoderData> {
+    override fun advance(state: State.Ok<Long>): State<EncoderData> {
         if (state is State.Eos) {
             return State.Eos(EncoderData.Empty)
         } else {

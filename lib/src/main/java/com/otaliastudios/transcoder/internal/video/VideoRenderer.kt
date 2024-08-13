@@ -6,6 +6,7 @@ import android.view.Surface
 import com.otaliastudios.transcoder.internal.codec.DecoderChannel
 import com.otaliastudios.transcoder.internal.codec.DecoderData
 import com.otaliastudios.transcoder.internal.media.MediaFormatConstants.KEY_ROTATION_DEGREES
+import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.pipeline.Step
@@ -13,15 +14,12 @@ import com.otaliastudios.transcoder.internal.utils.Logger
 
 
 internal class VideoRenderer(
-        private val sourceRotation: Int, // intrinsic source rotation
-        private val extraRotation: Int, // any extra rotation in TranscoderOptions
-        private val targetFormat: MediaFormat,
-        flipY: Boolean = false
-): Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
+    private val sourceRotation: Int, // intrinsic source rotation
+    private val extraRotation: Int, // any extra rotation in TranscoderOptions
+    private val targetFormat: MediaFormat,
+    flipY: Boolean = false
+): BaseStep<DecoderData, DecoderChannel, Long, Channel>("VideoRenderer"), DecoderChannel {
 
-    private val log = Logger("VideoRenderer")
-
-    override val name: String = "VideoRenderer"
     override val channel = this
 
     // frame drawer needs EGL context which is not created by us, so let's use by lazy.
@@ -92,7 +90,7 @@ internal class VideoRenderer(
 
     override fun handleRawFormat(rawFormat: MediaFormat) = Unit
 
-    override fun step(state: State.Ok<DecoderData>, fresh: Boolean): State<Long> {
+    override fun advance(state: State.Ok<DecoderData>): State<Long> {
         return if (state is State.Eos) {
             state.value.release(false)
             State.Eos(0L)
