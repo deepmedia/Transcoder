@@ -18,7 +18,7 @@ internal interface ReaderChannel : Channel {
 internal class Reader(
         private val source: DataSource,
         private val track: TrackType
-) : BaseStep<Unit, Channel, ReaderData, ReaderChannel>() {
+) : BaseStep<Unit, Channel, ReaderData, ReaderChannel>("Reader") {
 
     private val log = Logger("Reader")
     override val channel = Channel
@@ -52,6 +52,7 @@ internal class Reader(
             nextBufferOrWait { byteBuffer, id ->
                 chunk.buffer = byteBuffer
                 source.readTrack(chunk)
+                // log.v("Returning ${chunk.buffer?.remaining() ?: -1} bytes from source")
                 State.Ok(ReaderData(chunk, id))
             }
         }

@@ -3,65 +3,105 @@ package com.otaliastudios.transcoder.internal.pipeline
 import com.otaliastudios.transcoder.internal.utils.Logger
 
 
-private typealias AnyStep = Step<Any, Channel, Any, Channel>
 
-internal class Pipeline private constructor(name: String, private val chain: List<AnyStep>) {
+private class PipelineItem(
+    val step: Step<Any, Channel, Any, Channel>,
+) {
+    var success: State.Ok<Any>? = null
+    var failure: State.Wait<Any>? = null
 
-    private val log = Logger("Pipeline($name)")
-    private var headState: State.Ok<Any> = State.Ok(Unit)
-    private var headIndex = 0
+    fun set(output: State<Any>?) {
+        success = output as? State.Ok
+        failure = output as? State.Wait
+    }
+
+    // Ok or Wait
+    fun run(input: State.Ok<Any>, fresh: Boolean): State<Any> {
+        var newResult = step.step(input, fresh)
+        while (newResult is State.Retry) {
+            newResult = step.step(input, false)
+        }
+        return newResult
+    }
+}
+
+internal class Pipeline private constructor(name: String, private val items: List<PipelineItem>) {
+
+    private val log = Logger("${name}Pipeline")
 
     init {
-        chain.zipWithNext().reversed().forEach { (first, next) ->
-            first.initialize(next = next.channel)
+        items.zipWithNext().reversed().forEach { (first, next) ->
+            first.step.initialize(next = next.step.channel)
         }
     }
 
     // Returns Eos, Ok or Wait
     fun execute(): State<Unit> {
-        log.v("execute(): starting. head=$headIndex steps=${chain.size} remaining=${chain.size - headIndex}")
-        val head = headIndex
-        var state = headState
-        chain.forEachIndexed { index, step ->
-            if (index < head) return@forEachIndexed
-            val fresh = head == 0 || index != head
-
-            fun executeStep(fresh: Boolean): State.Wait<Any>? {
-                return when (val newState = step.step(state, fresh)) {
-                    is State.Eos -> {
-                        state = newState
-                        log.i("execute(): EOS from ${step.name} (#$index/${chain.size}).")
-                        headState = newState
-                        headIndex = index + 1
-                        null
-                    }
-                    is State.Ok -> {
-                        state = newState
-                        null
-                    }
-                    is State.Retry -> executeStep(fresh = false)
-                    is State.Wait -> return newState
+        var headState: State.Ok<Any> = State.Ok(Unit)
+        var headFresh = true
+        // In case of failure in the previous run, we should re-run all items before the failed one
+        // This is important for decoders/encoders that need more input before they can output
+        val previouslyFailedIndex = items.indexOfLast { it.failure != null }.takeIf { it >= 0 }
+        log.v("LOOP (previouslyFailed: ${previouslyFailedIndex})")
+        for (i in items.indices) {
+            val item = items[i]
+            val cached = item.success
+            if (cached != null && (!headFresh || cached is State.Eos)) {
+                log.v("${i+1}/${items.size} '${item.step.name}' SKIP ${if (item.success is State.Eos) "(eos)" else "(handled)"}")
+                headState = cached
+                headFresh = false
+                continue
+            }
+            // This item either:
+            // - never run (cached == null, fresh = true)
+            // - caused failure in the previous run (i == previouslyFailedIndex, failure != null)
+            // - run (with failure or success) then one of the items following it failed (i < previouslyFailedIndex, cached != null)
+            log.v("${i+1}/${items.size} '${item.step.name}' START (${if (headFresh) "fresh" else "stale"})")
+            item.set(item.run(headState, headFresh))
+            if (item.success != null) {
+                log.v("${i+1}/${items.size} '${item.step.name}' SUCCESS ${if (item.success is State.Eos) "(eos)" else ""}")
+                headState = item.success!!
+                headFresh = true
+                if (i == items.lastIndex) items.forEach {
+                    if (it.success !is State.Eos) it.set(null)
+                }
+                continue
+            }
+            // Item failed. Check if we had a later failure in the previous run. In that case
+            // we should retry that too. Note: `cached` should always be not null in this branch
+            // but let's avoid throwing
+            if (previouslyFailedIndex != null && i < previouslyFailedIndex) {
+                if (cached != null) {
+                    log.v("${i+1}/${items.size} '${item.step.name}' FAILED (skip)")
+                    item.set(cached) // keep 'cached' for next run
+                    headState = cached
+                    headFresh = false
+                    continue
                 }
             }
 
-            val wait = executeStep(fresh)
-            if (wait != null) return State.Wait(wait.sleep)
+            // Item failed: don't proceed. Return early.
+            log.v("${i+1}/${items.size} '${item.step.name}' FAILED")
+            return State.Wait(item.failure!!.sleep)
         }
         return when {
-            chain.isEmpty() -> State.Eos(Unit)
-            state is State.Eos -> State.Eos(Unit)
+            items.isEmpty() -> State.Eos(Unit)
+            headState is State.Eos -> State.Eos(Unit)
             else -> State.Ok(Unit)
         }
     }
 
     fun release() {
-        chain.forEach { it.release() }
+        items.forEach { it.step.release() }
     }
 
     companion object {
-        @Suppress("UNCHECKED_CAST")
         internal fun build(name: String, builder: () -> Builder<*, Channel> = { Builder<Unit, Channel>() }): Pipeline {
-            return Pipeline(name, builder().steps as List<AnyStep>)
+            val items = builder().steps.map {
+                @Suppress("UNCHECKED_CAST")
+                PipelineItem(it as Step<Any, Channel, Any, Channel>)
+            }
+            return Pipeline(name, items)
         }
     }
 

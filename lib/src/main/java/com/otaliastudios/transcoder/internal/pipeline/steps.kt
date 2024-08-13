@@ -5,7 +5,7 @@ internal abstract class BaseStep<
         InputChannel: Channel,
         Output: Any,
         OutputChannel: Channel
-> : Step<Input, InputChannel, Output, OutputChannel> {
+>(override val name: String) : Step<Input, InputChannel, Output, OutputChannel> {
     protected lateinit var next: OutputChannel
     private set
 
@@ -14,9 +14,10 @@ internal abstract class BaseStep<
     }
 }
 
-internal abstract class DataStep<D: Any, C: Channel> : Step<D, C, D, C> {
+internal abstract class TransformStep<D: Any, C: Channel>(name: String) : BaseStep<D, C, D, C>(name) {
     override lateinit var channel: C
     override fun initialize(next: C) {
+        super.initialize(next)
         channel = next
     }
 }
@@ -26,7 +27,7 @@ internal abstract class QueuedStep<
         InputChannel: Channel,
         Output: Any,
         OutputChannel: Channel
-> : BaseStep<Input, InputChannel, Output, OutputChannel>() {
+>(name: String) : BaseStep<Input, InputChannel, Output, OutputChannel>(name) {
 
     protected abstract fun enqueue(data: Input)
 

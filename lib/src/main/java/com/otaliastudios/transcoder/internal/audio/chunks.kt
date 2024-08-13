@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.internal.audio
 
+import com.otaliastudios.transcoder.internal.utils.Logger
 import java.nio.ShortBuffer
 
 private data class Chunk(
@@ -19,20 +20,27 @@ private data class Chunk(
  * big enough to contain the full processed size, in which case we want to consume only
  * part of the input buffer and keep it available for the next cycle.
  */
-internal class ChunkQueue(private val sampleRate: Int, private val channels: Int) {
+internal class ChunkQueue(
+    private val log: Logger,
+    private val sampleRate: Int,
+    private val channels: Int
+) {
     private val queue = ArrayDeque<Chunk>()
 
     fun isEmpty() = queue.isEmpty()
 
     fun enqueue(buffer: ShortBuffer, timeUs: Long, timeStretch: Double, release: () -> Unit) {
         if (buffer.hasRemaining()) {
+            log.v("[ChunkQueue] adding chunk at ${timeUs}us (${queue.size} => ${queue.size + 1})")
             queue.addLast(Chunk(buffer, timeUs, timeStretch, release))
         } else {
+            log.w("[ChunkQueue] enqueued invalid buffer ($timeUs, ${buffer.capacity()})")
             release()
         }
     }
 
     fun enqueueEos() {
+        log.i("[ChunkQueue] adding EOS chunk (${queue.size} => ${queue.size + 1})")
         queue.addLast(Chunk.Eos)
     }
 
@@ -50,8 +58,10 @@ internal class ChunkQueue(private val sampleRate: Int, private val channels: Int
             queue.addFirst(head.copy(
                     timeUs = shortsToUs(consumed, sampleRate, channels)
             ))
+            log.v("[ChunkQueue] partially handled chunk at ${head.timeUs}us, ${head.buffer.remaining()} bytes left (${queue.size})")
         } else {
             // buffer consumed!
+            log.v("[ChunkQueue] consumed chunk at ${head.timeUs}us (${queue.size + 1} => ${queue.size})")
             head.release()
         }
         return result

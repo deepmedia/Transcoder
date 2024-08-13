@@ -13,6 +13,7 @@ import com.otaliastudios.transcoder.internal.pipeline.Step
 internal class VideoPublisher: Step<Long, Channel, EncoderData, EncoderChannel> {
 
     override val channel = Channel
+    override val name: String = "VideoPublisher"
 
     private val core = EglCore(EGL14.EGL_NO_CONTEXT, EglCore.FLAG_RECORDABLE)
     private lateinit var surface: EglWindowSurface

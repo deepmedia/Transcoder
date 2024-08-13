@@ -12,14 +12,14 @@ internal class Seeker(
         private val source: DataSource,
         positions: List<Long>,
         private val seek: (Long) -> Boolean
-) : BaseStep<Unit, Channel, Unit, Channel>() {
+) : BaseStep<Unit, Channel, Unit, Channel>("Seeker") {
 
     private val log = Logger("Seeker")
     override val channel = Channel
     private val positions = positions.toMutableList()
 
     override fun step(state: State.Ok<Unit>, fresh: Boolean): State<Unit> {
-        if (positions.isNotEmpty()) {
+        if (fresh && positions.isNotEmpty()) {
             if (seek(positions.first())) {
                 log.i("Seeking to next position ${positions.first()}")
                 val next = positions.removeFirst()

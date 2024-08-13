@@ -11,6 +11,7 @@ import java.nio.ByteOrder
 internal class Bridge(private val format: MediaFormat)
     : Step<ReaderData, ReaderChannel, WriterData, WriterChannel>, ReaderChannel {
 
+    override val name: String = "Bridge"
     private val log = Logger("Bridge")
     private val bufferSize = format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE)
     private val buffer = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder())

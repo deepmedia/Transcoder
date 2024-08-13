@@ -11,6 +11,7 @@ internal interface Step<
         Output: Any,
         OutputChannel: Channel
 > {
+    val name: String
     val channel: InputChannel
 
     fun initialize(next: OutputChannel) = Unit
@@ -19,5 +20,3 @@ internal interface Step<
 
     fun release() = Unit
 }
-
-internal val Step<*, *, *, *>.name get() = this::class.simpleName

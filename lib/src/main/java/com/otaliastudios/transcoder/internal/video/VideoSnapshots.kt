@@ -24,7 +24,7 @@ internal class VideoSnapshots(
         requests: List<Long>,
         private val accuracyUs: Long,
         private val onSnapshot: (Long, Bitmap) -> Unit
-) : BaseStep<Long, Channel, Long, Channel>() {
+) : BaseStep<Long, Channel, Long, Channel>("VideoSnapshots") {
 
     private val log = Logger("VideoSnapshots")
     override val channel = Channel
@@ -37,7 +37,7 @@ internal class VideoSnapshots(
     }
 
     override fun step(state: State.Ok<Long>, fresh: Boolean): State<Long> {
-        if (requests.isEmpty()) return state
+        if (requests.isEmpty() || !fresh) return state
 
         val expectedUs = requests.first()
         val deltaUs = abs(expectedUs - state.value)

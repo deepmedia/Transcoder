@@ -21,6 +21,7 @@ internal class VideoRenderer(
 
     private val log = Logger("VideoRenderer")
 
+    override val name: String = "VideoRenderer"
     override val channel = this
 
     // frame drawer needs EGL context which is not created by us, so let's use by lazy.
