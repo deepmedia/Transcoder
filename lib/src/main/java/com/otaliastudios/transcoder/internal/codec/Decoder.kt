@@ -3,6 +3,7 @@ package com.otaliastudios.transcoder.internal.codec
 import android.media.MediaCodec.*
 import android.media.MediaFormat
 import android.view.Surface
+import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.common.trackType
 import com.otaliastudios.transcoder.internal.data.ReaderChannel
 import com.otaliastudios.transcoder.internal.data.ReaderData
@@ -29,15 +30,15 @@ internal interface DecoderChannel : Channel {
 }
 
 internal class Decoder(
-        private val format: MediaFormat, // source.getTrackFormat(track)
-        continuous: Boolean, // relevant if the source sends no-render chunks. should we compensate or not?
-) : QueuedStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>("Decoder"), ReaderChannel {
-
-    companion object {
-        private val ID = trackMapOf(AtomicInteger(0), AtomicInteger(0))
+    private val format: MediaFormat, // source.getTrackFormat(track)
+    continuous: Boolean, // relevant if the source sends no-render chunks. should we compensate or not?
+) : QueuedStep<ReaderData, ReaderChannel, DecoderData, DecoderChannel>(
+    when (format.trackType) {
+        TrackType.VIDEO -> "VideoDecoder"
+        TrackType.AUDIO -> "AudioDecoder"
     }
+), ReaderChannel {
 
-    private val log = Logger("Decoder(${format.trackType},${ID[format.trackType].getAndIncrement()})")
     override val channel = this
 
     private val codec = createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)

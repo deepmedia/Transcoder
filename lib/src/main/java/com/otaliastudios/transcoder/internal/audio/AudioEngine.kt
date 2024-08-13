@@ -19,15 +19,10 @@ import kotlin.math.floor
  * remixing, stretching. TODO: With some extra work this could be split in different steps.
  */
 internal class AudioEngine(
-        private val stretcher: AudioStretcher,
-        private val resampler: AudioResampler,
-        private val targetFormat: MediaFormat
+    private val stretcher: AudioStretcher,
+    private val resampler: AudioResampler,
+    private val targetFormat: MediaFormat
 ): QueuedStep<DecoderData, DecoderChannel, EncoderData, EncoderChannel>("AudioEngine"), DecoderChannel {
-
-    companion object {
-        private val ID = AtomicInteger(0)
-    }
-    private val log = Logger("AudioEngine(${ID.getAndIncrement()})")
 
     override val channel = this
     private val buffers = ShortBuffers()

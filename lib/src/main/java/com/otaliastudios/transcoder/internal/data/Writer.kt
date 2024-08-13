@@ -3,6 +3,7 @@ package com.otaliastudios.transcoder.internal.data
 import android.media.MediaCodec
 import android.media.MediaFormat
 import com.otaliastudios.transcoder.common.TrackType
+import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.internal.pipeline.Step
@@ -22,14 +23,12 @@ internal interface WriterChannel : Channel {
 }
 
 internal class Writer(
-        private val sink: DataSink,
-        private val track: TrackType
-) : Step<WriterData, WriterChannel, Unit, Channel>, WriterChannel {
+    private val sink: DataSink,
+    private val track: TrackType
+) : BaseStep<WriterData, WriterChannel, Unit, Channel>("Writer"), WriterChannel {
 
     override val channel = this
-    override val name: String = "Writer"
 
-    private val log = Logger("Writer")
     private val info = MediaCodec.BufferInfo()
 
     override fun handleFormat(format: MediaFormat) {
@@ -37,7 +36,7 @@ internal class Writer(
         sink.setTrackFormat(track, format)
     }
 
-    override fun step(state: State.Ok<WriterData>, fresh: Boolean): State<Unit> {
+    override fun advance(state: State.Ok<WriterData>): State<Unit> {
         val (buffer, timestamp, flags) = state.value
         // Note: flags does NOT include BUFFER_FLAG_END_OF_STREAM. That's passed via State.Eos.
         val eos = state is State.Eos
@@ -49,10 +48,10 @@ internal class Writer(
             info.set(0, 0, 0, flags or MediaCodec.BUFFER_FLAG_END_OF_STREAM)
         } else {
             info.set(
-                    buffer.position(),
-                    buffer.remaining(),
-                    timestamp,
-                    flags
+                buffer.position(),
+                buffer.remaining(),
+                timestamp,
+                flags
             )
         }
         sink.writeTrack(track, buffer, info)
