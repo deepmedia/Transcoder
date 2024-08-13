@@ -100,11 +100,11 @@ internal class Decoder(
             INFO_OUTPUT_FORMAT_CHANGED -> {
                 log.i("drain(): got INFO_OUTPUT_FORMAT_CHANGED, handling format and retrying. format=${codec.outputFormat}")
                 next.handleRawFormat(codec.outputFormat)
-                State.Retry
+                drain()
             }
             INFO_OUTPUT_BUFFERS_CHANGED -> {
                 log.i("drain(): got INFO_OUTPUT_BUFFERS_CHANGED, retrying.")
-                State.Retry
+                drain()
             }
             else -> {
                 val isEos = info.flags and BUFFER_FLAG_END_OF_STREAM != 0

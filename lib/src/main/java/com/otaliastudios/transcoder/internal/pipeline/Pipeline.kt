@@ -8,20 +8,11 @@ private class PipelineItem(
     val step: Step<Any, Channel, Any, Channel>,
 ) {
     var success: State.Ok<Any>? = null
-    var failure: State.Wait<Any>? = null
+    var failure: State.Wait? = null
 
     fun set(output: State<Any>?) {
         success = output as? State.Ok
         failure = output as? State.Wait
-    }
-
-    // Ok or Wait
-    fun run(input: State.Ok<Any>, fresh: Boolean): State<Any> {
-        var newResult = step.step(input, fresh)
-        while (newResult is State.Retry) {
-            newResult = step.step(input, false)
-        }
-        return newResult
     }
 }
 
@@ -57,7 +48,7 @@ internal class Pipeline private constructor(name: String, private val items: Lis
             // - caused failure in the previous run (i == previouslyFailedIndex, failure != null)
             // - run (with failure or success) then one of the items following it failed (i < previouslyFailedIndex, cached != null)
             log.v("${i+1}/${items.size} '${item.step.name}' START (${if (headFresh) "fresh" else "stale"})")
-            item.set(item.run(headState, headFresh))
+            item.set(item.step.step(headState, headFresh))
             if (item.success != null) {
                 log.v("${i+1}/${items.size} '${item.step.name}' SUCCESS ${if (item.success is State.Eos) "(eos)" else ""}")
                 headState = item.success!!
