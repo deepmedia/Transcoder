@@ -122,16 +122,16 @@ internal class Encoder(
             INFO_OUTPUT_FORMAT_CHANGED -> {
                 log.i("INFO_OUTPUT_FORMAT_CHANGED! format=${codec.outputFormat}")
                 next.handleFormat(codec.outputFormat)
-                State.Retry
+                drain()
             }
             INFO_OUTPUT_BUFFERS_CHANGED -> {
-                State.Retry
+                drain()
             }
             else -> {
                 val isConfig = info.flags and BUFFER_FLAG_CODEC_CONFIG != 0
                 if (isConfig) {
                     codec.releaseOutputBuffer(result, false)
-                    State.Retry
+                    drain()
                 } else {
                     dequeuedOutputs++
                     val isEos = info.flags and BUFFER_FLAG_END_OF_STREAM != 0

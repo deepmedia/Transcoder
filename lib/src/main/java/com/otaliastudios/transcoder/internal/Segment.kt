@@ -27,7 +27,6 @@ internal class Segment(
     fun needsSleep(): Boolean {
         when(val s = state ?: return false) {
             is State.Ok -> return false
-            is State.Retry -> return false
             is State.Wait -> return s.sleep
         }
     }
