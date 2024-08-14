@@ -21,7 +21,7 @@ public class Logger {
     @SuppressWarnings("WeakerAccess")
     public final static int LEVEL_ERROR = 3;
 
-    private static int sLevel;
+    private static int sLevel = LEVEL_INFO;
 
     /**
      * Interface of integers representing log levels.
@@ -36,9 +36,16 @@ public class Logger {
     public @interface LogLevel {}
 
     private final String mTag;
+    private final int mLevel;
 
     public Logger(@NonNull String tag) {
         mTag = tag;
+        mLevel = sLevel;
+    }
+
+    public Logger(@NonNull String tag, int level) {
+        mTag = tag;
+        mLevel = level;
     }
 
     /**
@@ -55,7 +62,7 @@ public class Logger {
     }
 
     private boolean should(int messageLevel) {
-        return sLevel <= messageLevel;
+        return mLevel <= messageLevel;
     }
 
     public void v(String message) { v(message, null); }

@@ -114,7 +114,7 @@ internal class DefaultTranscodeEngine(
             val advanced = (audio?.advance() ?: false) or (video?.advance() ?: false)
             val completed = !advanced && !segments.hasNext() // avoid calling hasNext if we advanced.
 
-            log.v("transcode(): executed step=$loop advanced=$advanced completed=$completed")
+            log.v("iteration #$loop audio=${segments.currentIndex.audio+1}/${dataSources.audio.size} video=${segments.currentIndex.video+1}/${dataSources.video.size} advanced=$advanced completed=$completed")
             if (Thread.interrupted()) {
                 throw InterruptedException()
             }

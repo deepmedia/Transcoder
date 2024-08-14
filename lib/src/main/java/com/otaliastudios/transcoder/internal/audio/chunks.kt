@@ -29,19 +29,24 @@ internal class ChunkQueue(private val log: Logger) {
     private val pool = ShortBufferPool()
 
     fun isEmpty() = queue.isEmpty()
+    val size get() = queue.size
 
     fun enqueue(buffer: ShortBuffer, timeUs: Long, timeStretch: Double, release: () -> Unit) {
         if (buffer.hasRemaining()) {
-            log.v("[ChunkQueue] adding chunk at ${timeUs}us (${queue.size} => ${queue.size + 1})")
-            queue.addLast(Chunk(buffer, timeUs, timeStretch, release))
+            if (queue.size >= 3) {
+                val copy = pool.take(buffer)
+                queue.addLast(Chunk(copy, timeUs, timeStretch, { pool.give(copy) }))
+                release()
+            } else {
+                queue.addLast(Chunk(buffer, timeUs, timeStretch, release))
+            }
         } else {
-            log.w("[ChunkQueue] enqueued invalid buffer ($timeUs, ${buffer.capacity()})")
+            log.w("enqueued invalid buffer ($timeUs, ${buffer.capacity()})")
             release()
         }
     }
 
     fun enqueueEos() {
-        log.i("[ChunkQueue] adding EOS chunk (${queue.size} => ${queue.size + 1})")
         queue.addLast(Chunk.Eos)
     }
 
@@ -67,10 +72,10 @@ internal class ChunkQueue(private val log: Logger) {
                 release = { pool.give(buffer) },
                 buffer = buffer
             ))
-            log.v("[ChunkQueue] partially handled chunk at ${head.timeUs}us, ${head.buffer.remaining()} bytes left (${queue.size})")
+            log.v("drain(): partially handled chunk at ${head.timeUs}us, ${head.buffer.remaining()} bytes left (${queue.size})")
         } else {
             // buffer consumed!
-            log.v("[ChunkQueue] consumed chunk at ${head.timeUs}us (${queue.size + 1} => ${queue.size})")
+            log.v("drain(): consumed chunk at ${head.timeUs}us (${queue.size + 1} => ${queue.size})")
             head.release()
         }
         return result
@@ -86,7 +91,7 @@ class ShortBufferPool {
         val index = pool.indexOfFirst { it.capacity() >= needed }
         val memory = when {
             index >= 0 -> pool.removeAt(index)
-            else -> ByteBuffer.allocateDirect(needed.coerceAtLeast(1024))
+            else -> ByteBuffer.allocateDirect((needed * Short.SIZE_BYTES).coerceAtLeast(1024))
                 .order(original.order())
                 .asShortBuffer()
         }
