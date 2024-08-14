@@ -14,6 +14,7 @@ import com.otaliastudios.transcoder.source.AssetFileDescriptorDataSource
 import com.otaliastudios.transcoder.source.ClipDataSource
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
+import com.otaliastudios.transcoder.validator.WriteAlwaysValidator
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -99,6 +100,15 @@ class IssuesTests {
         transcode {
             addDataSource(TrackType.VIDEO, input("transcode.3gp"))
             setVideoTrackStrategy(DefaultVideoStrategy.exact(400, 400).build())
+        }
+        Unit
+    }
+
+    @Test(timeout = 5000)
+    fun issue102() = with(Helper(102)) {
+        transcode {
+            addDataSource(input("sample.mp4"))
+            setValidator(WriteAlwaysValidator())
         }
         Unit
     }
