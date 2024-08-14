@@ -4,7 +4,6 @@ import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.State
-import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.source.DataSource
 import java.nio.ByteBuffer
 
@@ -28,7 +27,7 @@ internal class Reader(
         if (buffer == null) {
             // dequeueInputBuffer failed
             log.v("Returning State.Wait because buffer is null.")
-            return State.Wait(true)
+            return State.Retry(true)
         } else {
             return action(buffer.first, buffer.second)
         }
@@ -46,7 +45,7 @@ internal class Reader(
             }
         } else if (!source.canReadTrack(track)) {
             log.i("Returning State.Wait because source can't read $track right now.")
-            State.Wait(false)
+            State.Retry(false)
         } else {
             nextBufferOrWait { byteBuffer, id ->
                 chunk.buffer = byteBuffer

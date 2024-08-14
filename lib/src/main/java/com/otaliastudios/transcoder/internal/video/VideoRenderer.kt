@@ -9,8 +9,6 @@ import com.otaliastudios.transcoder.internal.media.MediaFormatConstants.KEY_ROTA
 import com.otaliastudios.transcoder.internal.pipeline.BaseStep
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.State
-import com.otaliastudios.transcoder.internal.pipeline.Step
-import com.otaliastudios.transcoder.internal.utils.Logger
 
 
 internal class VideoRenderer(
@@ -39,14 +37,17 @@ internal class VideoRenderer(
         val width = targetFormat.getInteger(KEY_WIDTH)
         val height = targetFormat.getInteger(KEY_HEIGHT)
         val flip = extraRotation % 180 != 0
-        log.e("FrameDrawerEncoder: size=$width-$height, flipping=$flip")
-        targetFormat.setInteger(KEY_WIDTH, if (flip) height else width)
-        targetFormat.setInteger(KEY_HEIGHT, if (flip) width else height)
+        val flippedWidth = if (flip) height else width
+        val flippedHeight = if (flip) width else height
+        targetFormat.setInteger(KEY_WIDTH, flippedWidth)
+        targetFormat.setInteger(KEY_HEIGHT, flippedHeight)
+        log.i("encoded output format: $targetFormat")
+        log.i("output size=${flippedWidth}x${flippedHeight}, flipped=$flip")
     }
 
     // VideoTrackTranscoder.onConfigureDecoder
     override fun handleSourceFormat(sourceFormat: MediaFormat): Surface {
-        log.i("handleSourceFormat($sourceFormat)")
+        log.i("encoded input format: $sourceFormat")
 
         // Just a sanity check that the rotation coming from DataSource is not different from
         // the one found in the DataSource's MediaFormat for video.
@@ -88,7 +89,9 @@ internal class VideoRenderer(
         return frameDrawer.surface
     }
 
-    override fun handleRawFormat(rawFormat: MediaFormat) = Unit
+    override fun handleRawFormat(rawFormat: MediaFormat) {
+        log.i("decoded input format: $rawFormat")
+    }
 
     override fun advance(state: State.Ok<DecoderData>): State<Long> {
         return if (state is State.Eos) {
@@ -101,7 +104,7 @@ internal class VideoRenderer(
                 State.Ok(state.value.timeUs)
             } else {
                 state.value.release(false)
-                State.Wait(false)
+                State.Consume()
             }
         }
     }

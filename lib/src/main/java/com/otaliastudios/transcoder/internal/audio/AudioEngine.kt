@@ -6,11 +6,8 @@ import android.view.Surface
 import com.otaliastudios.transcoder.internal.audio.remix.AudioRemixer
 import com.otaliastudios.transcoder.internal.codec.*
 import com.otaliastudios.transcoder.internal.pipeline.*
-import com.otaliastudios.transcoder.internal.utils.Logger
-import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import com.otaliastudios.transcoder.resample.AudioResampler
 import com.otaliastudios.transcoder.stretch.AudioStretcher
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -30,18 +27,18 @@ internal class AudioEngine(
     private val MediaFormat.sampleRate get() = getInteger(KEY_SAMPLE_RATE)
     private val MediaFormat.channels get() = getInteger(KEY_CHANNEL_COUNT)
 
+    private val chunks = ChunkQueue(log)
+    private var readyToDrain = false
     private lateinit var rawFormat: MediaFormat
-    private lateinit var chunks: ChunkQueue
     private lateinit var remixer: AudioRemixer
 
     override fun handleSourceFormat(sourceFormat: MediaFormat): Surface? = null
 
     override fun handleRawFormat(rawFormat: MediaFormat) {
         log.i("handleRawFormat($rawFormat)")
-        check(!::rawFormat.isInitialized) { "handleRawFormat called twice: ${this.rawFormat} => $rawFormat"}
         this.rawFormat = rawFormat
-        remixer = AudioRemixer[rawFormat.channels, targetFormat.channels]
-        chunks = ChunkQueue(log, rawFormat.sampleRate, rawFormat.channels)
+        this.remixer = AudioRemixer[rawFormat.channels, targetFormat.channels]
+        this.readyToDrain = true
     }
 
     override fun enqueueEos(data: DecoderData) {
@@ -59,19 +56,24 @@ internal class AudioEngine(
     }
 
     override fun drain(): State<EncoderData> {
+        if (!readyToDrain) {
+            log.i("drain(): not ready, waiting...")
+            return State.Retry(false)
+        }
         if (chunks.isEmpty()) {
             // nothing was enqueued
             log.i("drain(): no chunks, waiting...")
-            return State.Wait(false)
+            return State.Retry(false)
         }
         val (outBytes, outId) = next.buffer() ?: return run {
             // dequeueInputBuffer failed
             log.i("drain(): no next buffer, waiting...")
-            State.Wait(true)
+            State.Retry(true)
         }
         val outBuffer = outBytes.asShortBuffer()
         return chunks.drain(
-                eos = State.Eos(EncoderData(outBytes, outId, 0))
+            eos = State.Eos(EncoderData(outBytes, outId, 0)),
+            format = rawFormat
         ) { inBuffer, timeUs, stretch ->
             val outSize = outBuffer.remaining()
             val inSize = inBuffer.remaining()

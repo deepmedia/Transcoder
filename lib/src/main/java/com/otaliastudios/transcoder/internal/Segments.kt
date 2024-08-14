@@ -21,7 +21,7 @@ internal class Segments(
 
     fun hasNext(type: TrackType): Boolean {
         if (!sources.has(type)) return false
-        log.v("hasNext($type): segment=${current.getOrNull(type)} lastIndex=${sources.getOrNull(type)?.lastIndex} canAdvance=${current.getOrNull(type)?.canAdvance()}")
+        // log.v("hasNext($type): segment=${current.getOrNull(type)} lastIndex=${sources.getOrNull(type)?.lastIndex} canAdvance=${current.getOrNull(type)?.canAdvance()}")
         val segment = current.getOrNull(type) ?: return true // not started
         val lastIndex = sources.getOrNull(type)?.lastIndex ?: return false // no track!
         return segment.canAdvance() || segment.index < lastIndex
