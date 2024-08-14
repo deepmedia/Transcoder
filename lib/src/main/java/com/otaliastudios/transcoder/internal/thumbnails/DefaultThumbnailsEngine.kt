@@ -78,6 +78,7 @@ internal class DefaultThumbnailsEngine(
     private fun createPipeline(
             type: TrackType,
             index: Int,
+            count: Int,
             status: TrackStatus,
             outputFormat: MediaFormat
     ): Pipeline {

@@ -22,11 +22,11 @@ import com.otaliastudios.transcoder.time.TimeInterpolator
 internal fun EmptyPipeline() = Pipeline.build("Empty")
 
 internal fun PassThroughPipeline(
-        track: TrackType,
-        source: DataSource,
-        sink: DataSink,
-        interpolator: TimeInterpolator
-) = Pipeline.build("PassThrough($track)") {
+    track: TrackType,
+    source: DataSource,
+    sink: DataSink,
+    interpolator: TimeInterpolator
+) = Pipeline.build("PassThrough$track") {
     Reader(source, track) +
             ReaderTimer(track, interpolator) +
             Bridge(source.getTrackFormat(track)!!) +
@@ -34,28 +34,30 @@ internal fun PassThroughPipeline(
 }
 
 internal fun RegularPipeline(
-        track: TrackType,
-        source: DataSource,
-        sink: DataSink,
-        interpolator: TimeInterpolator,
-        format: MediaFormat,
-        codecs: Codecs,
-        videoRotation: Int,
-        audioStretcher: AudioStretcher,
-        audioResampler: AudioResampler
+    track: TrackType,
+    debug: String?,
+    source: DataSource,
+    sink: DataSink,
+    interpolator: TimeInterpolator,
+    format: MediaFormat,
+    codecs: Codecs,
+    videoRotation: Int,
+    audioStretcher: AudioStretcher,
+    audioResampler: AudioResampler
 ) = when (track) {
-    TrackType.VIDEO -> VideoPipeline(source, sink, interpolator, format, codecs, videoRotation)
-    TrackType.AUDIO -> AudioPipeline(source, sink, interpolator, format, codecs, audioStretcher, audioResampler)
+    TrackType.VIDEO -> VideoPipeline(debug, source, sink, interpolator, format, codecs, videoRotation)
+    TrackType.AUDIO -> AudioPipeline(debug, source, sink, interpolator, format, codecs, audioStretcher, audioResampler)
 }
 
 private fun VideoPipeline(
-        source: DataSource,
-        sink: DataSink,
-        interpolator: TimeInterpolator,
-        format: MediaFormat,
-        codecs: Codecs,
-        videoRotation: Int
-) = Pipeline.build("Video") {
+    debug: String?,
+    source: DataSource,
+    sink: DataSink,
+    interpolator: TimeInterpolator,
+    format: MediaFormat,
+    codecs: Codecs,
+    videoRotation: Int
+) = Pipeline.build("Video", debug) {
     Reader(source, TrackType.VIDEO) +
             Decoder(source.getTrackFormat(TrackType.VIDEO)!!, true) +
             DecoderTimer(TrackType.VIDEO, interpolator) +
@@ -66,14 +68,15 @@ private fun VideoPipeline(
 }
 
 private fun AudioPipeline(
-        source: DataSource,
-        sink: DataSink,
-        interpolator: TimeInterpolator,
-        format: MediaFormat,
-        codecs: Codecs,
-        audioStretcher: AudioStretcher,
-        audioResampler: AudioResampler
-) = Pipeline.build("Audio") {
+    debug: String?,
+    source: DataSource,
+    sink: DataSink,
+    interpolator: TimeInterpolator,
+    format: MediaFormat,
+    codecs: Codecs,
+    audioStretcher: AudioStretcher,
+    audioResampler: AudioResampler
+) = Pipeline.build("Audio", debug) {
     Reader(source, TrackType.AUDIO) +
             Decoder(source.getTrackFormat(TrackType.AUDIO)!!, true) +
             DecoderTimer(TrackType.AUDIO, interpolator) +

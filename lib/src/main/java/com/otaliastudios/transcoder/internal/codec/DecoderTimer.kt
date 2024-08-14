@@ -19,8 +19,8 @@ internal class DecoderTimer(
     private val interpolator: TimeInterpolator,
 ) : TransformStep<DecoderData, DecoderChannel>("DecoderTimer") {
 
-    private var lastTimeUs: Long? = null
-    private var lastRawTimeUs: Long? = null
+    private var lastTimeUs: Long = Long.MIN_VALUE
+    private var lastRawTimeUs: Long = Long.MIN_VALUE
 
     override fun advance(state: State.Ok<DecoderData>): State<DecoderData> {
         if (state is State.Eos) return state
@@ -29,13 +29,13 @@ internal class DecoderTimer(
         }
         val rawTimeUs = state.value.timeUs
         val timeUs = interpolator.interpolate(track, rawTimeUs)
-        val timeStretch = if (lastTimeUs == null) {
+        val timeStretch = if (lastTimeUs == Long.MIN_VALUE) {
             1.0
         } else {
             // TODO to be exact, timeStretch should be computed by comparing the NEXT timestamps
             //  with this, instead of comparing this with the PREVIOUS
-            val durationUs = timeUs - lastTimeUs!!
-            val rawDurationUs = rawTimeUs - lastRawTimeUs!!
+            val durationUs = timeUs - lastTimeUs
+            val rawDurationUs = rawTimeUs - lastRawTimeUs
             durationUs.toDouble() / rawDurationUs
         }
         lastTimeUs = timeUs

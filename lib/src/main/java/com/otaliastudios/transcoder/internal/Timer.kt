@@ -7,10 +7,10 @@ import com.otaliastudios.transcoder.source.DataSource
 import com.otaliastudios.transcoder.time.TimeInterpolator
 
 internal class Timer(
-        private val interpolator: TimeInterpolator,
-        private val sources: DataSources,
-        private val tracks: Tracks,
-        private val current: TrackMap<Int>
+    private val interpolator: TimeInterpolator,
+    private val sources: DataSources,
+    private val tracks: Tracks,
+    private val current: TrackMap<Int>
 ) {
 
     private val log = Logger("Timer")
@@ -55,7 +55,7 @@ internal class Timer(
         }
     }
 
-    private val interpolators = mutableMapOf<Pair<TrackType, Int>, TimeInterpolator>()
+    private val interpolators = mutableMapOf<Pair<TrackType, Int>, SegmentInterpolator>()
 
     fun localize(type: TrackType, index: Int, positionUs: Long): Long? {
         if (!tracks.active.has(type)) return null
@@ -68,27 +68,40 @@ internal class Timer(
         return localizedUs
     }
 
-    fun interpolator(type: TrackType, index: Int) = interpolators.getOrPut(type to index) {
-        object : TimeInterpolator {
+    fun interpolator(type: TrackType, index: Int): SegmentInterpolator = interpolators.getOrPut(type to index) {
+        SegmentInterpolator(
+            log = Logger("${type.displayName}Interpolator$index/${sources[type].size}"),
+            user = interpolator,
+            previous = if (index == 0) null else interpolator(type, index - 1)
+        )
+    }
 
-            private var lastOut = 0L
-            private var firstIn = Long.MAX_VALUE
-            private val firstOut = when {
-                index == 0 -> 0L
-                else -> {
-                    // Add 10 just so they're not identical.
-                    val previous = interpolators[type to index - 1]!!
-                    previous.interpolate(type, Long.MAX_VALUE) + 10L
-                }
+    class SegmentInterpolator(
+        private val log: Logger,
+        private val user: TimeInterpolator,
+        previous: SegmentInterpolator?,
+    ) : TimeInterpolator {
+
+        private var inputBase = Long.MIN_VALUE
+        private var interpolatedLast = Long.MIN_VALUE
+        private var outputLast = Long.MIN_VALUE
+        private val outputBase by lazy {
+            when (previous) {
+                null -> 0L
+                // Not interpolated by user, so we give user interpolator a consistent stream.
+                // Add a bit of distance just so they're not identical, won't be noticeable.
+                else -> previous.outputLast + 1L
+            }.also {
+                log.i("Found output base timestamp: $it")
             }
+        }
 
-            override fun interpolate(type: TrackType, time: Long) = when (time) {
-                Long.MAX_VALUE -> lastOut
-                else -> {
-                    if (firstIn == Long.MAX_VALUE) firstIn = time
-                    lastOut = firstOut + (time - firstIn)
-                    interpolator.interpolate(type, lastOut)
-                }
+        override fun interpolate(type: TrackType, time: Long): Long {
+            if (inputBase == Long.MIN_VALUE) inputBase = time
+            outputLast = outputBase + (time - inputBase)
+            return user.interpolate(type, outputLast).also {
+                check(it > interpolatedLast) { "Timestamps must be monotonically increasing: $it, $interpolatedLast" }
+                interpolatedLast = it
             }
         }
     }

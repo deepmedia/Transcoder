@@ -65,7 +65,7 @@ private class PipelineItem(
 
 internal class Pipeline private constructor(name: String, private val items: List<PipelineItem>) {
 
-    private val log = Logger("${name}Pipeline")
+    private val log = Logger(name)
 
     init {
         items.zipWithNext().reversed().forEach { (first, next) -> first.attachToNext(next) }
@@ -80,17 +80,17 @@ internal class Pipeline private constructor(name: String, private val items: Lis
             val item = items[i]
 
             if (item.canHandle(i == 0)) {
-                log.v("${item.name} START ${item.unhandled.size}")
+                log.v("${item.name} START #${item.packets} (${item.unhandled.size} pending)")
                 val failure = item.handle()
                 if (failure != null) {
                     sleeps = sleeps || failure.sleep
-                    log.v("${item.name} FAILED +${item.packets}")
+                    log.v("${item.name} FAILED #${item.packets}")
                 } else {
-                    log.v("${item.name} SUCCESS +${item.packets} ${if (item.done) "(eos)" else ""}")
+                    log.v("${item.name} SUCCESS #${item.packets} ${if (item.done) "(eos)" else ""}")
                 }
                 advanced = advanced || item.advanced
             } else {
-                log.v("${item.name} SKIP +${item.packets} ${if (item.done) "(eos)" else ""}")
+                log.v("${item.name} SKIP #${item.packets} ${if (item.done) "(eos)" else ""}")
             }
         }
         return when {
@@ -165,7 +165,7 @@ internal class Pipeline private constructor(name: String, private val items: Lis
     }
 
     companion object {
-        internal fun build(name: String, builder: () -> Builder<*, Channel> = { Builder<Unit, Channel>() }): Pipeline {
+        internal fun build(name: String, debug: String? = null, builder: () -> Builder<*, Channel> = { Builder<Unit, Channel>() }): Pipeline {
             val steps = builder().steps
             val items = steps.mapIndexed { index, step ->
                 @Suppress("UNCHECKED_CAST")
@@ -174,7 +174,7 @@ internal class Pipeline private constructor(name: String, private val items: Lis
                     name = "${index+1}/${steps.size} '${step.name}'"
                 )
             }
-            return Pipeline(name, items)
+            return Pipeline("${name}Pipeline${debug ?: ""}", items)
         }
     }
 
