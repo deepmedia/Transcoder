@@ -11,7 +11,7 @@ import com.otaliastudios.transcoder.internal.utils.mutableTrackMapOf
 internal class Segments(
     private val sources: DataSources,
     private val tracks: Tracks,
-    private val factory: (TrackType, Int, TrackStatus, MediaFormat) -> Pipeline
+    private val factory: (TrackType, Int, Int, TrackStatus, MediaFormat) -> Pipeline
 ) {
 
     private val log = Logger("Segments")
@@ -85,15 +85,16 @@ internal class Segments(
         // who check it during pipeline init.
         currentIndex[type] = index
         val pipeline = factory(
-                type,
-                index,
-                tracks.all[type],
-                tracks.outputFormats[type]
+            type,
+            index,
+            sources[type].size,
+            tracks.all[type],
+            tracks.outputFormats[type]
         )
         return Segment(
-                type = type,
-                index = index,
-                pipeline = pipeline
+            type = type,
+            index = index,
+            pipeline = pipeline
         ).also {
             current[type] = it
         }

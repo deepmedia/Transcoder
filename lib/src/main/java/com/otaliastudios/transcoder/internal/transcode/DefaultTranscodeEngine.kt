@@ -63,6 +63,7 @@ internal class DefaultTranscodeEngine(
     private fun createPipeline(
         type: TrackType,
         index: Int,
+        count: Int,
         status: TrackStatus,
         outputFormat: MediaFormat
     ): Pipeline {
@@ -79,7 +80,7 @@ internal class DefaultTranscodeEngine(
             TrackStatus.ABSENT -> EmptyPipeline()
             TrackStatus.REMOVING -> EmptyPipeline()
             TrackStatus.PASS_THROUGH -> PassThroughPipeline(type, source, sink, interpolator)
-            TrackStatus.COMPRESSING -> RegularPipeline(type,
+            TrackStatus.COMPRESSING -> RegularPipeline(type, if (count > 1) "${index+1}/$count" else null,
                     source, sink, interpolator, outputFormat, codecs,
                     videoRotation, audioStretcher, audioResampler)
         }

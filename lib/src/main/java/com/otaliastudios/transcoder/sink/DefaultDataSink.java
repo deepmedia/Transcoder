@@ -12,6 +12,8 @@ import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
 import com.otaliastudios.transcoder.internal.utils.MutableTrackMap;
 import com.otaliastudios.transcoder.internal.utils.Logger;
+import com.otaliastudios.transcoder.time.MonotonicTimeInterpolator;
+import com.otaliastudios.transcoder.time.TimeInterpolator;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -64,6 +66,7 @@ public class DefaultDataSink implements DataSink {
     private final MutableTrackMap<MediaFormat> mLastFormat = mutableTrackMapOf(null);
     private final MutableTrackMap<Integer> mMuxerIndex = mutableTrackMapOf(null);
     private final DefaultDataSinkChecks mMuxerChecks = new DefaultDataSinkChecks();
+    private final TimeInterpolator mInterpolator = new MonotonicTimeInterpolator();
 
     public DefaultDataSink(@NonNull String outputFilePath) {
         this(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -149,6 +152,9 @@ public class DefaultDataSink implements DataSink {
     @Override
     public void writeTrack(@NonNull TrackType type, @NonNull ByteBuffer byteBuffer, @NonNull MediaCodec.BufferInfo bufferInfo) {
         if (mMuxerStarted) {
+            if (bufferInfo.presentationTimeUs != 0) {
+                bufferInfo.presentationTimeUs = mInterpolator.interpolate(type, bufferInfo.presentationTimeUs);
+            }
             /* LOG.v("writeTrack(" + type + "): offset=" + bufferInfo.offset
                     + "\trealOffset=" + byteBuffer.position()
                     + "\tsize=" + bufferInfo.size

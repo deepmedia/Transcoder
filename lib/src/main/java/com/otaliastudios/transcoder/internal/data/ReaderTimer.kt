@@ -6,8 +6,8 @@ import com.otaliastudios.transcoder.internal.pipeline.State
 import com.otaliastudios.transcoder.time.TimeInterpolator
 
 internal class ReaderTimer(
-        private val track: TrackType,
-        private val interpolator: TimeInterpolator
+    private val track: TrackType,
+    private val interpolator: TimeInterpolator
 ) : TransformStep<ReaderData, ReaderChannel>("ReaderTimer") {
     override fun advance(state: State.Ok<ReaderData>): State<ReaderData> {
         if (state is State.Eos) return state

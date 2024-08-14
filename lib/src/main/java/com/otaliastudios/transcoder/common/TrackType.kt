@@ -2,8 +2,9 @@ package com.otaliastudios.transcoder.common
 
 import android.media.MediaFormat
 
-enum class TrackType {
-    AUDIO, VIDEO
+enum class TrackType(internal val displayName: String) {
+    AUDIO("Audio"), VIDEO("Video");
+
 }
 
 internal val MediaFormat.trackType get() = requireNotNull(trackTypeOrNull) {
