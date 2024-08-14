@@ -3,7 +3,6 @@ package com.otaliastudios.transcoder.internal
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.pipeline.Pipeline
 import com.otaliastudios.transcoder.internal.pipeline.State
-import com.otaliastudios.transcoder.internal.utils.Logger
 
 internal class Segment(
         val type: TrackType,
@@ -27,7 +26,7 @@ internal class Segment(
     fun needsSleep(): Boolean {
         when(val s = state ?: return false) {
             is State.Ok -> return false
-            is State.Wait -> return s.sleep
+            is State.Failure -> return s.sleep
         }
     }
 

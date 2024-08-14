@@ -15,27 +15,19 @@ internal class VideoPublisher: BaseStep<Long, Channel, EncoderData, EncoderChann
 
     override val channel = Channel
 
-    private val core = EglCore(EGL14.EGL_NO_CONTEXT, EglCore.FLAG_RECORDABLE)
-    private lateinit var surface: EglWindowSurface
-
-    override fun initialize(next: EncoderChannel) {
-        super.initialize(next)
-        surface = EglWindowSurface(core, next.surface!!, false)
-        surface.makeCurrent()
-    }
-
     override fun advance(state: State.Ok<Long>): State<EncoderData> {
         if (state is State.Eos) {
             return State.Eos(EncoderData.Empty)
         } else {
-            surface.setPresentationTime(state.value * 1000)
-            surface.swapBuffers()
+            val surface = next.surface!!
+            surface.window.setPresentationTime(state.value * 1000)
+            surface.window.swapBuffers()
+            /* val s = EGL14.eglGetCurrentSurface(EGL14.EGL_DRAW)
+            val ss = IntArray(2)
+            EGL14.eglQuerySurface(EGL14.eglGetCurrentDisplay(), s, EGL14.EGL_WIDTH, ss, 0)
+            EGL14.eglQuerySurface(EGL14.eglGetCurrentDisplay(), s, EGL14.EGL_HEIGHT, ss, 1)
+            log.e("XXX VideoPublisher.surfaceSize: ${ss[0]}x${ss[1]}") */
             return State.Ok(EncoderData.Empty)
         }
-    }
-
-    override fun release() {
-        surface.release()
-        core.release()
     }
 }

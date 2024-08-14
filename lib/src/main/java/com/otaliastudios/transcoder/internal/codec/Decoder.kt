@@ -10,11 +10,7 @@ import com.otaliastudios.transcoder.internal.data.ReaderData
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
 import com.otaliastudios.transcoder.internal.pipeline.State
-import com.otaliastudios.transcoder.internal.utils.Logger
-import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.properties.Delegates
 import kotlin.properties.Delegates.observable
 
 
@@ -70,7 +66,7 @@ internal class Decoder(
             val buf = checkNotNull(codec.getInputBuffer(id)) { "inputBuffer($id) should not be null." }
             buf to id
         } else {
-            log.i("buffer() failed. dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
+            log.i("buffer() failed with $id. dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs")
             null
         }
     }
@@ -96,7 +92,7 @@ internal class Decoder(
         return when (result) {
             INFO_TRY_AGAIN_LATER -> {
                 log.i("drain(): got INFO_TRY_AGAIN_LATER, waiting.")
-                State.Wait(true)
+                State.Retry(true)
             }
             INFO_OUTPUT_FORMAT_CHANGED -> {
                 log.i("drain(): got INFO_OUTPUT_FORMAT_CHANGED, handling format and retrying. format=${codec.outputFormat}")
@@ -126,7 +122,7 @@ internal class Decoder(
                 } else {
                     // frame was dropped, no need to sleep
                     codec.releaseOutputBuffer(result, false)
-                    State.Wait(false)
+                    State.Retry(false)
                 }.also {
                     log.v("drain(): returning $it")
                 }

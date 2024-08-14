@@ -3,19 +3,15 @@ package com.otaliastudios.transcoder.internal.codec
 import android.media.MediaCodec
 import android.media.MediaCodec.*
 import android.view.Surface
+import com.otaliastudios.opengl.surface.EglWindowSurface
 import com.otaliastudios.transcoder.common.TrackType
-import com.otaliastudios.transcoder.common.trackType
 import com.otaliastudios.transcoder.internal.Codecs
 import com.otaliastudios.transcoder.internal.data.WriterChannel
 import com.otaliastudios.transcoder.internal.data.WriterData
 import com.otaliastudios.transcoder.internal.pipeline.Channel
 import com.otaliastudios.transcoder.internal.pipeline.QueuedStep
 import com.otaliastudios.transcoder.internal.pipeline.State
-import com.otaliastudios.transcoder.internal.utils.Logger
-import com.otaliastudios.transcoder.internal.utils.trackMapOf
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.properties.Delegates
 import kotlin.properties.Delegates.observable
 
 internal data class EncoderData(
@@ -27,15 +23,15 @@ internal data class EncoderData(
 }
 
 internal interface EncoderChannel : Channel {
-    val surface: Surface?
+    val surface: Codecs.Surface?
     fun buffer(): Pair<ByteBuffer, Int>?
 }
 
 internal class Encoder(
-        private val codec: MediaCodec,
-        override val surface: Surface?,
-        ownsCodecStart: Boolean,
-        private val ownsCodecStop: Boolean,
+    private val codec: MediaCodec,
+    override val surface: Codecs.Surface?,
+    ownsCodecStart: Boolean,
+    private val ownsCodecStop: Boolean,
 ) : QueuedStep<EncoderData, EncoderChannel, WriterData, WriterChannel>(
     when (surface) {
         null -> "AudioEncoder"
@@ -44,13 +40,12 @@ internal class Encoder(
 ), EncoderChannel {
 
     constructor(codecs: Codecs, type: TrackType) : this(
-            codecs.encoders[type].first,
-            codecs.encoders[type].second,
-            codecs.ownsEncoderStart[type],
-            codecs.ownsEncoderStop[type]
+        codecs.encoders[type].first,
+        codecs.encoders[type].second,
+        codecs.ownsEncoderStart[type],
+        codecs.ownsEncoderStop[type]
     )
 
-    private val type = if (surface != null) TrackType.VIDEO else TrackType.AUDIO
     private var dequeuedInputs by observable(0) { _, _, _ -> printDequeued() }
     private var dequeuedOutputs by observable(0) { _, _, _ -> printDequeued() }
     private fun printDequeued() {
@@ -61,9 +56,8 @@ internal class Encoder(
 
     private var info = BufferInfo()
 
-
     init {
-        log.i("Encoder: ownsStart=$ownsCodecStart ownsStop=$ownsCodecStop")
+        log.i("ownsStart=$ownsCodecStart ownsStop=$ownsCodecStop")
         if (ownsCodecStart) {
             codec.start()
         }
@@ -116,7 +110,7 @@ internal class Encoder(
                     State.Eos(WriterData(buffer, 0L, 0) {})
                 } else {
                     log.i("Can't dequeue output buffer: INFO_TRY_AGAIN_LATER")
-                    State.Wait(true)
+                    State.Retry(true)
                 }
             }
             INFO_OUTPUT_FORMAT_CHANGED -> {

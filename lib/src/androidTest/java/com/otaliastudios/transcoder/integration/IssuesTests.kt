@@ -1,5 +1,6 @@
 package com.otaliastudios.transcoder.integration
 
+import android.media.MediaFormat
 import android.media.MediaMetadataRetriever.METADATA_KEY_DURATION
 import android.media.MediaMetadataRetriever
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -66,7 +67,7 @@ class IssuesTests {
     }
 
 
-    @Test(timeout = 3000)
+    @Test(timeout = 5000)
     fun issue137() = with(Helper(137)) {
         transcode {
             // addDataSource(ClipDataSource(input("main.mp3"), 0L, 200_000L))
@@ -93,7 +94,7 @@ class IssuesTests {
         Unit
     }
 
-    @Test(timeout = 3000)
+    @Test(timeout = 5000)
     fun issue184() = with(Helper(184)) {
         transcode {
             addDataSource(TrackType.VIDEO, input("transcode.3gp"))

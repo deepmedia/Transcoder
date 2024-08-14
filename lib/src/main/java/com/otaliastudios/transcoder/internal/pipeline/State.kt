@@ -1,9 +1,9 @@
 package com.otaliastudios.transcoder.internal.pipeline
 
-internal sealed class State<out T> {
+internal sealed interface State<out T> {
 
     // Running
-    open class Ok<T>(val value: T) : State<T>() {
+    open class Ok<T>(val value: T) : State<T> {
         override fun toString() = "State.Ok($value)"
     }
 
@@ -12,8 +12,16 @@ internal sealed class State<out T> {
         override fun toString() = "State.Eos($value)"
     }
 
-    // couldn't run, but might in the future
-    class Wait(val sleep: Boolean) : State<Nothing>() {
-        override fun toString() = "State.Wait($sleep)"
+    // Failed to produce output, try again later
+    sealed interface Failure : State<Nothing> {
+        val sleep: Boolean
+    }
+
+    class Retry(override val sleep: Boolean) : Failure {
+        override fun toString() = "State.Retry($sleep)"
+    }
+
+    class Consume(override val sleep: Boolean = false) : Failure {
+        override fun toString() = "State.Consume($sleep)"
     }
 }
