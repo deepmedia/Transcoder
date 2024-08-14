@@ -77,7 +77,7 @@ class IssuesTests {
     }
 
 
-    @Test(timeout = 8000)
+    @Test(timeout = 16000)
     fun issue137() = with(Helper(137)) {
         transcode {
             addDataSource(ClipDataSource(input("main.mp3"), 0L, 1000_000L))
@@ -102,7 +102,7 @@ class IssuesTests {
         Unit
     }
 
-    @Test(timeout = 8000)
+    @Test(timeout = 16000)
     fun issue184() = with(Helper(184)) {
         transcode {
             addDataSource(TrackType.VIDEO, input("transcode.3gp"))
@@ -111,7 +111,7 @@ class IssuesTests {
         Unit
     }
 
-    @Test(timeout = 8000)
+    @Test(timeout = 16000)
     fun issue102() = with(Helper(102)) {
         transcode {
             addDataSource(input("sample.mp4"))

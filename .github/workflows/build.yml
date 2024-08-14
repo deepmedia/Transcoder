@@ -54,10 +54,18 @@ jobs:
           arch: x86_64
           profile: Nexus 6
           emulator-options: -no-snapshot -no-window -no-boot-anim -camera-back none -camera-front none -gpu swiftshader_indirect
-          script: ./.github/workflows/emulator_script.sh
+          script: ./.github/workflows/emulator_script.sh logcat_${{ matrix.EMULATOR_API }}.txt
+
+      - name: Upload emulator logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator_logs_${{ matrix.EMULATOR_API }}
+          path: ./logcat_${{ matrix.EMULATOR_API }}.txt
 
       - name: Upload emulator tests artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: emulator_tests_${{ matrix.EMULATOR_API }}
           path: ./lib/build/reports/androidTests/connected/debug/
