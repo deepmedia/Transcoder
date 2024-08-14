@@ -74,6 +74,17 @@ internal class Codecs(
             val eglWindow = EglWindowSurface(eglContext, surface, true)
             eglWindow.makeCurrent()
 
+            // On API28 (possibly others) emulator, this happens. If we don't throw early, it fails later with unclear
+            // errors - a tombstone dump saying that src.width() & 1 == 0 (basically, complains that surface size is odd)
+            // and an error much later on during encoder's dequeue. Surface size is odd because it's 1x1.
+            val (eglWidth, eglHeight) = eglWindow.getWidth() to eglWindow.getHeight()
+            if (eglWidth != width || eglHeight != height) {
+                log.e("OpenGL surface has wrong size (expected: ${width}x${height}, found: ${eglWindow.getWidth()}x${eglWindow.getHeight()}).")
+                // Throw a clear error in this very specific scenario so we can catch it in tests.
+                if (codec.name == "c2.android.avc.encoder" && eglWidth == 1 && eglHeight == 1) {
+                    error("c2.android.avc.encoder was unable to create the input surface (1x1).")
+                }
+            }
             codec to Surface(eglContext, eglWindow)
         }
 
