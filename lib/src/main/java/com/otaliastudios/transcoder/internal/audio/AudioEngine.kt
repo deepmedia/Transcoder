@@ -42,22 +42,19 @@ internal class AudioEngine(
     }
 
     override fun enqueueEos(data: DecoderData) {
-        log.i("enqueueEos()")
+        log.i("enqueueEos (${chunks.size} in queue)")
         data.release(false)
         chunks.enqueueEos()
     }
 
     override fun enqueue(data: DecoderData) {
         val stretch = (data as? DecoderTimerData)?.timeStretch ?: 1.0
-        chunks.enqueue(data.buffer.asShortBuffer(), data.timeUs, stretch) {
-            log.v("drain(): releasing input data (decoder's outputBuffer)")
-            data.release(false)
-        }
+        chunks.enqueue(data.buffer.asShortBuffer(), data.timeUs, stretch) { data.release(false) }
     }
 
     override fun drain(): State<EncoderData> {
         if (!readyToDrain) {
-            log.i("drain(): not ready, waiting...")
+            log.i("drain(): not ready, waiting... (${chunks.size} in queue)")
             return State.Retry(false)
         }
         if (chunks.isEmpty()) {
@@ -67,7 +64,7 @@ internal class AudioEngine(
         }
         val (outBytes, outId) = next.buffer() ?: return run {
             // dequeueInputBuffer failed
-            log.i("drain(): no next buffer, waiting...")
+            log.i("drain(): no next buffer, waiting... (${chunks.size} in queue)")
             State.Retry(true)
         }
         val outBuffer = outBytes.asShortBuffer()
@@ -104,16 +101,17 @@ internal class AudioEngine(
 
             // Resample
             resampler.resample(
-                    remixBuffer, rawFormat.sampleRate,
-                    outBuffer, targetFormat.sampleRate,
-                    targetFormat.channels)
+                remixBuffer, rawFormat.sampleRate,
+                outBuffer, targetFormat.sampleRate,
+                targetFormat.channels
+            )
             outBuffer.flip()
 
             // Adjust position and dispatch.
             outBytes.clear()
             outBytes.limit(outBuffer.limit() * BYTES_PER_SHORT)
             outBytes.position(outBuffer.position() * BYTES_PER_SHORT)
-            log.v("drain(): passing buffer $outId to encoder...")
+            log.v("drain(): passing buffer $outId to encoder... ${chunks.size} in queue")
             State.Ok(EncoderData(outBytes, outId, timeUs))
         }
     }

@@ -1,19 +1,18 @@
 package com.otaliastudios.transcoder.internal
 
 import android.media.MediaCodec
-import android.media.MediaCodecInfo
 import android.media.MediaCodecList
 import android.media.MediaFormat
 import android.opengl.EGL14
-import android.view.Surface
 import com.otaliastudios.opengl.core.EglCore
-import com.otaliastudios.opengl.surface.EglOffscreenSurface
 import com.otaliastudios.opengl.surface.EglWindowSurface
 import com.otaliastudios.transcoder.common.TrackStatus
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.media.MediaFormatConstants
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.internal.utils.TrackMap
+import java.nio.ByteBuffer
+import kotlin.properties.Delegates.observable
 
 /**
  * Encoders are shared between segments. This is not strictly needed but it is more efficient
@@ -28,8 +27,8 @@ internal class Codecs(
         private val current: TrackMap<Int>
 ) {
 
-    internal class Surface(
-        val context: EglCore,
+    class Surface(
+        private val context: EglCore,
         val window: EglWindowSurface,
     ) {
         fun release() {
@@ -38,9 +37,42 @@ internal class Codecs(
         }
     }
 
+    class Codec(val codec: MediaCodec, val surface: Surface? = null, var log: Logger? = null) {
+        var dequeuedInputs by observable(0) { _, _, _ -> log?.v(state) }
+        var dequeuedOutputs by observable(0) { _, _, _ -> log?.v(state) }
+        val state get(): String = "dequeuedInputs=$dequeuedInputs dequeuedOutputs=$dequeuedOutputs heldInputs=${heldInputs.size}"
+
+        private val heldInputs = ArrayDeque<Pair<ByteBuffer, Int>>()
+
+        fun getInputBuffer(): Pair<ByteBuffer, Int>? {
+            if (heldInputs.isNotEmpty()) {
+                return heldInputs.removeFirst().also { log?.v(state) }
+            }
+            val id = codec.dequeueInputBuffer(100)
+            return if (id >= 0) {
+                dequeuedInputs++
+                val buf = checkNotNull(codec.getInputBuffer(id)) { "inputBuffer($id) should not be null." }
+                buf to id
+            } else {
+                log?.i("buffer() failed with $id. $state")
+                null
+            }
+        }
+
+        /**
+         * When we're not ready to write into this buffer, it can be held for later.
+         * Previously we were returning it to the codec with timestamp=0, flags=0, but especially
+         * on older Android versions that can create subtle issues.
+         * It's better to just keep the buffer here and reuse it on the next [getInputBuffer] call.
+         */
+        fun holdInputBuffer(buffer: ByteBuffer, id: Int) {
+            heldInputs.addLast(buffer to id)
+        }
+    }
+
     private val log = Logger("Codecs")
 
-    val encoders = object : TrackMap<Pair<MediaCodec, Surface?>> {
+    val encoders = object : TrackMap<Codec> {
 
         override fun has(type: TrackType) = tracks.all[type] == TrackStatus.COMPRESSING
 
@@ -48,7 +80,7 @@ internal class Codecs(
             val format = tracks.outputFormats.audio
             val codec = MediaCodec.createEncoderByType(format.getString(MediaFormat.KEY_MIME)!!)
             codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-            codec to null
+            Codec(codec, null)
         }
 
         private val lazyVideo by lazy {
@@ -85,7 +117,8 @@ internal class Codecs(
                     error("c2.android.avc.encoder was unable to create the input surface (1x1).")
                 }
             }
-            codec to Surface(eglContext, eglWindow)
+
+            Codec(codec, Surface(eglContext, eglWindow))
         }
 
         override fun get(type: TrackType) = when (type) {
@@ -106,7 +139,7 @@ internal class Codecs(
 
     fun release() {
         encoders.forEach {
-            it.first.release()
+            it.surface?.release()
         }
     }
 }

@@ -9,9 +9,9 @@ import com.otaliastudios.transcoder.internal.utils.TrackMap
 import com.otaliastudios.transcoder.internal.utils.mutableTrackMapOf
 
 internal class Segments(
-        private val sources: DataSources,
-        private val tracks: Tracks,
-        private val factory: (TrackType, Int, TrackStatus, MediaFormat) -> Pipeline
+    private val sources: DataSources,
+    private val tracks: Tracks,
+    private val factory: (TrackType, Int, TrackStatus, MediaFormat) -> Pipeline
 ) {
 
     private val log = Logger("Segments")
