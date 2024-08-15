@@ -4,13 +4,16 @@ title: Install
 
 # Installation
 
-Transcoder is publicly hosted on the [Maven Central](https://repo1.maven.org/maven2/com/otaliastudios/)
+Transcoder is publicly hosted on the [Maven Central](https://repo1.maven.org/maven2/io/deepmedia/community/)
 repository, where you can download the AAR package. To fetch with Gradle, assuming that `mavenCentral()` is already
 one of your repository sources, simply declare a new dependency:
 
 ```kotlin
 dependencies {
-    api("com.otaliastudios:transcoder:LATEST_VERSION")
+    api("io.deepmedia.community:transcoder-android:LATEST_VERSION")
+
+    // Or use the legacy coordinates:
+    // api("com.otaliastudios:transcoder:LATEST_VERSION")
 }
 ```
 
@@ -32,6 +35,9 @@ pluginManagement {
 
 // build.gradle.kts
 dependencies {
-    implementation("com.otaliastudios:transcoder:latest-SNAPSHOT")
+    api("io.deepmedia.community:transcoder-android:latest-SNAPSHOT")
+
+    // Or use the legacy coordinates:
+    // api("com.otaliastudios:transcoder:latest-SNAPSHOT")
 }
 ```
