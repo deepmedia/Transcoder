@@ -15,4 +15,5 @@ dependencyResolutionManagement {
 }
 
 include(":lib")
+include(":lib-legacy")
 include(":demo")

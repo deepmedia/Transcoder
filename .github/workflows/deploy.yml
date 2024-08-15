@@ -22,6 +22,6 @@ jobs:
           distribution: temurin
           cache: gradle
       - name: Publish to Maven Central
-        run: ./gradlew deployNexus
+        run: ./gradlew deployNexus --stacktrace
       - name: Publish to GitHub Packages
-        run: ./gradlew deployGithub
+        run: ./gradlew deployGithub --stacktrace

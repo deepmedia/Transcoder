@@ -24,4 +24,4 @@ jobs:
           distribution: temurin
           cache: gradle
       - name: Publish nexus snapshot
-        run: ./gradlew deployNexusSnapshot
+        run: ./gradlew deployNexusSnapshot --stacktrace
