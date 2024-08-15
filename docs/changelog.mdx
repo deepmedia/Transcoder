@@ -6,6 +6,25 @@ title: Changelog
 
 New versions are released through GitHub, so the reference page is the [GitHub Releases](https://github.com/deepmedia/Transcoder/releases) page.
 
+## 0.11.X
+
+### 0.11.0
+
+This release focuses on stability and performance, fixing old bugs that were making the library unstable and unreliable.
+In addition, the library is now available at new maven coordinates `io.deepmedia.community:transcoder-android`.
+The old coordinates will still work and receive updates.
+
+- Enhancement: Revisit transcoding pipeline ([#203](https://github.com/deepmedia/Transcoder/pull/203))
+- Enhancement: Allow SpeedTimeInterpolator reuse, thanks to [@vaibhavpandeyvpz](https://github.com/vaibhavpandeyvpz) ([#199](https://github.com/deepmedia/Transcoder/pull/199))
+- Fix: fix video artifacts, thanks to [@jumperson](https://github.com/jumperson) ([#199](https://github.com/deepmedia/Transcoder/pull/200))
+- Fix: fix end-of-stream flag not sent ([#201](https://github.com/deepmedia/Transcoder/pull/201))
+- Fix: fix performance issues, thanks to [@jumperson](https://github.com/jumperson) ([#202](https://github.com/deepmedia/Transcoder/pull/202))
+- Fix: handle null buffers ([#203](https://github.com/deepmedia/Transcoder/pull/203))
+- Fix: avoid pipeline stalls ([#203](https://github.com/deepmedia/Transcoder/pull/203))
+- Fix: ensure monotonic muxer timestamps ([#203](https://github.com/deepmedia/Transcoder/pull/203))
+
+[Compare 0.10.5...0.11.0](https://github.com/deepmedia/Transcoder/compare/v0.10.5...v0.11.0).
+
 ## 0.10.X
 
 ### 0.10.5
