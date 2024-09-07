@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value=":lib:deployLocal" />
+          <option value="deployLocal" />
         </list>
       </option>
       <option name="vmOptions" />
