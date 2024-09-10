@@ -11,6 +11,7 @@ import com.otaliastudios.transcoder.TranscoderOptions
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.utils.Logger
 import com.otaliastudios.transcoder.source.AssetFileDescriptorDataSource
+import com.otaliastudios.transcoder.source.BlankAudioDataSource
 import com.otaliastudios.transcoder.source.ClipDataSource
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
@@ -116,6 +117,21 @@ class IssuesTests {
         transcode {
             addDataSource(input("sample.mp4"))
             setValidator(WriteAlwaysValidator())
+        }
+        Unit
+    }
+
+    @Test(timeout = 16000)
+    fun issue180() = with(Helper(180)) {
+        transcode {
+            val vds = input("party.mp4")
+            val duration = run {
+                vds.initialize()
+                vds.durationUs.also { vds.deinitialize() }
+            }
+            check(duration > 0L) { "Invalid duration: $duration" }
+            addDataSource(TrackType.VIDEO, vds)
+            addDataSource(TrackType.AUDIO, BlankAudioDataSource(duration))
         }
         Unit
     }

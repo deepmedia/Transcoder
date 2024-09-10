@@ -63,7 +63,7 @@ deployer {
     projectInfo {
         groupId = "io.deepmedia.community"
         artifactId = "transcoder-android"
-        release.version = "0.11.0" // change :lib-legacy and README
+        release.version = "0.11.1" // change :lib-legacy and README
         description = "Accelerated video compression and transcoding on Android using MediaCodec APIs (no FFMPEG/LGPL licensing issues). Supports cropping to any dimension, concatenation, audio processing and much more."
         url = "https://opensource.deepmedia.io/transcoder"
         scm.fromGithub("deepmedia", "Transcoder")
