@@ -29,7 +29,7 @@ Android codecs available on the device. Works on API 21+.
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.deepmedia.community:transcoder-android:0.11.1")
+    implementation("io.deepmedia.community:transcoder-android:0.11.2")
 }
 ```
 
