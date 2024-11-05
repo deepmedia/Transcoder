@@ -143,10 +143,11 @@ class IssuesTests {
             val vds = input("bbb_720p_30mb.mp4")
             addDataSource(ClipDataSource(vds, 0, 500_000))
             setVideoTrackStrategy(DefaultVideoStrategy.exact(300, 300).build())
+            // API 23:
             // This video seems to have wrong number of channels in metadata (6) wrt MediaCodec decoder output (2)
             // so when using DefaultAudioStrategy.CHANNELS_AS_INPUT we target 6 and try to upscale from 2 to 6, which fails
             // The workaround below explicitly sets a number of channels different than CHANNELS_AS_INPUT to make it work
-            setAudioTrackStrategy(DefaultAudioStrategy.builder().channels(1).build())
+            // setAudioTrackStrategy(DefaultAudioStrategy.builder().channels(1).build())
         }
         Unit
     }
