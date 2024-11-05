@@ -14,6 +14,7 @@ import com.otaliastudios.transcoder.source.AssetFileDescriptorDataSource
 import com.otaliastudios.transcoder.source.BlankAudioDataSource
 import com.otaliastudios.transcoder.source.ClipDataSource
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource
+import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
 import com.otaliastudios.transcoder.validator.WriteAlwaysValidator
 import org.junit.Assume
@@ -132,6 +133,21 @@ class IssuesTests {
             check(duration > 0L) { "Invalid duration: $duration" }
             addDataSource(TrackType.VIDEO, vds)
             addDataSource(TrackType.AUDIO, BlankAudioDataSource(duration))
+        }
+        Unit
+    }
+
+    @Test(timeout = 16000)
+    fun issue75_workaround() = with(Helper(75)) {
+        transcode {
+            val vds = input("bbb_720p_30mb.mp4")
+            addDataSource(ClipDataSource(vds, 0, 500_000))
+            setVideoTrackStrategy(DefaultVideoStrategy.exact(300, 300).build())
+            // API 23:
+            // This video seems to have wrong number of channels in metadata (6) wrt MediaCodec decoder output (2)
+            // so when using DefaultAudioStrategy.CHANNELS_AS_INPUT we target 6 and try to upscale from 2 to 6, which fails
+            // The workaround below explicitly sets a number of channels different than CHANNELS_AS_INPUT to make it work
+            // setAudioTrackStrategy(DefaultAudioStrategy.builder().channels(1).build())
         }
         Unit
     }
