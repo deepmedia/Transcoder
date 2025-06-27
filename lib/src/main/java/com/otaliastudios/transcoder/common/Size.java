@@ -9,6 +9,8 @@ public class Size {
 
     private final int mMajor;
     private final int mMinor;
+    private final int mFirst;
+    private final int mSecond;
 
     /**
      * The order does not matter.
@@ -19,6 +21,8 @@ public class Size {
     public Size(int firstSize, int secondSize) {
         mMajor = Math.max(firstSize, secondSize);
         mMinor = Math.min(firstSize, secondSize);
+        mFirst = firstSize;
+        mSecond = secondSize;
     }
 
     public int getMinor() {
@@ -28,4 +32,12 @@ public class Size {
     public int getMajor() {
         return mMajor;
     }
+    public int getFirst() {
+        return mFirst;
+    }
+
+    public int getSecond() {
+        return mSecond;
+    }
+
 }

@@ -10,10 +10,12 @@ import com.otaliastudios.transcoder.TranscoderListener
 import com.otaliastudios.transcoder.TranscoderOptions
 import com.otaliastudios.transcoder.common.TrackType
 import com.otaliastudios.transcoder.internal.utils.Logger
+import com.otaliastudios.transcoder.resize.AspectRatioResizer
 import com.otaliastudios.transcoder.source.AssetFileDescriptorDataSource
 import com.otaliastudios.transcoder.source.BlankAudioDataSource
 import com.otaliastudios.transcoder.source.ClipDataSource
 import com.otaliastudios.transcoder.source.FileDescriptorDataSource
+import com.otaliastudios.transcoder.source.FilePathDataSource
 import com.otaliastudios.transcoder.strategy.DefaultAudioStrategy
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy
 import com.otaliastudios.transcoder.validator.WriteAlwaysValidator
@@ -22,6 +24,7 @@ import org.junit.AssumptionViolatedException
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import kotlin.math.roundToInt
 
 @RunWith(AndroidJUnit4::class)
 class IssuesTests {
@@ -75,6 +78,64 @@ class IssuesTests {
                 throw AssumptionViolatedException("Hit known emulator bug.")
             }
             throw it
+        }
+        fun getRotation(file:File) : Int {
+            val outputDataSource = FilePathDataSource(file.absolutePath)
+            var displayRotation = 0
+            try{
+                outputDataSource.initialize()
+                val mediaFormat = outputDataSource.getTrackFormat(TrackType.VIDEO) ?: throw NullPointerException("MediaFormat is null")
+                displayRotation = mediaFormat.getInteger(MediaFormat.KEY_ROTATION)
+            }catch (_:Exception){
+
+            }finally {
+                outputDataSource.deinitialize()
+            }
+            return displayRotation
+        }
+        fun getRotation(fd:AssetFileDescriptorDataSource) : Int {
+            var displayRotation = 0
+            try{
+                fd.initialize()
+                val mediaFormat = fd.getTrackFormat(TrackType.VIDEO) ?: throw NullPointerException("MediaFormat is null")
+                displayRotation = mediaFormat.getInteger(MediaFormat.KEY_ROTATION)
+            }catch (_:Exception){
+
+            }finally {
+                fd.deinitialize()
+            }
+            return displayRotation
+        }
+        fun getFrameSize(fd:AssetFileDescriptorDataSource): Pair<Int, Int>{
+            var outputWidth = 0
+            var outputHeight = 0
+            try{
+                fd.initialize()
+                val mediaFormat = fd.getTrackFormat(TrackType.VIDEO) ?: throw NullPointerException("MediaFormat is null")
+                outputWidth = mediaFormat.getInteger(MediaFormat.KEY_WIDTH)
+                outputHeight = mediaFormat.getInteger(MediaFormat.KEY_HEIGHT)
+            }catch (ex:Exception){
+                throw Exception("Get video size\n${ex.localizedMessage}")
+            }finally {
+                fd.deinitialize()
+            }
+            return Pair(outputWidth, outputHeight)
+        }
+        fun getFrameSize(file:File) : Pair<Int, Int> {
+            val outputDataSource = FilePathDataSource(file.absolutePath)
+            var outputWidth = 0
+            var outputHeight = 0
+            try{
+                outputDataSource.initialize()
+                val mediaFormat = outputDataSource.getTrackFormat(TrackType.VIDEO) ?: throw NullPointerException("MediaFormat is null")
+                outputWidth = mediaFormat.getInteger(MediaFormat.KEY_WIDTH)
+                outputHeight = mediaFormat.getInteger(MediaFormat.KEY_HEIGHT)
+            }catch (ex:Exception){
+                throw Exception("Get video size\n${ex.localizedMessage}")
+            }finally {
+                outputDataSource.deinitialize()
+            }
+            return Pair(outputWidth, outputHeight)
         }
     }
 
@@ -150,5 +211,32 @@ class IssuesTests {
             // setAudioTrackStrategy(DefaultAudioStrategy.builder().channels(1).build())
         }
         Unit
+    }
+    @Test
+    fun issue215() = with(Helper(215)){
+        //Display rotation 0, 90, 180, 270
+        val rotations = listOf(0,270,180,90)
+        val videoNames = listOf("bbb_720p_1sec.mp4", "bbb_720p_1sec_r90.mp4", "bbb_720p_1sec_r180.mp4", "bbb_720p_1sec_r270.mp4")
+        videoNames.forEachIndexed { i, videoName ->
+            val inputVideoSize = getFrameSize(input(videoName))
+            val inputRatio = inputVideoSize.first.toFloat() / inputVideoSize.second.toFloat()
+            check(inputRatio > 1f){"Input video ($videoName) ratio is: $inputRatio but expected: greater then 1"}
+            val inputRotation = getRotation(input(videoName))
+            check(inputRotation == rotations[i]) {"Input video ($videoName) display rotation is: $inputRotation but expected: ${rotations[i]}"}
+            val expectedOutputRatio = 0.5f
+            val outputVideo = transcode {
+                val vds = input(videoName)
+                addDataSource(vds)
+                val videoTrackStrategy = DefaultVideoStrategy.Builder()
+                videoTrackStrategy.addResizer(AspectRatioResizer(expectedOutputRatio))
+                setVideoTrackStrategy(videoTrackStrategy.build())
+            }
+            val outputRotation = getRotation(outputVideo)
+            val outputVideoSize = getFrameSize(outputVideo)
+            val outputRatio = ((outputVideoSize.first.toFloat() / outputVideoSize.second.toFloat()) * 10).roundToInt() / 10f
+            check(outputRatio == expectedOutputRatio) {"Output ratio is: $outputRatio but expects: $expectedOutputRatio (input video[$i]: $videoName)"}
+            check(outputRotation == 0) {"Output video display rotation is: $outputRotation but expected: 0 (input video[$i]: $videoName)"}
+            println("$videoName (rotation: $outputRotation expected: 0), inputRatio: $inputRatio (${inputVideoSize.first}x${inputVideoSize.second}) expectedOutputRatio: $expectedOutputRatio (${outputVideoSize.first}x${outputVideoSize.second}) OK")
+        }
     }
 }
